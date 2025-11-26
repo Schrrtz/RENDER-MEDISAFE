@@ -663,7 +663,11 @@
           <div class="consultations-grid">
             {% for doctor in doctors %}
             <div class="consultation-card" data-availability='{{ doctor.availability|escapejs }}' data-appointment-count='{{ doctor.appointment_count|default:0 }}'>
-              <img src="{% if doctor.photo_url and not doctor.photo_url|startswith:'/media/' %}{{ doctor.photo_url }}{% else %}{% static 'images/default-doctor.svg' %}{% endif %}" alt="{{ doctor.specialization }}" class="card-image" decoding="async" onerror="this.src='{% static 'images/default-doctor.svg' %}'">
+              {% if doctor.photo_url and not doctor.photo_url|slice:":7" == "/media/" %}
+                <img src="{{ doctor.photo_url }}" alt="{{ doctor.specialization }}" class="card-image" decoding="async" onerror="this.src='{% static 'images/default-doctor.svg' %}'">
+              {% else %}
+                <img src="{% static 'images/default-doctor.svg' %}" alt="{{ doctor.specialization }}" class="card-image" decoding="async">
+              {% endif %}
             
             <div class="card-content">
               <h2 class="specialty">{{ doctor.specialization }}</h2>
