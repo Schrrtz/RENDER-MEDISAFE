@@ -50,6 +50,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Add WhiteNoise for serving static/media on Render
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -171,21 +172,24 @@ SESSION_COOKIE_HTTPONLY = True
 STATIC_URL = 'static/'
 
 # Media files (User uploaded files)
-# On Render, use Supabase Storage for persistent media files
+# For Render deployment, serve media from local path during request
+# Files are stored in database references, served through Django view
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+# Add middleware to handle media file serving
 if os.getenv('RENDER'):
-    # Production: Use Supabase Storage URL
-    MEDIA_URL = 'https://[YOUR_SUPABASE_ID].supabase.co/storage/v1/object/public/medisafe-media/'
-    MEDIA_ROOT = BASE_DIR / 'media'  # Temporary local storage during upload
-else:
-    # Development: Use local storage
-    MEDIA_URL = '/media/'
-    MEDIA_ROOT = BASE_DIR / 'media'
+    # On Render, explicitly configure media serving
+    MIDDLEWARE.append('django.middleware.common.CommonMiddleware')
 
 STATICFILES_DIRS = [
     BASE_DIR / 'myapp' / 'static',
     BASE_DIR / 'myapp' / 'features' / 'doctors',
 ]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# WhiteNoise configuration for serving media and static files on Render
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
