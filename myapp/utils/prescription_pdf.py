@@ -59,7 +59,7 @@ def generate_prescription_pdf(prescription):
         # Patient information
         content.append(Paragraph("Patient Information", heading_style))
         patient_data = [
-            ['Name:', f"{patient.user.username}" if patient else "N/A"],
+            ['Name:', f"{patient.username}" if patient else "N/A"],
             ['Date:', datetime.now().strftime('%B %d, %Y')],
             ['Prescription #:', prescription.prescription_number or 'N/A'],
         ]
@@ -156,5 +156,7 @@ def generate_prescription_pdf(prescription):
         return buffer.getvalue()
         
     except Exception as e:
+        import traceback
         print(f"Error generating prescription PDF: {str(e)}")
+        traceback.print_exc()
         return None

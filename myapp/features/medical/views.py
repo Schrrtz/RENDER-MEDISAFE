@@ -949,6 +949,8 @@ def prescription_download(request, prescription_id):
     try:
         from ...models import User, Prescription
         from ...utils.prescription_pdf import generate_prescription_pdf
+        import logging
+        logger = logging.getLogger(__name__)
         
         user = User.objects.get(user_id=user_id)
         
@@ -961,9 +963,10 @@ def prescription_download(request, prescription_id):
         # Generate PDF on-the-fly (works even if file doesn't exist on Render)
         pdf_content = generate_prescription_pdf(prescription)
         if not pdf_content:
+            logger.error(f"PDF generation returned None for prescription {prescription_id}")
             return JsonResponse({
                 'error': 'Failed to generate prescription PDF',
-                'message': 'An error occurred while generating the prescription document.'
+                'message': 'An error occurred while generating the prescription document. Check logs for details.'
             }, status=500)
         
         # Return PDF
@@ -976,7 +979,7 @@ def prescription_download(request, prescription_id):
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)
-        logger.error(f"Error downloading prescription {prescription_id}: {str(e)}")
+        logger.error(f"Error downloading prescription {prescription_id}: {str(e)}", exc_info=True)
         return JsonResponse({'error': f'Error: {str(e)}'}, status=500)
 
 

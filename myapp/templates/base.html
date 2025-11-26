@@ -5,9 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}MediSafe{% endblock %}</title>
-    <!-- Favicon and social preview image (served from media folder) -->
-    <link rel="icon" type="image/png" href="/media/logo/Medisafe%20Logo.jpg" />
-    <meta property="og:image" content="/media/logo/Medisafe%20Logo.jpg" />
+    <!-- Favicon and social preview image (served from static folder for persistence on Render) -->
+    <link rel="icon" type="image/png" href="{% static 'images/medisafe-logo.jpg' %}" />
+    <meta property="og:image" content="{% static 'images/medisafe-logo.jpg' %}" />
     <meta name="twitter:card" content="summary_large_image" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -413,7 +413,7 @@
     <nav class="main-nav">
         <div class="nav-container">
             <a href="{% url 'dashboard' %}" class="nav-brand" aria-label="MediSafe">
-                <img src="/media/logo/Medisafe%20Logo.jpg" alt="MediSafe logo" class="nav-logo" />
+                <img src="{% static 'images/medisafe-logo.jpg' %}" alt="MediSafe logo" class="nav-logo" />
                 <span class="brand-text" aria-hidden="true"><span class="brand-part1">Medi</span><span class="brand-part2">Safe</span></span>
             </a>
             
