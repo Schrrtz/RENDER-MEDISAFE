@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <!-- Background -->
+  <rect fill="#F0F0F0" width="300" height="300"/>
+  
+  <!-- Head -->
+  <circle cx="150" cy="90" r="45" fill="#D4A574"/>
+  
+  <!-- Body/Stethoscope -->
+  <ellipse cx="150" cy="180" rx="55" ry="65" fill="#3498DB"/>
+  
+  <!-- Medical coat collar -->
+  <path d="M 120 160 L 130 150 L 170 150 L 180 160" fill="#FFFFFF"/>
+  
+  <!-- Stethoscope curve -->
+  <path d="M 130 140 Q 150 120 170 140" stroke="#DC3545" stroke-width="4" fill="none" stroke-linecap="round"/>
+  
+  <!-- Text placeholder -->
+  <text x="150" y="280" text-anchor="middle" font-family="Arial" font-size="16" fill="#666666">Doctor Profile</text>
+</svg>
