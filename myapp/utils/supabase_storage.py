@@ -157,3 +157,24 @@ def get_media_url(path: str) -> str:
         return path
         
     return path  # Django will serve it via /media/ URL
+
+
+def clean_old_profile_photo(old_photo_path):
+    """
+    Delete old profile photo file when user uploads a new one.
+    
+    Args:
+        old_photo_path: Path to old photo file (e.g., '/media/profile_photos/file.jpg')
+    """
+    if old_photo_path and old_photo_path.startswith('/media/'):
+        # Extract actual file path
+        file_path = old_photo_path.lstrip('/media/')
+        import os
+        media_root = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'media')
+        full_path = os.path.join(media_root, file_path)
+        
+        try:
+            if os.path.exists(full_path):
+                os.remove(full_path)
+        except Exception as e:
+            print(f"Error deleting old photo: {str(e)}")
