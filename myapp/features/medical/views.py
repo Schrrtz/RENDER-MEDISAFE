@@ -940,7 +940,7 @@ def prescription_details(request, prescription_id):
 
 
 def prescription_download(request, prescription_id):
-    """Download prescription file (patient) with proper error handling for Render ephemeral storage"""
+    """Download prescription file (patient) - generates PDF on-the-fly for Render compatibility"""
     user_id = request.session.get('user_id') or request.session.get('user')
     
     if not user_id:
@@ -948,6 +948,8 @@ def prescription_download(request, prescription_id):
     
     try:
         from ...models import User, Prescription
+        from ...utils.prescription_pdf import generate_prescription_pdf
+        
         user = User.objects.get(user_id=user_id)
         
         # Get prescription and verify ownership (patient can only download their own prescriptions)
@@ -956,29 +958,18 @@ def prescription_download(request, prescription_id):
             live_appointment__appointment__patient=user
         )
         
-        # Check if prescription has a file
-        if not prescription.prescription_file:
+        # Generate PDF on-the-fly (works even if file doesn't exist on Render)
+        pdf_content = generate_prescription_pdf(prescription)
+        if not pdf_content:
             return JsonResponse({
-                'error': 'No file attached to this prescription. Please ask your doctor to upload a prescription file.'
-            }, status=404)
+                'error': 'Failed to generate prescription PDF',
+                'message': 'An error occurred while generating the prescription document.'
+            }, status=500)
         
-        file_obj = prescription.prescription_file
-        file_name = file_obj.name.split('/')[-1]
-        mime_type, _ = mimetypes.guess_type(file_name)
-        mode = request.GET.get('mode', 'download')
-        disposition = 'inline' if mode == 'preview' else 'attachment'
-        
-        try:
-            response = FileResponse(file_obj.open('rb'), content_type=mime_type or 'application/octet-stream')
-            response['Content-Disposition'] = f'{disposition}; filename="{smart_str(prescription.prescription_number)}_{smart_str(file_name)}"'
-            return response
-        except FileNotFoundError:
-            # File path in DB but file not on disk (Render ephemeral storage)
-            return JsonResponse({
-                'error': 'Prescription file not available',
-                'message': 'The file has been removed from temporary storage. Please ask your doctor to re-upload the prescription.',
-                'type': 'ephemeral_storage_missing'
-            }, status=410)  # 410 Gone
+        # Return PDF
+        response = HttpResponse(pdf_content, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="Prescription_{prescription.prescription_number}.pdf"'
+        return response
         
     except Prescription.DoesNotExist:
         return JsonResponse({'error': 'Prescription not found'}, status=404)
@@ -986,7 +977,7 @@ def prescription_download(request, prescription_id):
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"Error downloading prescription {prescription_id}: {str(e)}")
-        return JsonResponse({'error': f'Error downloading file: {str(e)}'}, status=500)
+        return JsonResponse({'error': f'Error: {str(e)}'}, status=500)
 
 
 # ===== Global Notification API Endpoints =====

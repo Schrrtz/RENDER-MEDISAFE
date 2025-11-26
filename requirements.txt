@@ -79,6 +79,9 @@ tzdata==2025.2
 # Web Sockets
 websockets==15.0.1
 
+# PDF Generation
+reportlab==4.0.9
+
 # WSGI Server (Production)
 gunicorn==21.2.0
 
