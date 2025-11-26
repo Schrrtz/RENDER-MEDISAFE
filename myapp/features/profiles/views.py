@@ -113,35 +113,19 @@ def update_profile_photo(request):
         if uploaded.content_type not in allowed_types:
             return JsonResponse({'success': False, 'error': 'Invalid file type. Please upload a JPEG, PNG, or GIF image.'}, status=400)
 
-        # Compute destination path
-        filename = f"{user.user_id}_{uploaded.name}"
-        relative_path = os.path.join('profile_photos', filename)
-        full_path = os.path.join(settings.MEDIA_ROOT, relative_path)
+        # Import storage utility
+        from ...utils.supabase_storage import upload_profile_photo, clean_old_profile_photo
 
-        # Ensure directory exists
-        os.makedirs(os.path.dirname(full_path), exist_ok=True)
-
-        # Delete previous file if it existed and is within MEDIA_ROOT
+        # Delete old photo if it exists
         if user_profile.photo_url:
-            old_path = user_profile.photo_url
-            # Handle both string and ImageFieldFile objects
-            if hasattr(old_path, 'url'):
-                old_path = old_path.url
-            if isinstance(old_path, str) and old_path.startswith('/media/'):
-                old_full_path = os.path.join(settings.BASE_DIR, old_path.lstrip('/'))
-                if os.path.exists(old_full_path):
-                    try:
-                        os.remove(old_full_path)
-                    except Exception:
-                        pass
+            clean_old_profile_photo(user_profile.photo_url)
 
-        # Save new file
-        with open(full_path, 'wb+') as destination:
-            for chunk in uploaded.chunks():
-                destination.write(chunk)
+        # Upload new photo to storage
+        photo_url_str = upload_profile_photo(uploaded, user.user_id)
+        if not photo_url_str:
+            return JsonResponse({'success': False, 'error': 'Failed to upload photo'}, status=500)
 
         # Update profile URL
-        photo_url_str = f"/media/{relative_path.replace('\\', '/')}"
         user_profile.photo_url = photo_url_str
         user_profile.save()
 
@@ -233,25 +217,16 @@ def update_profile(request):
                     filename = f"{user.user_id}_{uploaded.name}"
                     relative_path = os.path.join('profile_photos', filename)
                     full_path = os.path.join(settings.MEDIA_ROOT, relative_path)
-                    os.makedirs(os.path.dirname(full_path), exist_ok=True)
-                    
                     # Delete old photo if exists
                     if user_profile.photo_url:
-                        old_path = user_profile.photo_url
-                        if isinstance(old_path, str) and old_path.startswith('/media/'):
-                            old_full_path = os.path.join(settings.BASE_DIR, old_path.lstrip('/'))
-                            if os.path.exists(old_full_path):
-                                try:
-                                    os.remove(old_full_path)
-                                except Exception:
-                                    pass
+                        from ...utils.supabase_storage import clean_old_profile_photo
+                        clean_old_profile_photo(user_profile.photo_url)
                     
-                    # Save new file
-                    with open(full_path, 'wb+') as destination:
-                        for chunk in uploaded.chunks():
-                            destination.write(chunk)
-                    
-                    user_profile.photo_url = f"/media/{relative_path.replace('\\', '/')}"
+                    # Upload new photo using storage utility
+                    from ...utils.supabase_storage import upload_profile_photo
+                    photo_url = upload_profile_photo(uploaded, user.user_id)
+                    if photo_url:
+                        user_profile.photo_url = photo_url
         
         # Update UserProfile fields
         userprofile_fields = [
