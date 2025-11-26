@@ -1,0 +1,76 @@
+/* Dashboard card styles */
+.dashboard-card {
+  background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.9) 100%);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 51, 102, 0.1);
+}
+
+.dashboard-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(0, 51, 102, 0.15);
+  border-color: #0066CC;
+}
+
+.quick-link {
+  transition: all 0.3s ease;
+}
+
+.quick-link:hover {
+  transform: translateY(-2px);
+}
+
+/* Mobile responsive styles */
+@media (max-width: 640px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .action-buttons {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+  
+  .search-container {
+    width: 100% !important;
+    margin-bottom: 1rem;
+  }
+}
+
+/* Tablet responsive styles */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Navigation responsive styles */
+@media (max-width: 768px) {
+  .mobile-menu {
+    display: block !important;
+  }
+  
+  .nav-links {
+    display: none;
+  }
+  
+  .nav-links.active {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    padding: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+}

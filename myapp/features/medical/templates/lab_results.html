@@ -1,0 +1,1288 @@
+{% extends 'base.html' %}
+
+
+
+{% block title %}Laboratory Results{% endblock %}
+
+
+
+{% block extra_css %}
+
+<style>
+
+    :root {
+
+      --ink: #2c2c2f;
+
+      --blue: #2c71b7;
+
+      --blue2: #2c71b7;
+
+      --red: #f15e2c;
+
+      --bg: #f0f3f6;
+
+      --muted: #64748b;
+
+      --border: #d4cac9;
+
+    }
+
+
+
+    body {
+
+      margin: 0;
+
+      background: linear-gradient(135deg, #f8fafc 0%, #f0f3f6 100%);
+
+      color: var(--ink);
+
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+      position: relative;
+
+    }
+
+    body::before {
+
+      display: none;
+
+    }
+
+
+
+    .wrap {
+
+      max-width: 1100px;
+
+      margin: 24px auto;
+
+      padding: 0 16px;
+
+      position: relative;
+
+      z-index: 1;
+
+    }
+
+    .page-title {
+      margin: 0 0 24px 0;
+      font-size: 36px;
+      font-weight: 900;
+      color: var(--blue);
+      letter-spacing: -0.5px;
+      line-height: 1.2;
+    }
+
+    .filters{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+
+    .chip{padding:8px 12px;border:2px solid #cbd5e1;border-radius:999px;background:#fff;font-weight:700;color:#0f172a;cursor:pointer}
+
+    .chip.active{border-color:var(--red);color:var(--red);background:#fff5f5}
+
+    .panel{background:#ffffff;border-radius:14px;border:1px solid #e2e8f0;box-shadow:0 8px 24px rgba(0,0,0,.06)}
+
+    .panel-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #e2e8f0;background:linear-gradient(90deg,#f8fbff,#ffffff)}
+
+    .panel-title{font-weight:800;color:var(--blue2)}
+
+    table{width:100%;border-collapse:collapse}
+
+    th,td{padding:12px 14px;border-bottom:1px solid #eef2f7;text-align:left}
+
+    th{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#ffffff;text-shadow:0 1px 2px rgba(0,0,0,0.1)}
+
+    tbody tr:hover{background:#f8fbff}
+
+    .status-pill{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:800}
+
+    .ok{background:#ecfccb;color:#365314}
+
+    .flag{background:#fee2e2;color:#7f1d1d}
+
+    .meta{color:#64748b;font-size:12px}
+
+    .grid{display:grid;grid-template-columns: 1fr;gap:16px;margin-top:16px}
+
+    @media(max-width:1200px){.grid{grid-template-columns:1fr}}
+
+    .book-btn{background:var(--red);color:#fff;border:none;border-radius:999px;padding:8px 12px;font-weight:800;cursor:pointer}
+
+    .book-btn:hover{filter:brightness(.95)}
+
+
+
+    /* Scrollable Tables */
+    .table-wrapper {
+      overflow-x: auto;
+      overflow-y: auto;
+      max-height: 650px;
+      border-radius: 12px;
+      margin-top: 20px;
+      background: white;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e2e8f0;
+    }
+
+    .table-wrapper table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .table-wrapper thead {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--blue);
+      color: white;
+    }
+
+    /* Modal Styling */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      animation: fadeIn 0.3s ease;
+    }
+
+    .modal.show {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal-content {
+      background-color: white;
+      padding: 32px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.25);
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(30px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 16px;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--blue);
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 28px;
+      cursor: pointer;
+      color: #64748b;
+      transition: color 0.2s;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close:hover {
+      color: var(--red);
+    }
+
+    .modal-body {
+      margin-bottom: 24px;
+    }
+
+    .modal-row {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .modal-row:last-child {
+      border-bottom: none;
+    }
+
+    .modal-label {
+      font-weight: 700;
+      color: var(--ink);
+      font-size: 14px;
+    }
+
+    .modal-value {
+      color: #64748b;
+      font-size: 14px;
+      word-break: break-word;
+    }
+
+    .modal-footer {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    .modal-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .modal-btn-primary {
+      background: var(--blue);
+      color: white;
+    }
+
+    .modal-btn-primary:hover {
+      filter: brightness(0.9);
+    }
+
+    .modal-btn-secondary {
+      background: #f3f4f6;
+      color: #4b5563;
+      border: 1px solid #d1d5db;
+    }
+
+    .modal-btn-secondary:hover {
+      background: #e5e7eb;
+    }
+
+    /* Slideshow Styling */
+    .slideshow-container {
+      position: relative;
+      max-width: 1100px;
+      margin: 0 auto 32px auto;
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+      height: 380px;
+    }
+
+    .slideshow-slide {
+      display: none;
+      position: relative;
+      width: 100%;
+      height: 100%;
+      animation: fadeIn 0.8s ease;
+    }
+
+    .slideshow-slide.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .slideshow-slide img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .slideshow-controls {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+      padding: 40px 20px 20px 20px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      z-index: 10;
+    }
+
+    .slideshow-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.5);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+    }
+
+    .slideshow-dot.active {
+      background: white;
+      transform: scale(1.3);
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+    }
+
+    .slideshow-dot:hover {
+      background: rgba(255, 255, 255, 0.8);
+    }
+
+    .slideshow-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255, 255, 255, 0.3);
+      color: white;
+      border: none;
+      font-size: 24px;
+      padding: 12px 18px;
+      cursor: pointer;
+      border-radius: 50%;
+      transition: all 0.3s ease;
+      z-index: 10;
+    }
+
+    .slideshow-arrow:hover {
+      background: rgba(255, 255, 255, 0.6);
+      transform: translateY(-50%) scale(1.1);
+    }
+
+    .slideshow-arrow.left {
+      left: 20px;
+    }
+
+    .slideshow-arrow.right {
+      right: 20px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+  </style>
+
+{% endblock %}
+
+
+
+{% block content %}
+
+  {% if not is_logged_in %}
+
+    <!-- Compact Encouraging Message for Non-Logged-In Users -->
+
+    <div style="background: linear-gradient(135deg, #2c71b7 0%, #2c71b7 100%); color: white; padding: 20px; border-radius: 12px; margin: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+
+        <div style="flex: 1; min-width: 250px;">
+
+          <h3 style="font-size: 20px; font-weight: 700; margin: 0 0 8px 0;">Welcome to MediSafe+ Lab Results</h3>
+
+          <p style="font-size: 14px; opacity: 0.9; margin: 0; line-height: 1.4;">{{ encouraging_message }}</p>
+
+        </div>
+
+        <button class="standard-login-btn" onclick="var btn=document.getElementById('loginBtn'); if(btn){ btn.click(); }" aria-label="Login to View Results">
+
+          <i class="fas fa-sign-in-alt" style="margin-right: 6px;"></i>Login to View Results
+
+        </button>
+
+      </div>
+
+    </div>
+
+    
+
+    <!-- Login Button now triggers standardized header login modal -->
+
+  {% else %}
+
+    <!-- Full Lab Results Content for Logged-In Users with Tabbed Interface -->
+
+    <div class="wrap">
+
+      <h1 class="page-title">Laboratory Services</h1>
+
+      <!-- Slideshow -->
+      <div class="slideshow-container">
+        <div class="slideshow-slide active">
+          <img src="/media/LAB PICTURES/494735190_1253847330077202_3176136615826347115_n (1).jpg" alt="Lab Services 1">
+        </div>
+        <div class="slideshow-slide">
+          <img src="/media/LAB PICTURES/582653849_1431617372300196_609596099699283007_n.jpg" alt="Lab Services 2">
+        </div>
+        <div class="slideshow-slide">
+          <img src="/media/LAB PICTURES/586635633_1434216902040243_8285362125535417095_n.jpg" alt="Lab Services 3">
+        </div>
+        
+        <!-- Navigation Arrows -->
+        <button class="slideshow-arrow left" onclick="changeLabSlide(-1)">❮</button>
+        <button class="slideshow-arrow right" onclick="changeLabSlide(1)">❯</button>
+        
+        <!-- Dots Navigation -->
+        <div class="slideshow-controls">
+          <span class="slideshow-dot active" onclick="goToLabSlide(0)"></span>
+          <span class="slideshow-dot" onclick="goToLabSlide(1)"></span>
+          <span class="slideshow-dot" onclick="goToLabSlide(2)"></span>
+        </div>
+      </div>
+
+      <!-- Tabbed Panes for Services -->
+      <div>
+        <!-- Tab Navigation -->
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; border-bottom: 2px solid #e2e8f0; overflow-x: auto;">
+          <button class="lab-tab-btn active" data-tab="book-services" onclick="switchLabTab('book-services')" style="padding: 14px 20px; border: none; background: transparent; cursor: pointer; font-weight: 700; color: var(--ink); border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s; white-space: nowrap;">
+            <i class="fas fa-shopping-cart" style="margin-right: 8px;"></i>Book Services
+          </button>
+          <button class="lab-tab-btn" data-tab="my-services" onclick="switchLabTab('my-services')" style="padding: 14px 20px; border: none; background: transparent; cursor: pointer; font-weight: 700; color: #cbd5e1; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s; white-space: nowrap;">
+            <i class="fas fa-list-check" style="margin-right: 8px;"></i>My Booked Services
+          </button>
+          <button class="lab-tab-btn" data-tab="lab-results" onclick="switchLabTab('lab-results')" style="padding: 14px 20px; border: none; background: transparent; cursor: pointer; font-weight: 700; color: #cbd5e1; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s; white-space: nowrap;">
+            <i class="fas fa-file-medical" style="margin-right: 8px;"></i>My Laboratory Results
+          </button>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="lab-tabs-container">
+
+          <!-- Book Services Tab -->
+          <div id="book-services" class="lab-tab-content active" style="display: block;">
+            <div style="background: white; border-radius: 14px; border: 1px solid #e2e8f0; box-shadow: 0 8px 24px rgba(0,0,0,.06); padding: 32px;">
+              <h2 style="color: var(--blue); font-size: 24px; font-weight: 800; margin: 0 0 28px 0;">Book a Service</h2>
+              
+              <form id="bookServiceForm" onsubmit="submitBookService(event)" style="max-width: 800px;">
+                <!-- Service Selection -->
+                <div style="margin-bottom: 28px;">
+                  <label style="display: block; font-weight: 700; margin-bottom: 12px; color: var(--ink); font-size: 16px; letter-spacing: 0.3px;">Select Service <span style="color: var(--red);">*</span></label>
+                  <select id="serviceSelect" required style="width: 120%; padding: 14px 16px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px; transition: all 0.3s; background: white; cursor: pointer; line-height: 1.6; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);" onchange="validateServiceSelection()" onfocus="this.style.borderColor='var(--blue)'; this.style.boxShadow='0 0 0 3px rgba(44, 113, 183, 0.1)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.05)'">
+                    <option value="">-- Choose a Service --</option>
+                    <!-- Clinical Chemistry -->
+                    <optgroup label="Clinical Chemistry">
+                      <option value="FBS/RBS">FBS/RBS</option>
+                      <option value="Lipid Profile">Lipid Profile</option>
+                      <option value="Total Cholesterol">Total Cholesterol</option>
+                      <option value="Triglycerides">Triglycerides</option>
+                      <option value="HDL/LDL">HDL/LDL</option>
+                      <option value="Creatinine">Creatinine</option>
+                      <option value="BUN">BUN</option>
+                      <option value="BUA">BUA</option>
+                      <option value="AST/SGOT">AST/SGOT</option>
+                      <option value="ALT/SGPT">ALT/SGPT</option>
+                      <option value="Albumin">Albumin</option>
+                      <option value="Bilirubin Total">Bilirubin Total (B1+B2)</option>
+                      <option value="LDH">LDH</option>
+                      <option value="Lipase">Lipase</option>
+                      <option value="Total Protein">Total Protein / TPAG</option>
+                      <option value="CPK">Total CPK / CK-MB / CK-MM</option>
+                      <option value="Troponin">Troponin T / I</option>
+                    </optgroup>
+                    <!-- Hematology -->
+                    <optgroup label="Hematology">
+                      <option value="CBC">CBC</option>
+                      <option value="CBC with Platelet">CBC with Platelet Count</option>
+                      <option value="Bleeding/Clotting Time">Bleeding Time / Clotting Time</option>
+                      <option value="Reticulocyte Count">Reticulocyte Count / ESR</option>
+                      <option value="PBS/Malarial">PBS / Malarial Smear</option>
+                      <option value="Protime">Protime (PT) / APTT / RH Factor</option>
+                    </optgroup>
+                    <!-- Clinical Microscopy -->
+                    <optgroup label="Clinical Microscopy">
+                      <option value="Urinalysis">Urinalysis (IN-HOUSE)</option>
+                      <option value="Fecalysis">Fecalysis (IN-HOUSE)</option>
+                      <option value="PT Serum/Urine">PT Serum / PT Urine</option>
+                      <option value="Occult Blood">Occult Blood FOBT</option>
+                      <option value="Microalbumin">Microalbumin / Creatinine Total / Clearance</option>
+                      <option value="Uric Acid">Uric Acid / Protein / Electrolytes</option>
+                    </optgroup>
+                    <!-- Bacteriology -->
+                    <optgroup label="Bacteriology (Send-Out)">
+                      <option value="C/S">C/S</option>
+                      <option value="Gram Stain">Gram Stain</option>
+                      <option value="Culture Only">Culture Only</option>
+                      <option value="KOH">KOH</option>
+                    </optgroup>
+                    <!-- Drug Test -->
+                    <optgroup label="Drug Test">
+                      <option value="Drug Test DOH">Drug Test (DOH Accredited)</option>
+                    </optgroup>
+                    <!-- Imaging -->
+                    <optgroup label="Imaging">
+                      <option value="Chest X-ray">Chest X-ray (PA/LAT)</option>
+                      <option value="Abdominal X-ray">Abdominal X-ray (UP/SUPPINE)</option>
+                      <option value="Ultrasound">Ultrasound</option>
+                      <option value="12 Lead ECG">12 Lead ECG</option>
+                      <option value="2D Echo">2D Echo with Doppler</option>
+                    </optgroup>
+                    <!-- Vaccination -->
+                    <optgroup label="Vaccination">
+                      <option value="Hexaxim 6-in-1">Hexaxim 6-in-1 — Sanofi</option>
+                      <option value="Infanrix Hexa">Infanrix Hexa — GSK</option>
+                      <option value="Engerix Adult">Engerix Adult — GSK</option>
+                      <option value="Engerix Pedia">Engerix Pedia — GSK</option>
+                      <option value="Genevac Adult">Genevac Adult — Gen PH</option>
+                      <option value="Genevac Pedia">Genevac Pedia — Gen PH</option>
+                      <option value="Tdap">Tdap</option>
+                      <option value="Chickenpox">Chickenpox</option>
+                      <option value="PPD Skin test">PPD Skin test</option>
+                    </optgroup>
+                    <!-- Packages -->
+                    <optgroup label="Pre-Employment Packages">
+                      <option value="PACKAGE A">PACKAGE A — BASIC 5</option>
+                      <option value="PACKAGE B">PACKAGE B — BASIC 5, ECG</option>
+                      <option value="PACKAGE C">PACKAGE C — BASIC 5, ECG, PAPSMEAR</option>
+                      <option value="PACKAGE D">PACKAGE D — BASIC 5, DRUG TEST</option>
+                      <option value="PACKAGE E">PACKAGE E — BASIC 5, PREGNANCY TEST</option>
+                      <option value="PACKAGE F">PACKAGE F — BASIC 5, PREGNANCY TEST, DRUG TEST</option>
+                      <option value="PACKAGE G">PACKAGE G — BASIC 5, HEPA B SCREENING</option>
+                      <option value="PACKAGE H">PACKAGE H — BASIC 5, HEPA B SCREENING, DRUG TEST</option>
+                      <option value="PACKAGE I">PACKAGE I — BASIC 5, HEPA B SCREENING, PREGNANCY TEST</option>
+                      <option value="PACKAGE J">PACKAGE J — BASIC 5, HEPA B SCREENING, PREGNANCY TEST, DRUG TEST</option>
+                      <option value="PACKAGE K">PACKAGE K — BASIC 5, HEPA B SCREENING, DRUG TEST, ANTIGEN TEST</option>
+                    </optgroup>
+                  </select>
+                </div>
+
+                <!-- Date & Time Row -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+                  <!-- Booking Date -->
+                  <div>
+                    <label style="display: block; font-weight: 700; margin-bottom: 12px; color: var(--ink); font-size: 15px; letter-spacing: 0.3px;">Booking Date *</label>
+                    <input type="date" id="bookingDate" required min="" style="width: 100%; padding: 14px 16px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);" onfocus="this.style.borderColor='var(--blue)'; this.style.boxShadow='0 0 0 3px rgba(44, 113, 183, 0.1)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.05)'" onchange="validateBookingDate()">
+                  </div>
+
+                  <!-- Booking Time -->
+                  <div>
+                    <label style="display: block; font-weight: 700;margin-left: 100px; margin-bottom: 12px; color: var(--ink); font-size: 15px; letter-spacing: 0.3px;">Preferred Time *</label>
+                    <input type="time" id="bookingTime" required style="width: 107%; margin-left: 100px; padding: 14px 16px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);" onfocus="this.style.borderColor='var(--blue)'; this.style.boxShadow='0 0 0 3px rgba(44, 113, 183, 0.1)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.05)'">
+                  </div>
+                </div>
+
+                <!-- Notes -->
+                <div style="margin-bottom: 28px;">
+                 
+                  <label style="display: block; font-weight: 700; margin-bottom: 0px; color: var(--ink); font-size: 15px; letter-spacing: 0.3px;">Special Notes (Optional)</label>
+                  <textarea id="bookingNotes" style="width: 70%; padding: 14px 16px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px; transition: all 0.3s; resize: vertical; min-height: 110px; font-family: inherit; line-height: 1.6; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);" placeholder="Any special requests or notes..." onfocus="this.style.borderColor='var(--blue)'; this.style.boxShadow='0 0 0 3px rgba(44, 113, 183, 0.1)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.05)'"></textarea>
+               
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" style="width: 70%; margin-left: 250px; padding: 20px 20px; background: var(--red); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 15px; transition: filter 0.2s, transform 0.2s; letter-spacing: 0.5px;" onmouseover="this.style.filter='brightness(0.95)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.filter='brightness(1)'; this.style.transform='translateY(0)'">
+                  <i class="fas fa-check-circle" style="margin-right: 10px;"></i>Confirm Booking
+                </button>
+              </form>
+
+              <div id="bookServiceMessage" style="margin-top: 16px; padding: 12px 16px; border-radius: 8px; display: none;"></div>
+            </div>
+          </div>
+
+          <!-- My Booked Services Tab -->
+          <div id="my-services" class="lab-tab-content" style="display: none;">
+            <div style="background: white; border-radius: 14px; border: 1px solid #e2e8f0; box-shadow: 0 8px 24px rgba(0,0,0,.06); padding: 24px;">
+              <h2 style="color: var(--blue); font-size: 24px; font-weight: 800; margin: 0 0 24px 0;">My Booked Services</h2>
+              
+              <!-- Search & Filter Controls -->
+              <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #e2e8f0;">
+                <div style="margin-bottom: 16px;">
+                  <label style="display: block; font-weight: 700; margin-bottom: 8px; color: var(--ink); font-size: 14px;">Search</label>
+                    <input type="text" id="bookedServicesSearch" placeholder="🔍 Search by service name, date, or status..." style="width: 50%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 14px; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);" onkeyup="filterBookedServices()" onfocus="this.style.borderColor='var(--blue)'; this.style.boxShadow='0 0 0 3px rgba(44, 113, 183, 0.1)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.05)'">
+                </div>
+
+                <!-- Filter Grid -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px;">
+                  <!-- Status Filter -->
+                  <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--ink); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Status</label>
+                    <select id="bookedServicesStatusFilter" style="width: 100%; padding: 10px 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 13px; background: white; cursor: pointer; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);" onchange="filterBookedServices()" onfocus="this.style.borderColor='var(--blue)'; this.style.boxShadow='0 0 0 3px rgba(44, 113, 183, 0.1)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.05)'">
+                      <option value="">All Status</option>
+                      <option value="Pending">Pending</option>
+                      <option value="Confirmed">Confirmed</option>
+                      <option value="Completed">Completed</option>
+                      <option value="Cancelled">Cancelled</option>
+                    </select>
+                  </div>
+
+                  <!-- Date From Filter -->
+                  <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--ink); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">From Date</label>
+                    <input type="date" id="bookedServicesDateFrom" style="width: 100%; padding: 10px 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 13px; background: white; cursor: pointer; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);" onchange="filterBookedServices()" onfocus="this.style.borderColor='var(--blue)'; this.style.boxShadow='0 0 0 3px rgba(44, 113, 183, 0.1)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.05)'">
+                  </div>
+
+                  <!-- Date To Filter -->
+                  <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--ink); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">To Date</label>
+                    <input type="date" id="bookedServicesDateTo" style="width: 100%; padding: 10px 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 13px; background: white; cursor: pointer; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);" onchange="filterBookedServices()" onfocus="this.style.borderColor='var(--blue)'; this.style.boxShadow='0 0 0 3px rgba(44, 113, 183, 0.1)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.05)'">
+                  </div>
+
+                  <!-- Sort Order -->
+                  <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--ink); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Sort By</label>
+                    <select id="bookedServicesSortOrder" style="width: 100%; padding: 10px 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 13px; background: white; cursor: pointer; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);" onchange="filterBookedServices()" onfocus="this.style.borderColor='var(--blue)'; this.style.boxShadow='0 0 0 3px rgba(44, 113, 183, 0.1)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.05)'">
+                      <option value="date-desc">Newest First</option>
+                      <option value="date-asc">Oldest First</option>
+                      <option value="service-asc">Service (A-Z)</option>
+                      <option value="status-asc">Status (A-Z)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Reset Button -->
+                <div style="margin-top: 16px;">
+                  <button onclick="resetBookedServicesFilters()" style="padding: 10px 16px; background: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='#f3f4f6'">
+                    <i class="fas fa-redo"></i> Reset Filters
+                  </button>
+                </div>
+              </div>
+
+              <!-- Booked Services Table -->
+              <div class="table-wrapper">
+                <table style="min-width: 900px;">
+                  <thead style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); color: white; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);">
+                    <tr>
+                      <th style="padding: 18px 15px; text-align: left; font-weight: 700; min-width: 200px; white-space: nowrap;">Service Name</th>
+                      <th style="padding: 18px 15px; text-align: left; font-weight: 700; min-width: 140px; white-space: nowrap;">Booking Date</th>
+                      <th style="padding: 18px 15px; text-align: left; font-weight: 700; min-width: 100px; white-space: nowrap;">Time</th>
+                      <th style="padding: 18px 15px; text-align: left; font-weight: 700; min-width: 110px; white-space: nowrap;">Status</th>
+                      <th style="padding: 18px 15px; text-align: left; font-weight: 700; min-width: 180px;">Notes</th>
+                      <th style="padding: 18px 15px; text-align: center; font-weight: 700; min-width: 100px; white-space: nowrap;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="bookedServicesTableBody">
+                    {% if booked_services %}
+                      {% for service in booked_services %}
+                      <tr class="booked-service-row" 
+                          style="border-bottom: 1px solid #e2e8f0; transition: all 0.2s;" 
+                          onmouseover="this.style.background='#f0f7ff'" 
+                          onmouseout="this.style.background=''"
+                          data-service="{{ service.service_name }}"
+                          data-status="{{ service.status }}"
+                          data-date="{{ service.booking_date|date:'Y-m-d' }}">
+                        <td style="padding: 16px 15px; font-weight: 600; color: var(--ink);">{{ service.service_name }}</td>
+                        <td style="padding: 16px 15px; font-size: 14px;">{{ service.booking_date|date:'M d, Y' }}</td>
+                        <td style="padding: 16px 15px; font-size: 14px;">{{ service.booking_time|time:'H:i' }}</td>
+                        <td style="padding: 16px 15px;">
+                          <span style="{% if service.status == 'Completed' %}background: #dcfce7; color: #166534;{% elif service.status == 'Cancelled' %}background: #e5e7eb; color: #374151;{% elif service.status == 'Confirmed' %}background: #dbeafe; color: #1e40af;{% else %}background: #fef3c7; color: #92400e;{% endif %} padding: 6px 12px; border-radius: 14px; font-size: 13px; font-weight: 600; display: inline-block;">
+                            {{ service.status }}
+                          </span>
+                        </td>
+                        <td style="padding: 16px 15px; color: #64748b; font-size: 13px;">{{ service.notes|truncatewords:5|default:"—" }}</td>
+                        <td style="padding: 16px 15px; text-align: center;">
+                          <button onclick="viewServiceDetails({{ service.booking_id }})" style="padding: 10px 16px; background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.3s; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);" onmouseover="this.style.filter='brightness(1.1)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(37, 99, 235, 0.4)'" onmouseout="this.style.filter='brightness(1)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(37, 99, 235, 0.3)'">
+                            <i class="fas fa-eye"></i>View
+                          </button>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    {% else %}
+                    <tr style="border-bottom: 1px solid #e2e8f0;">
+                      <td colspan="6" style="padding: 60px 20px; text-align: center; color: #64748b;">
+                        <i class="fas fa-clipboard-list" style="font-size: 3rem; margin-bottom: 20px; opacity: 0.4; display: block;"></i>
+                        <p style="margin: 0; font-size: 18px; font-weight: 600; color: var(--ink);">No booked services yet</p>
+                        <p style="margin: 8px 0 0; font-size: 14px; color: #94a3b8;">Start by booking a service from the tab above</p>
+                      </td>
+                    </tr>
+                    {% endif %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- My Lab Results Tab -->
+          <div id="lab-results" class="lab-tab-content" style="display: none;">
+            <div style="background: white; border-radius: 14px; border: 1px solid #e2e8f0; box-shadow: 0 8px 24px rgba(0,0,0,.06); padding: 24px;">
+              <h2 style="color: var(--blue); font-size: 24px; font-weight: 800; margin: 0 0 24px 0;">My Laboratory Results</h2>
+              
+              <!-- Search & Filter Controls -->
+              <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #e2e8f0;">
+                <div style="margin-bottom: 16px;">
+                  <label style="display: block; font-weight: 700; margin-bottom: 8px; color: var(--ink); font-size: 14px;">Search</label>
+                  <input type="text" id="labResultsSearch" placeholder="🔍 Search by test type or date..." style="width: 50%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 14px; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);" onkeyup="filterLabResults()" onfocus="this.style.borderColor='var(--blue)'; this.style.boxShadow='0 0 0 3px rgba(44, 113, 183, 0.1)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.05)'">
+                </div>
+
+                <!-- Filter Grid -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px;">
+                  <!-- Lab Type Filter -->
+                  <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--ink); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Test Type</label>
+                    <select id="labResultsTypeFilter" style="width: 100%; padding: 10px 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 13px; background: white; cursor: pointer; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);" onchange="filterLabResults()" onfocus="this.style.borderColor='var(--blue)'; this.style.boxShadow='0 0 0 3px rgba(44, 113, 183, 0.1)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.05)'">
+                      <option value="">All Types</option>
+                      {% for result in lab_results %}
+                        <option value="{{ result.lab_type }}">{{ result.lab_type }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <!-- Date From Filter -->
+                  <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--ink); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">From Date</label>
+                    <input type="date" id="labResultsDateFrom" style="width: 100%; padding: 10px 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 13px; background: white; cursor: pointer; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);" onchange="filterLabResults()" onfocus="this.style.borderColor='var(--blue)'; this.style.boxShadow='0 0 0 3px rgba(44, 113, 183, 0.1)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.05)'">
+                  </div>
+
+                  <!-- Date To Filter -->
+                  <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--ink); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">To Date</label>
+                    <input type="date" id="labResultsDateTo" style="width: 100%; padding: 10px 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 13px; background: white; cursor: pointer; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);" onchange="filterLabResults()" onfocus="this.style.borderColor='var(--blue)'; this.style.boxShadow='0 0 0 3px rgba(44, 113, 183, 0.1)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.05)'">
+                  </div>
+
+                  <!-- Sort Order -->
+                  <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--ink); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Sort By</label>
+                    <select id="labResultsSortOrder" style="width: 100%; padding: 10px 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 13px; background: white; cursor: pointer; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);" onchange="filterLabResults()" onfocus="this.style.borderColor='var(--blue)'; this.style.boxShadow='0 0 0 3px rgba(44, 113, 183, 0.1)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.05)'">
+                      <option value="date-desc">Newest First</option>
+                      <option value="date-asc">Oldest First</option>
+                      <option value="type-asc">Test Type (A-Z)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Reset Button -->
+                <div style="margin-top: 16px;">
+                  <button onclick="resetLabResultsFilters()" style="padding: 10px 16px; background: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='#f3f4f6'">
+                    <i class="fas fa-redo"></i> Reset Filters
+                  </button>
+                </div>
+              </div>
+
+              <!-- Lab Results Table -->
+              <div class="table-wrapper">
+                <table style="min-width: 1000px;">
+                  <thead style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); color: white; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);">
+                    <tr>
+                      <th style="padding: 18px 15px; text-align: left; font-weight: 700; min-width: 180px; white-space: nowrap;">Test Type</th>
+                      <th style="padding: 18px 15px; text-align: left; font-weight: 700; min-width: 150px; white-space: nowrap;">Upload Date</th>
+                      <th style="padding: 18px 15px; text-align: left; font-weight: 700; min-width: 100px; white-space: nowrap;">File Type</th>
+                      <th style="padding: 18px 15px; text-align: left; font-weight: 700; min-width: 200px;">File Name</th>
+                      <th style="padding: 18px 15px; text-align: left; font-weight: 700; min-width: 140px; white-space: nowrap;">Uploaded By</th>
+                      <th style="padding: 18px 15px; text-align: center; font-weight: 700; min-width: 110px; white-space: nowrap;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="labResultsTableBody">
+                    {% if lab_results %}
+                      {% for result in lab_results %}
+                      <tr class="lab-result-row" 
+                          style="border-bottom: 1px solid #e2e8f0; transition: all 0.2s;" 
+                          onmouseover="this.style.background='#f0f7ff'" 
+                          onmouseout="this.style.background=''"
+                          data-test-type="{{ result.lab_type }}"
+                          data-date="{{ result.upload_date|date:'Y-m-d' }}">
+                        <td style="padding: 16px 15px; font-weight: 600; color: var(--ink);">
+                          <i class="fas fa-file-medical" style="color: var(--blue); margin-right: 8px;"></i>{{ result.lab_type }}
+                        </td>
+                        <td style="padding: 16px 15px; color: #64748b; font-size: 13px;">{{ result.upload_date|date:'M d, Y - H:i' }}</td>
+                        <td style="padding: 16px 15px; font-size: 13px;">
+                          <span style="background: #e0e7ff; color: #3730a3; padding: 6px 10px; border-radius: 6px; font-weight: 600; display: inline-block;">{{ result.file_type }}</span>
+                        </td>
+                        <td style="padding: 16px 15px; font-size: 13px; color: var(--ink);">{{ result.file_name|truncatewords:4 }}</td>
+                        <td style="padding: 16px 15px; color: #64748b; font-size: 13px;">
+                          {% if result.uploaded_by %}
+                            <i class="fas fa-user-md" style="color: var(--blue); margin-right: 6px;"></i>Dr. {{ result.uploaded_by.userprofile.first_name }}
+                          {% else %}
+                            <i class="fas fa-server" style="color: #94a3b8; margin-right: 6px;"></i>System
+                          {% endif %}
+                        </td>
+                        <td style="padding: 16px 15px; text-align: center;">
+                          <a href="{% url 'download_lab_result' result.lab_result_id %}" style="padding: 10px 16px; background: linear-gradient(135deg, #ff6b35 0%, #f15e2c 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: all 0.3s; box-shadow: 0 2px 8px rgba(241, 94, 44, 0.3);" onmouseover="this.style.filter='brightness(1.1)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(241, 94, 44, 0.4)'" onmouseout="this.style.filter='brightness(1)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(241, 94, 44, 0.3)'">
+                            <i class="fas fa-download"></i>Download
+                          </a>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    {% else %}
+                    <tr style="border-bottom: 1px solid #e2e8f0;">
+                      <td colspan="6" style="padding: 40px; text-align: center; color: #64748b;">
+                        <i class="fas fa-file-medical" style="font-size: 2.5rem; margin-bottom: 16px; opacity: 0.5; display: block;"></i>
+                        <p style="margin: 0; font-size: 16px; font-weight: 600;">No lab results available yet</p>
+                        <p style="margin: 8px 0 0; font-size: 14px; color: #94a3b8;">Lab results will appear here once uploaded</p>
+                      </td>
+                    </tr>
+                    {% endif %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Service Details Modal -->
+    <div id="serviceDetailsModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Service Details</h2>
+          <button class="modal-close" onclick="closeServiceDetailsModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="modalBody">
+          <!-- Service details will be populated here -->
+        </div>
+        <div class="modal-footer">
+          <button class="modal-btn modal-btn-secondary" onclick="closeServiceDetailsModal()">Close</button>
+        </div>
+      </div>
+    </div>
+
+
+
+
+  {% endif %}
+
+  {% endblock %}
+
+
+
+  {% block extra_js %}
+  <script>
+    // Modal Functions for Service Details
+    function openServiceDetailsModal(bookingId) {
+      // Show loading state
+      var modalBody = document.getElementById('modalBody');
+      modalBody.innerHTML = '<p style="text-align: center; color: #64748b; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';
+      document.getElementById('serviceDetailsModal').classList.add('show');
+      
+      // Fetch service details via AJAX
+      fetch('{% url "get-service-details" %}?booking_id=' + bookingId, {
+        method: 'GET',
+        credentials: 'same-origin'
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('HTTP ' + response.status);
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data.success) {
+          var statusBgColor = '';
+          var statusTextColor = '';
+
+          if (data.status === 'Completed') {
+            statusBgColor = '#dcfce7';
+            statusTextColor = '#166534';
+          } else if (data.status === 'Cancelled') {
+            statusBgColor = '#e5e7eb';
+            statusTextColor = '#374151';
+          } else if (data.status === 'Confirmed') {
+            statusBgColor = '#dbeafe';
+            statusTextColor = '#1e40af';
+          } else {
+            statusBgColor = '#fef3c7';
+            statusTextColor = '#92400e';
+          }
+
+          var modalBody = document.getElementById('modalBody');
+          modalBody.innerHTML = `
+            <div class="modal-row">
+              <div class="modal-label">Service Name</div>
+              <div class="modal-value">${data.service_name || 'N/A'}</div>
+            </div>
+            <div class="modal-row">
+              <div class="modal-label">Booking Date</div>
+              <div class="modal-value">${data.booking_date || 'N/A'}</div>
+            </div>
+            <div class="modal-row">
+              <div class="modal-label">Booking Time</div>
+              <div class="modal-value">${data.booking_time || 'N/A'}</div>
+            </div>
+            <div class="modal-row">
+              <div class="modal-label">Status</div>
+              <div class="modal-value">
+                <span style="background: ${statusBgColor}; color: ${statusTextColor}; padding: 6px 12px; border-radius: 12px; font-weight: 600;">
+                  ${data.status || 'N/A'}
+                </span>
+              </div>
+            </div>
+            <div class="modal-row">
+              <div class="modal-label">Notes</div>
+              <div class="modal-value">${data.notes || 'No notes provided'}</div>
+            </div>
+          `;
+        } else {
+          modalBody.innerHTML = `<div style="color: #991b1b; background: #fee2e2; padding: 16px; border-radius: 8px; text-align: center;"><i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i><strong>Error:</strong> ${data.message || 'Failed to load service details'}</div>`;
+        }
+      })
+      .catch(error => {
+        console.error('Fetch error:', error);
+        modalBody.innerHTML = `<div style="color: #991b1b; background: #fee2e2; padding: 16px; border-radius: 8px; text-align: center;"><i class="fas fa-exclamation-triangle" style="margin-right: 8px;"></i><strong>Error:</strong> An error occurred while loading service details. Please check the console and try again.</div>`;
+      });
+    }
+
+    function closeServiceDetailsModal() {
+      document.getElementById('serviceDetailsModal').classList.remove('show');
+    }
+
+    function formatDate(dateString) {
+      var options = { year: 'numeric', month: 'short', day: 'numeric' };
+      return new Date(dateString).toLocaleDateString('en-US', options);
+    }
+
+    // Close modal when clicking outside of it
+    window.onclick = function(event) {
+      var modal = document.getElementById('serviceDetailsModal');
+      if (event.target === modal) {
+        closeServiceDetailsModal();
+      }
+    }
+
+    // Tab Switching Functionality
+    function switchLabTab(tabName) {
+      // Hide all tab contents
+      var tabContents = document.querySelectorAll('.lab-tab-content');
+      tabContents.forEach(function(content) {
+        content.style.display = 'none';
+      });
+
+      // Deactivate all tab buttons
+      var tabBtns = document.querySelectorAll('.lab-tab-btn');
+      tabBtns.forEach(function(btn) {
+        btn.classList.remove('active');
+        btn.style.color = '#cbd5e1';
+        btn.style.borderBottomColor = 'transparent';
+      });
+
+      // Show selected tab
+      var selectedTab = document.getElementById(tabName);
+      if (selectedTab) {
+        selectedTab.style.display = 'block';
+      }
+
+      // Activate selected button
+      var selectedBtn = document.querySelector('.lab-tab-btn[data-tab="' + tabName + '"]');
+      if (selectedBtn) {
+        selectedBtn.classList.add('active');
+        selectedBtn.style.color = 'var(--ink)';
+        selectedBtn.style.borderBottomColor = 'var(--red)';
+      }
+    }
+
+    // Book Service Form Submission
+    function submitBookService(event) {
+      event.preventDefault();
+      
+      var serviceName = document.getElementById('serviceSelect').value;
+      var bookingDate = document.getElementById('bookingDate').value;
+      var bookingTime = document.getElementById('bookingTime').value;
+      var notes = document.getElementById('bookingNotes').value;
+
+      if (!serviceName || !bookingDate || !bookingTime) {
+        showBookServiceMessage('Please fill in all required fields', 'error');
+        return;
+      }
+
+      // Submit the booking via AJAX
+      fetch('{% url "book-service" %}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+          service_name: serviceName,
+          booking_date: bookingDate,
+          booking_time: bookingTime,
+          notes: notes
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          showBookServiceMessage('Service booked successfully!', 'success');
+          document.getElementById('bookServiceForm').reset();
+          setTimeout(() => {
+            location.reload();
+          }, 1500);
+        } else {
+          showBookServiceMessage(data.message || 'Error booking service', 'error');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showBookServiceMessage('An error occurred. Please try again.', 'error');
+      });
+    }
+
+    function validateServiceSelection() {
+      var select = document.getElementById('serviceSelect');
+      if (select.value) {
+        select.style.borderColor = 'var(--blue)';
+      }
+    }
+
+    function showBookServiceMessage(message, type) {
+      var messageDiv = document.getElementById('bookServiceMessage');
+      messageDiv.textContent = message;
+      messageDiv.style.display = 'block';
+      messageDiv.style.backgroundColor = type === 'success' ? '#dcfce7' : '#fee2e2';
+      messageDiv.style.color = type === 'success' ? '#166534' : '#991b1b';
+      messageDiv.style.borderLeft = '4px solid ' + (type === 'success' ? '#22c55e' : '#ef4444');
+    }
+
+    // Booked Services Filtering
+    function filterBookedServices() {
+      var searchInput = document.getElementById('bookedServicesSearch').value.toLowerCase();
+      var statusFilter = document.getElementById('bookedServicesStatusFilter').value;
+      var dateFromFilter = document.getElementById('bookedServicesDateFrom').value;
+      var dateToFilter = document.getElementById('bookedServicesDateTo').value;
+      var sortOrder = document.getElementById('bookedServicesSortOrder').value;
+
+      var rows = document.querySelectorAll('.booked-service-row');
+      var visibleRows = [];
+
+      rows.forEach(function(row) {
+        var service = row.getAttribute('data-service').toLowerCase();
+        var status = row.getAttribute('data-status');
+        var date = row.getAttribute('data-date');
+
+        var matchesSearch = service.includes(searchInput);
+        var matchesStatus = !statusFilter || status === statusFilter;
+        var matchesDateFrom = !dateFromFilter || date >= dateFromFilter;
+        var matchesDateTo = !dateToFilter || date <= dateToFilter;
+
+        if (matchesSearch && matchesStatus && matchesDateFrom && matchesDateTo) {
+          row.style.display = '';
+          visibleRows.push(row);
+        } else {
+          row.style.display = 'none';
+        }
+      });
+
+      // Sort visible rows
+      if (visibleRows.length > 0) {
+        sortRows(visibleRows, sortOrder);
+      }
+    }
+
+    function resetBookedServicesFilters() {
+      document.getElementById('bookedServicesSearch').value = '';
+      document.getElementById('bookedServicesStatusFilter').value = '';
+      document.getElementById('bookedServicesDateFrom').value = '';
+      document.getElementById('bookedServicesDateTo').value = '';
+      document.getElementById('bookedServicesSortOrder').value = 'date-desc';
+      filterBookedServices();
+    }
+
+    // Lab Results Filtering
+    function filterLabResults() {
+      var searchInput = document.getElementById('labResultsSearch').value.toLowerCase();
+      var typeFilter = document.getElementById('labResultsTypeFilter').value;
+      var dateFromFilter = document.getElementById('labResultsDateFrom').value;
+      var dateToFilter = document.getElementById('labResultsDateTo').value;
+      var sortOrder = document.getElementById('labResultsSortOrder').value;
+
+      var rows = document.querySelectorAll('.lab-result-row');
+      var visibleRows = [];
+
+      rows.forEach(function(row) {
+        var testType = row.getAttribute('data-test-type').toLowerCase();
+        var date = row.getAttribute('data-date');
+
+        var matchesSearch = testType.includes(searchInput);
+        var matchesType = !typeFilter || testType === typeFilter.toLowerCase();
+        var matchesDateFrom = !dateFromFilter || date >= dateFromFilter;
+        var matchesDateTo = !dateToFilter || date <= dateToFilter;
+
+        if (matchesSearch && matchesType && matchesDateFrom && matchesDateTo) {
+          row.style.display = '';
+          visibleRows.push(row);
+        } else {
+          row.style.display = 'none';
+        }
+      });
+
+      // Sort visible rows
+      if (visibleRows.length > 0) {
+        sortRows(visibleRows, sortOrder);
+      }
+    }
+
+    function resetLabResultsFilters() {
+      document.getElementById('labResultsSearch').value = '';
+      document.getElementById('labResultsTypeFilter').value = '';
+      document.getElementById('labResultsDateFrom').value = '';
+      document.getElementById('labResultsDateTo').value = '';
+      document.getElementById('labResultsSortOrder').value = 'date-desc';
+      filterLabResults();
+    }
+
+    // Generic sort function for table rows
+    function sortRows(rows, sortOrder) {
+      rows.sort(function(a, b) {
+        var aDate = a.getAttribute('data-date') || a.querySelector('td:nth-child(2)').textContent;
+        var aService = a.getAttribute('data-service') || a.getAttribute('data-test-type');
+        var aStatus = a.getAttribute('data-status');
+        var bDate = b.getAttribute('data-date') || b.querySelector('td:nth-child(2)').textContent;
+        var bService = b.getAttribute('data-service') || b.getAttribute('data-test-type');
+        var bStatus = b.getAttribute('data-status');
+
+        switch(sortOrder) {
+          case 'date-asc':
+            return new Date(aDate) - new Date(bDate);
+          case 'date-desc':
+            return new Date(bDate) - new Date(aDate);
+          case 'service-asc':
+            return aService.localeCompare(bService);
+          case 'type-asc':
+            return aService.localeCompare(bService);
+          case 'status-asc':
+            return aStatus.localeCompare(bStatus);
+          default:
+            return 0;
+        }
+      });
+
+      var tbody = rows[0].parentNode;
+      rows.forEach(function(row) {
+        tbody.appendChild(row);
+      });
+    }
+
+    // View Service Details
+    function viewServiceDetails(bookingId) {
+      openServiceDetailsModal(bookingId);
+    }
+
+    // Utility function to get CSRF token
+    function getCookie(name) {
+      var cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+          var cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    // Slideshow Functionality for Lab Results
+    var currentSlideIndex = 0;
+    var slideTimer = null;
+
+    function changeLabSlide(direction) {
+      var slides = document.querySelectorAll('.slideshow-slide');
+      var dots = document.querySelectorAll('.slideshow-dot');
+
+      // Remove active class from all slides and dots
+      slides.forEach(function(slide) {
+        slide.classList.remove('active');
+      });
+      dots.forEach(function(dot) {
+        dot.classList.remove('active');
+      });
+
+      // Calculate new index
+      currentSlideIndex += direction;
+      if (currentSlideIndex >= slides.length) {
+        currentSlideIndex = 0;
+      } else if (currentSlideIndex < 0) {
+        currentSlideIndex = slides.length - 1;
+      }
+
+      // Activate new slide and dot
+      slides[currentSlideIndex].classList.add('active');
+      dots[currentSlideIndex].classList.add('active');
+
+      // Reset auto-play timer
+      resetSlideTimer();
+    }
+
+    function goToLabSlide(index) {
+      var slides = document.querySelectorAll('.slideshow-slide');
+      var dots = document.querySelectorAll('.slideshow-dot');
+
+      if (index >= 0 && index < slides.length) {
+        // Remove active class from all slides and dots
+        slides.forEach(function(slide) {
+          slide.classList.remove('active');
+        });
+        dots.forEach(function(dot) {
+          dot.classList.remove('active');
+        });
+
+        // Activate selected slide and dot
+        currentSlideIndex = index;
+        slides[currentSlideIndex].classList.add('active');
+        dots[currentSlideIndex].classList.add('active');
+
+        // Reset auto-play timer
+        resetSlideTimer();
+      }
+    }
+
+    function autoPlaySlides() {
+      changeLabSlide(1);
+    }
+
+    function resetSlideTimer() {
+      if (slideTimer) {
+        clearInterval(slideTimer);
+      }
+      slideTimer = setInterval(autoPlaySlides, 5000); // Auto-play every 5 seconds
+    }
+
+    // Date Validation Function
+    function validateBookingDate() {
+      var dateInput = document.getElementById('bookingDate');
+      var selectedDate = new Date(dateInput.value);
+      var today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (selectedDate < today) {
+        alert('Please select a future date for booking.');
+        dateInput.value = '';
+      }
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      // Set minimum date to today for date input
+      var today = new Date();
+      var year = today.getFullYear();
+      var month = String(today.getMonth() + 1).padStart(2, '0');
+      var day = String(today.getDate()).padStart(2, '0');
+      var minDate = year + '-' + month + '-' + day;
+      
+      var dateInput = document.getElementById('bookingDate');
+      if (dateInput) {
+        dateInput.setAttribute('min', minDate);
+      }
+
+      // Start slideshow auto-play
+      resetSlideTimer();
+    });
+  </script>
+{% endblock %}
+
+
+
+
+

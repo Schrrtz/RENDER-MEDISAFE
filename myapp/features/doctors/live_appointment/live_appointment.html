@@ -1,0 +1,2310 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<style>/* Styles and animations for Live Appointment panel */
+  :root{
+    --ink:#213A57;--muted:#5b738b;--panel:#ffffff;--ring:#e2e8f0;
+    --c1:#0B6477;--c2:#14919B;--c3:#213A57;--red:#DC2626;--brand:#213A57;
+    --grad-1: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    --grad-2: linear-gradient(90deg, var(--c1), var(--c2));
+  }
+  :root{--bg:#f6f7fb;--accent:#dc2626;--muted:#6b7280;--card:#ffffff;--glass:rgba(255,255,255,0.6)}
+  *{box-sizing:border-box;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial}
+  body{margin:0;background: linear-gradient(120deg, #332464 10%, #ff0000 60%, #213A57 100%);background-size:200% 200%;animation:bgShift 8s ease-in-out infinite;min-height:100vh;color:#12263b}
+  .live-panel{display:flex;gap:20px;padding:24px;max-width:1200px;margin:28px auto;position:relative;overflow:hidden}
+  
+  /* Ray of light overlay using pseudo-elements (translate-based for reliability) */
+  .live-panel::before {
+    content: '';
+    position: absolute;
+    left: -30%;
+    top: -20%;
+    width: 160%;
+    height: 160%;
+    pointer-events: none;
+    background: radial-gradient(circle at 10% 10%, rgba(255,255,255,0.16), rgba(255,255,255,0) 28%);
+    transform: rotate(12deg);
+    filter: blur(40px);
+    opacity: 0.9;
+    mix-blend-mode: screen;
+    z-index: 0;
+  }
+  
+  .live-panel::after {
+    content: '';
+    position: absolute;
+    left: -40%;
+    top: -30%;
+    width: 40%;
+    height: 200%;
+    pointer-events: none;
+    background: linear-gradient(90deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.08) 30%, rgba(255,255,255,0) 60%);
+    filter: blur(28px);
+    transform: translateX(-120%) rotate(-12deg);
+    opacity: 0.9;
+    mix-blend-mode: screen;
+    z-index: 0;
+    will-change: transform, opacity;
+    animation: rayTranslate 5s ease-in-out infinite;
+  }
+  
+  @keyframes rayTranslate {
+    0% { transform: translateX(-120%) rotate(-12deg); opacity: 0; }
+    10% { opacity: 0.6; }
+    50% { transform: translateX(40%) rotate(-12deg); opacity: 1; }
+    90% { opacity: 0.4; }
+    100% { transform: translateX(220%) rotate(-12deg); opacity: 0; }
+  }
+  
+  /* make sure content sits above the rays */
+  .live-panel > * { position: relative; z-index: 1 }
+  .patient-list{width:320px;background:var(--card);border-radius:12px;padding:12px 12px;box-shadow:0 8px 30px rgba(16,24,40,.06)}
+  .patient-list .header{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+  .patient-list h2{margin:0;font-size:18px}
+  .patient-list input{padding:10px;border-radius:8px;border:2px solid #e6eef6}
+  #patients{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;max-height:68vh;overflow:auto}
+  .patient-item{padding:12px;border-radius:10px;border:2px solid #f1f5f9;cursor:pointer;transition:transform .12s ease,box-shadow .12s ease;background:linear-gradient(180deg,#fff,#fbfbff);display:flex;align-items:center;gap:8px;justify-content:space-between;}
+  .patient-item:hover{transform:translateY(-4px);box-shadow:0 8px 24px rgba(16,24,40,.06)}
+  .patient-item .name{font-weight:700}
+  .patient-item .meta{font-size:13px;color:var(--muted)}
+  .details-area{flex:1;min-height:60vh;position:relative}
+  .empty-state{display:grid;place-items:center;height:60vh;border-radius:12px;background:linear-gradient(180deg,#ffffff,#fbfdff);border:2px dashed #e6eef6;color:var(--muted)}
+  .empty-state .emoji{font-size:48px}
+  .details{position:relative;background:var(--card);border-radius:12px;padding:18px;box-shadow:0 14px 44px rgba(16,24,40,.06);transform-origin:left;animation:fadeIn .18s ease both}
+  .details-header{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:2px solid #eef2f7;padding-bottom:12px;margin-bottom:12px}
+  .detail-grid{display:grid;grid-template-columns:1fr 320px;gap:12px}
+  .card{background:var(--glass);padding:12px;border-radius:10px;border:2px solid #eef2f7}
+  .card.wide{grid-column:1/-1}
+  .vitals{display:flex;gap:12px;margin-top:8px}
+  .muted{color:var(--muted)}
+  .btn{border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
+  .btn.ghost{background:transparent;border:2px solid #e6eef6}
+  .btn.primary{background:var(--accent);color:#fff}
+  textarea#detailNotes{width:100%;min-height:120px;padding:10px;border-radius:8px;border:2px solid #e6eef6}
+  .note-actions{display:flex;justify-content:flex-end;margin-top:8px}
+  @keyframes fadeIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
+  @keyframes bgShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+  @media(max-width:900px){.live-panel{flex-direction:column;padding:12px}.patient-list{width:100%}.detail-grid{grid-template-columns:1fr}}
+  
+  /* Defensive: hide tiny accidental indicators (pseudo-elements) inside the details/contact cards
+     The UI sometimes picks up small ::before/::after markers from other global styles. These rules
+     explicitly disable such pseudo-elements for the details area so the small red dot is removed
+     without touching global badge styles elsewhere. */
+  #details .card::before,
+  #details .card::after,
+  #detailContact::before,
+  #detailContact::after,
+  .view-field::before,
+  .view-field::after {
+    display: none !important;
+    content: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  
+  /* More aggressive: hide any small badges/dots or inline-red elements that might overlay the details cards.
+     This uses attribute selectors to catch inline style markers and common badge/dot classes but keeps
+     the scope limited to #details to avoid changing global UI elsewhere. */
+  #details .badge,
+  #details .dot,
+  #details .mini-badge,
+  #details [class*="badge"],
+  #details [class*="dot"],
+  #details [style*="#dc2626"],
+  #details [style*="#FF0000"],
+  #details [style*="#ff0000"],
+  #details [style*="background:var(--red)"],
+  #details [style*="background: var(--red)"] {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  
+  /* Details panel - inline display for labels and values */
+  .details-header .view-field {
+    display: inline;
+    margin-right: 8px;
+  }
+  
+  .details-header .muted {
+    font-weight: normal;
+  }
+  
+  /* Modal visibility control */
+  #addPatientModal {
+    display: none !important;
+  }
+  
+  #addPatientModal[style*="display: flex"],
+  #addPatientModal.show {
+    display: flex !important;
+  }
+  
+  /* Success notification */
+  .success-notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #10b981;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 999999999;
+    animation: slideDown 0.3s ease-out;
+  }
+  
+  .success-notification::before {
+    content: '✓';
+    font-weight: bold;
+    font-size: 18px;
+  }
+  
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+  
+  @keyframes slideUp {
+    from {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-20px);
+    }
+  }
+  </style>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Live Appointment Panel</title>
+  {% load static %}
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'live_appointment.css' %}">
+</head>
+<body>
+  <!-- Doctor Information (Hidden) -->
+  <div id="doctorInfo" style="display: none;">
+    <span class="doctor-name">{% if doctor %}{{ doctor.get_full_name }}{% else %}Dr. [Doctor Name]{% endif %}</span>
+    <span class="doctor-specialization">{% if doctor %}{{ doctor.specialization }}{% else %}General Medicine{% endif %}</span>
+    <span class="doctor-license">{% if doctor %}{{ doctor.license_number }}{% else %}N/A{% endif %}</span>
+  </div>
+  
+  <!-- JavaScript Context Data -->
+  <script>
+    // Get doctor information from URL parameters or use defaults
+    function getUrlParameter(name) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(name);
+    }
+    
+    window.doctorData = {
+      name: getUrlParameter('doctor_name') || '{% if doctor %}{{ doctor.get_full_name }}{% else %}Dr. [Doctor Name]{% endif %}',
+      specialization: getUrlParameter('doctor_specialization') || '{% if doctor %}{{ doctor.specialization }}{% else %}General Medicine{% endif %}',
+      license: getUrlParameter('doctor_license') || '{% if doctor %}{{ doctor.license_number }}{% else %}N/A{% endif %}',
+      photo: getUrlParameter('doctor_photo') || ''
+    };
+    
+    // Update doctor information display with passed data
+    document.addEventListener('DOMContentLoaded', function() {
+      // Update doctor name info
+      const doctorNameInfo = document.getElementById('doctorNameInfo');
+      if (doctorNameInfo && window.doctorData.name) {
+        doctorNameInfo.textContent = window.doctorData.name;
+      }
+      
+      // Update doctor specialization info
+      const doctorSpecializationInfo = document.getElementById('doctorSpecializationInfo');
+      if (doctorSpecializationInfo && window.doctorData.specialization) {
+        doctorSpecializationInfo.textContent = window.doctorData.specialization;
+      }
+      
+      // Update doctor license info
+      const doctorLicenseInfo = document.getElementById('doctorLicenseInfo');
+      if (doctorLicenseInfo && window.doctorData.license) {
+        doctorLicenseInfo.textContent = window.doctorData.license;
+      }
+    });
+  </script>
+  
+  <!-- Close Button -->
+  <div style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
+    <button onclick="window.close()" style="background: #dc2626; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);">
+      <i class="fas fa-times"></i> Close Panel
+    </button>
+  </div>
+  <!-- Live Session Header -->
+  <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 16px 24px; margin-bottom: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <div>
+        <h1 style="margin: 0; font-size: 24px; font-weight: 700; display: flex; align-items: center; gap: 12px;">
+          <i class="fas fa-video" style="color: #fff;"></i>
+          Live Appointment Session
+        </h1>
+        <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 14px;">
+          {% if selected_appointment %}
+            <strong>Currently viewing:</strong> {{ selected_appointment.patient.userprofile.first_name|default:selected_appointment.patient.username }}{% if selected_appointment.patient.userprofile.last_name %} {{ selected_appointment.patient.userprofile.last_name }}{% endif %} - {{ selected_appointment.consultation_date|date:'M d, Y' }} at {{ selected_appointment.consultation_time|time:'H:i' }} ({{ selected_appointment.consultation_type }})
+          {% else %}
+            Select a patient to begin the appointment
+          {% endif %}
+        </p>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+          <i class="fas fa-circle" style="color: #10b981; margin-right: 6px;"></i>
+          LIVE
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="live-panel">
+    <aside class="patient-list">
+      <!-- Patient Profile Section -->
+      <div id="patientProfile" style="display:none;">
+        <!-- Profile Photo -->
+        <div style="text-align:center;margin-bottom:24px;">
+          <div id="profilePictureContainer" style="width:120px;height:120px;border-radius:50%;overflow:hidden;background:#e2e8f0;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;margin:0 auto;border:4px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+            <i class="fas fa-user" id="profilePictureIcon" style="color:#6b7280;font-size:48px;"></i>
+            <img id="profilePicture" src="" alt="Profile" style="width:100%;height:100%;object-fit:cover;display:none;">
+      </div>
+        </div>
+        
+        <!-- Patient Name -->
+        <div style="text-align:center;margin-bottom:20px;">
+          <h2 id="detailName" style="font-size:24px;font-weight:700;color:#1f2937;margin:0 0 8px 0;">—</h2>
+          <p id="detailId" style="color:#6b7280;font-size:14px;margin:0;">Patient ID: —</p>
+        </div>
+        
+        <!-- Patient Details -->
+        <div style="background:#f8fafc;border-radius:12px;padding:20px;border:1px solid #e2e8f0;">
+          <div style="margin-bottom:16px;">
+            <div style="font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Date of Birth</div>
+            <div id="detailDOB" style="font-size:16px;font-weight:600;color:#1f2937;">—</div>
+          </div>
+          
+          <div style="margin-bottom:16px;">
+            <div style="font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Gender</div>
+            <div id="detailGender" style="font-size:16px;font-weight:600;color:#1f2937;">—</div>
+          </div>
+          
+          <div style="margin-bottom:16px;">
+            <div style="font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Contact Number</div>
+            <div id="detailContact" style="font-size:16px;font-weight:600;color:#1f2937;">—</div>
+          </div>
+          
+          <div>
+            <div style="font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Emergency Contact</div>
+            <div id="ecPhone" style="font-size:16px;font-weight:600;color:#1f2937;">—</div>
+          </div>
+        </div>
+        
+        <!-- Doctor Information -->
+        <div style="background:#e0f2fe;border-radius:12px;padding:20px;margin-top:20px;border:1px solid #0ea5e9;">
+          <div style="display:flex;align-items:center;margin-bottom:16px;">
+            <i class="fas fa-user-md" style="color:#0ea5e9;font-size:20px;margin-right:8px;"></i>
+            <h3 style="font-size:18px;font-weight:700;color:#0c4a6e;margin:0;">Doctor Information</h3>
+          </div>
+          
+          <div style="margin-bottom:12px;">
+            <div style="font-size:12px;font-weight:600;color:#0369a1;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Doctor Name</div>
+            <div id="doctorNameInfo" style="font-size:16px;font-weight:600;color:#0c4a6e;">{% if doctor %}{{ doctor.get_full_name }}{% else %}Dr. [Doctor Name]{% endif %}</div>
+          </div>
+          
+          <div style="margin-bottom:12px;">
+            <div style="font-size:12px;font-weight:600;color:#0369a1;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Specialization</div>
+            <div id="doctorSpecializationInfo" style="font-size:16px;font-weight:600;color:#0c4a6e;">{% if doctor %}{{ doctor.specialization }}{% else %}General Medicine{% endif %}</div>
+          </div>
+          
+          <div>
+            <div style="font-size:12px;font-weight:600;color:#0369a1;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">License Number</div>
+            <div id="doctorLicenseInfo" style="font-size:16px;font-weight:600;color:#0c4a6e;">{% if doctor %}{{ doctor.license_number }}{% else %}N/A{% endif %}</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Empty State for Patient Profile -->
+      <div id="emptyPatientProfile" style="text-align:center;padding:40px 20px;color:#64748b;">
+        <div style="font-size:48px;margin-bottom:16px;">👤</div>
+        <h3 style="margin:0 0 8px 0;color:#374151;">No Patient Selected</h3>
+        <p style="margin:0;font-size:14px;">Patient information will appear here when an appointment is selected.</p>
+      </div>
+    </aside>
+
+    <section class="details-area">
+      <div id="emptyState" class="empty-state">
+        <div class="emoji">🩺</div>
+        <h3>No appointment selected</h3>
+        <p>Appointment details will appear here when an appointment is selected.</p>
+      </div>
+
+  <div id="details" class="details" aria-hidden="true" style="display:none">
+        <!-- Appointment Details Section -->
+        <div style="background:var(--card);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(16,24,40,.04);margin-bottom:12px;">
+          <h3 style="margin:0 0 8px 0;font-size:14px;font-weight:700;color:#1f2937;display:flex;align-items:center;gap:6px;">
+            <i class="fas fa-calendar-check" style="color:#3b82f6;font-size:12px;"></i>
+            Appointment Details
+          </h3>
+          
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:8px;">
+            <div style="background:#f8fafc;padding:6px;border-radius:4px;border:1px solid #e2e8f0;">
+              <div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:2px;">Time</div>
+              <div id="appointmentTime" style="font-size:12px;font-weight:600;color:#1f2937;">—</div>
+              </div>
+            <div style="background:#f8fafc;padding:6px;border-radius:4px;border:1px solid #e2e8f0;">
+              <div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:2px;">Date</div>
+              <div id="appointmentDate" style="font-size:12px;font-weight:600;color:#1f2937;">—</div>
+            </div>
+            <div style="background:#f8fafc;padding:6px;border-radius:4px;border:1px solid #e2e8f0;">
+              <div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:2px;">Type</div>
+              <div id="appointmentType" style="font-size:12px;font-weight:600;color:#1f2937;">—</div>
+              </div>
+            <div style="background:#f8fafc;padding:6px;border-radius:4px;border:1px solid #e2e8f0;">
+              <div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:2px;">Status</div>
+              <div id="appointmentStatus" style="font-size:12px;font-weight:600;color:#1f2937;">—</div>
+              </div>
+            </div>
+          
+          <div style="background:#f8fafc;padding:6px;border-radius:4px;border:1px solid #e2e8f0;margin-bottom:6px;">
+            <div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:2px;">Notes</div>
+            <div id="appointmentNotes" style="font-size:11px;color:#374151;font-style:italic;">No notes available</div>
+          </div>
+          
+          <div id="meetingLinkSection" style="background:#e0f2fe;padding:6px;border-radius:4px;border:1px solid #0ea5e9;display:none;">
+            <div style="font-size:10px;font-weight:600;color:#0ea5e9;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:2px;">Meeting Link</div>
+            <a href="#" id="meetingLink" target="_blank" style="color:#0ea5e9;text-decoration:none;font-weight:600;font-size:11px;">
+              <i class="fas fa-video" style="margin-right:4px;"></i>Join Meeting
+            </a>
+          </div>
+          </div>
+        
+        <!-- Separator Line -->
+        <div style="height:1px;background:#e2e8f0;margin:8px 0;"></div>
+        
+        <!-- Vitals Section -->
+        <div style="background:var(--card);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(16,24,40,.04);margin-bottom:12px;">
+          <h3 style="margin:0 0 8px 0;font-size:14px;font-weight:700;color:#1f2937;display:flex;align-items:center;gap:6px;">
+            <i class="fas fa-heartbeat" style="color:#ef4444;font-size:12px;"></i>
+            Live Vitals
+            <div style="display:flex;align-items:center;gap:4px;background:#ef4444;color:white;padding:2px 6px;border-radius:8px;font-size:8px;font-weight:600;margin-left:auto;">
+              <div style="width:4px;height:4px;background:white;border-radius:50%;animation:pulse 2s infinite;"></div>
+              LIVE
+            </div>
+          </h3>
+          
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;">
+            <div style="background:linear-gradient(135deg,#f8fafc 0%,#f1f5f9 100%);padding:8px;border-radius:6px;border-left:3px solid #3b82f6;display:flex;align-items:center;gap:8px;">
+              <div style="width:24px;height:24px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-tint" style="color:#3b82f6;font-size:10px;"></i>
+            </div>
+          <div>
+                <div style="font-size:9px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.3px;">Blood Pressure</div>
+                <div id="bpVal" style="font-size:12px;font-weight:700;color:#1f2937;">—</div>
+              </div>
+            </div>
+
+            <div style="background:linear-gradient(135deg,#f8fafc 0%,#f1f5f9 100%);padding:8px;border-radius:6px;border-left:3px solid #ef4444;display:flex;align-items:center;gap:8px;">
+              <div style="width:24px;height:24px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-heart" style="color:#ef4444;font-size:10px;"></i>
+              </div>
+              <div>
+                <div style="font-size:9px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.3px;">Heart Rate</div>
+                <div id="hrVal" style="font-size:12px;font-weight:700;color:#1f2937;">—</div>
+            </div>
+          </div>
+
+            <div style="background:linear-gradient(135deg,#f8fafc 0%,#f1f5f9 100%);padding:8px;border-radius:6px;border-left:3px solid #f59e0b;display:flex;align-items:center;gap:8px;">
+              <div style="width:24px;height:24px;border-radius:50%;background:#fef3c7;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-thermometer-half" style="color:#f59e0b;font-size:10px;"></i>
+              </div>
+              <div>
+                <div style="font-size:9px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.3px;">Temperature</div>
+                <div id="tempVal" style="font-size:12px;font-weight:700;color:#1f2937;">—</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="text-align:center;margin-top:8px;padding:6px;background:#f8fafc;border-radius:4px;border:1px solid #e2e8f0;">
+            <small style="color:#6b7280;font-style:italic;font-size:9px;">Values are simulated for demonstration purposes</small>
+          </div>
+        </div>
+
+        <!-- Separator Line -->
+        <div style="height:1px;background:#e2e8f0;margin:8px 0;"></div>
+        
+        <!-- Live Consultation System -->
+        <div id="consultationSystem" style="background:var(--card);border-radius:8px;padding:16px;box-shadow:0 4px 12px rgba(16,24,40,.04);">
+          <!-- Session Controls -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #e2e8f0;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <h3 style="margin:0;font-size:16px;font-weight:700;color:#2c71b7;">Live Consultation</h3>
+              <div id="sessionStatus" style="display:flex;align-items:center;gap:6px;background:#f15e2c;color:white;padding:4px 8px;border-radius:12px;font-size:10px;font-weight:600;">
+                <div id="statusDot" style="width:6px;height:6px;background:white;border-radius:50%;animation:pulse 2s infinite;"></div>
+                <span id="statusText">READY</span>
+            </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div id="sessionTimer" style="font-size:14px;font-weight:600;color:#2c71b7;">00:00</div>
+              <button id="startConsultationBtn" style="background:#2c71b7;color:white;border:none;padding:8px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">
+                <i class="fas fa-play"></i> Start Consultation
+              </button>
+              <button id="completeConsultationBtn" style="background:#f15e2c;color:white;border:none;padding:8px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;display:none;">
+                <i class="fas fa-check"></i> Complete
+              </button>
+            </div>
+          </div>
+
+          <!-- Session Info -->
+          <div id="sessionInfo" style="margin-top:12px;padding:8px;background:#f0f3f6;border-radius:6px;font-size:10px;color:#666;display:none;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div><strong>Session ID:</strong> <span id="sessionIdDisplay">-</span></div>
+              <div><strong>Started:</strong> <span id="sessionStartDisplay">-</span></div>
+              <div><strong>Status:</strong> <span id="sessionStatusDisplay">-</span></div>
+              <div><strong>Action:</strong> <span id="sessionActionDisplay">-</span></div>
+              <div><strong>Doctor:</strong> <span id="doctorNameDisplay">-</span></div>
+              <div><strong>Specialization:</strong> <span id="doctorSpecializationDisplay">-</span></div>
+            </div>
+          </div>
+
+          <!-- Consultation Form -->
+          <div id="consultationForm" style="display:none;">
+            <!-- Symptoms and Diagnosis -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+              <div>
+                <label style="display:block;font-size:12px;font-weight:600;color:#2c2c2f;margin-bottom:4px;">Symptoms</label>
+                <textarea id="symptoms" placeholder="Describe patient symptoms..." style="width:100%;height:80px;padding:8px;border-radius:6px;border:1px solid #b7cce4;font-size:12px;resize:vertical;"></textarea>
+              </div>
+              <div>
+                <label style="display:block;font-size:12px;font-weight:600;color:#2c2c2f;margin-bottom:4px;">Diagnosis</label>
+                <textarea id="diagnosis" placeholder="Enter diagnosis..." style="width:100%;height:80px;padding:8px;border-radius:6px;border:1px solid #b7cce4;font-size:12px;resize:vertical;"></textarea>
+              </div>
+          </div>
+
+            <!-- Clinical Notes and Treatment Plan -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+              <div>
+                <label style="display:block;font-size:12px;font-weight:600;color:#2c2c2f;margin-bottom:4px;">Clinical Notes</label>
+                <textarea id="clinicalNotes" placeholder="Clinical observations and notes..." style="width:100%;height:80px;padding:8px;border-radius:6px;border:1px solid #b7cce4;font-size:12px;resize:vertical;"></textarea>
+              </div>
+              <div>
+                <label style="display:block;font-size:12px;font-weight:600;color:#2c2c2f;margin-bottom:4px;">Treatment Plan</label>
+                <textarea id="treatmentPlan" placeholder="Treatment plan and recommendations..." style="width:100%;height:80px;padding:8px;border-radius:6px;border:1px solid #b7cce4;font-size:12px;resize:vertical;"></textarea>
+            </div>
+          </div>
+
+            <!-- Doctor Notes -->
+            <div style="margin-bottom:16px;">
+              <label style="display:block;font-size:12px;font-weight:600;color:#2c2c2f;margin-bottom:4px;">Doctor's Notes</label>
+              <textarea id="doctorNotes" placeholder="Additional notes and observations..." style="width:100%;height:60px;padding:8px;border-radius:6px;border:1px solid #b7cce4;font-size:12px;resize:vertical;"></textarea>
+          </div>
+
+            <!-- Save Button -->
+            <div style="text-align:center;margin-bottom:16px;">
+              <button id="saveConsultationBtn" style="background:#2c71b7;color:white;border:none;padding:10px 20px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">
+                <i class="fas fa-save"></i> Save Consultation Data
+              </button>
+              <div id="saveIndicator" style="font-size:10px;color:#666;margin-top:8px;display:none;">
+                <i class="fas fa-check"></i> Saved successfully
+              </div>
+            </div>
+        </div>
+
+          <!-- Prescription Section -->
+          <div id="prescriptionSection" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid #e2e8f0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+              <h4 style="margin:0;font-size:14px;font-weight:700;color:#2c71b7;">Prescription</h4>
+              <button id="createPrescriptionBtn" style="background:#2c71b7;color:white;border:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">
+                <i class="fas fa-plus"></i> Create Prescription
+              </button>
+      </div>
+            
+            <div id="prescriptionForm" style="display:none;">
+              <!-- Medicine List -->
+              <div style="margin-bottom:12px;">
+                <label style="display:block;font-size:12px;font-weight:600;color:#2c2c2f;margin-bottom:4px;">Medicines</label>
+                <div id="medicineList" style="border:1px solid #b7cce4;border-radius:6px;padding:8px;min-height:60px;background:#f0f3f6;">
+                  <div style="text-align:center;color:#6b7280;font-size:11px;padding:20px;">
+                    No medicines added yet. Click "Add Medicine" to start.
+                  </div>
+                </div>
+                <button id="addMedicineBtn" style="background:#d4cac9;color:#2c2c2f;border:none;padding:6px 12px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;margin-top:8px;">
+                  <i class="fas fa-plus"></i> Add Medicine
+                </button>
+                <button id="addTemplateBtn" style="background:#b7cce4;color:#2c2c2f;border:none;padding:6px 12px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;margin-top:8px;margin-left:8px;">
+                  <i class="fas fa-list"></i> Templates
+                </button>
+  </div>
+
+              <!-- Instructions -->
+              <div style="margin-bottom:12px;">
+                <label style="display:block;font-size:12px;font-weight:600;color:#2c2c2f;margin-bottom:4px;">Instructions</label>
+                <textarea id="prescriptionInstructions" placeholder="Special instructions for the patient..." style="width:100%;height:60px;padding:8px;border-radius:6px;border:1px solid #b7cce4;font-size:12px;resize:vertical;"></textarea>
+        </div>
+
+              <!-- Follow-up -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+                <div>
+                  <label style="display:block;font-size:12px;font-weight:600;color:#2c2c2f;margin-bottom:4px;">Follow-up Date</label>
+                  <input id="followUpDate" type="date" style="width:100%;padding:6px;border-radius:6px;border:1px solid #b7cce4;font-size:12px;" onchange="validateFollowUpDate(this)">
+      </div>
+          <div>
+                  <label style="display:block;font-size:12px;font-weight:600;color:#2c2c2f;margin-bottom:4px;">Follow-up Instructions</label>
+                  <input id="followUpInstructions" placeholder="Follow-up instructions..." style="width:100%;padding:6px;border-radius:6px;border:1px solid #b7cce4;font-size:12px;">
+          </div>
+              </div>
+
+              <!-- Digital Signature -->
+              <div style="margin-bottom:12px;">
+                <label style="display:block;font-size:12px;font-weight:600;color:#2c2c2f;margin-bottom:4px;">Digital Signature</label>
+                <div style="border:1px solid #b7cce4;border-radius:6px;padding:8px;background:#f0f3f6;">
+                  <!-- Signature Options -->
+                  <div style="margin-bottom:8px;">
+                    <button id="drawSignatureBtn" style="background:#2c71b7;color:white;border:none;padding:4px 8px;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;margin-right:8px;">
+                      <i class="fas fa-pen"></i> Draw Signature
+                    </button>
+                    <button id="uploadSignatureBtn" style="background:#b7cce4;color:#2c2c2f;border:none;padding:4px 8px;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;">
+                      <i class="fas fa-upload"></i> Upload Image
+                    </button>
+                    <input id="signatureUpload" type="file" accept="image/*" style="display:none;">
+                  </div>
+                  
+                  <!-- Canvas for drawing -->
+                  <canvas id="signatureCanvas" width="300" height="100" style="border:1px solid #d4cac9;border-radius:4px;cursor:crosshair;"></canvas>
+                  
+                  <!-- Image preview for uploaded signature -->
+                  <div id="signatureImagePreview" style="display:none;margin-top:8px;">
+                    <img id="signatureImage" style="max-width:300px;max-height:100px;border:1px solid #d4cac9;border-radius:4px;">
+                  </div>
+                  
+                  <div style="margin-top:8px;">
+                    <button id="clearSignatureBtn" style="background:#d4cac9;color:#2c2c2f;border:none;padding:4px 8px;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;margin-right:8px;">
+                      Clear
+                    </button>
+                    <button id="signPrescriptionBtn" style="background:#2c71b7;color:white;border:none;padding:4px 8px;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;">
+                      Sign Prescription
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Prescription Actions -->
+              <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;">
+                <button id="savePrescriptionBtn" style="background:#b7cce4;color:#2c2c2f;border:none;padding:8px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">
+                  <i class="fas fa-save"></i> Save Draft
+                </button>
+                <button id="printPrescriptionBtn" style="background:#f15e2c;color:white;border:none;padding:8px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">
+                  <i class="fas fa-print"></i> Print
+                </button>
+                <button id="sendPrescriptionBtn" style="background:#10b981;color:white;border:none;padding:8px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">
+                  <i class="fas fa-upload"></i> Send Prescription
+                </button>
+              </div>
+
+              <!-- Prescription File Upload (hidden by default) -->
+              <div id="prescriptionFileUploadForm" style="display:none;margin-top:12px;padding:12px;border:1px solid #e2e8f0;border-radius:6px;background:#f9fafb;">
+                <label style="display:block;font-size:12px;font-weight:600;color:#2c2c2f;margin-bottom:8px;">Upload Prescription File</label>
+                <input id="prescriptionFileInput" type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp" style="display:block;margin-bottom:8px;padding:8px;border:1px solid #b7cce4;border-radius:4px;width:100%;font-size:11px;">
+                <div style="display:flex;gap:8px;justify-content:flex-end;">
+                  <button id="cancelFileUploadBtn" style="background:#b7cce4;color:#2c2c2f;border:none;padding:6px 12px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;">
+                    Cancel
+                  </button>
+                  <button id="confirmFileUploadBtn" style="background:#10b981;color:white;border:none;padding:6px 12px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;">
+                    Upload File
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+
+  <script src="{% static 'live_appointment.js' %}"></script>
+  
+  <!-- Auto-select specific appointment if provided -->
+  {% if selected_appointment %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Directly populate the details panel with the selected appointment data
+      const details = document.getElementById('details');
+      const emptyState = document.getElementById('emptyState');
+      
+      if (details && emptyState) {
+        // Hide empty state and show details
+        emptyState.style.display = 'none';
+        details.style.display = 'block';
+        details.setAttribute('aria-hidden', 'false');
+        
+        // Show patient profile in left panel
+        const patientProfile = document.getElementById('patientProfile');
+        const emptyPatientProfile = document.getElementById('emptyPatientProfile');
+        if (patientProfile && emptyPatientProfile) {
+          patientProfile.style.display = 'block';
+          emptyPatientProfile.style.display = 'none';
+        }
+        
+        // Populate patient information directly
+        const patient = {
+          id: '{{ selected_appointment.patient.user_id }}',
+          first: '{{ selected_appointment.patient.userprofile.first_name|default:"" }}',
+          last: '{{ selected_appointment.patient.userprofile.last_name|default:"" }}',
+          dob: '{{ selected_appointment.patient.userprofile.birth_date|date:"Y-m-d"|default:"" }}',
+          gender: '{{ selected_appointment.patient.userprofile.sex|default:"" }}',
+          contact: '{{ selected_appointment.patient.userprofile.contact_number|default:"" }}',
+          email: '{{ selected_appointment.patient.email }}',
+          address: '{{ selected_appointment.patient.userprofile.address|default:"" }}',
+          ecPerson: '{{ selected_appointment.patient.userprofile.emergency_contact|default:"" }}',
+          ecNumber: '{{ selected_appointment.patient.userprofile.contact_number|default:"" }}',
+          profilePicture: '{{ selected_appointment.patient.userprofile.photo_url|default:"" }}',
+          appointmentId: '{{ selected_appointment.consultation_id }}',
+          appointmentTime: '{{ selected_appointment.consultation_time|time:"H:i" }}',
+          appointmentType: '{{ selected_appointment.consultation_type }}',
+          appointmentDate: '{{ selected_appointment.consultation_date|date:"Y-m-d" }}',
+          appointmentStatus: '{{ selected_appointment.status }}',
+          appointmentApproval: '{{ selected_appointment.approval_status }}',
+          appointmentNotes: '{{ selected_appointment.notes|default:"" }}',
+          appointmentMeetingLink: '{{ selected_appointment.meeting_link|default:"" }}'
+        };
+        
+        // Create a mock element with the data
+        const mockElement = {
+          dataset: patient
+        };
+        
+        // Use the existing showDetailsFromElement function
+        if (typeof showDetailsFromElement === 'function') {
+          showDetailsFromElement(mockElement);
+        } else {
+          // Fallback: populate fields directly
+          document.getElementById('detailId').textContent = patient.id;
+          document.getElementById('detailName').textContent = (patient.first + ' ' + patient.last).trim() || '{{ selected_appointment.patient.username }}';
+          document.getElementById('detailDOB').textContent = patient.dob || '—';
+          document.getElementById('detailGender').textContent = patient.gender || '—';
+          document.getElementById('detailContact').textContent = patient.contact;
+          document.getElementById('ecPhone').textContent = patient.ecNumber;
+          
+          // Appointment information
+          document.getElementById('appointmentTime').textContent = patient.appointmentTime || '—';
+          document.getElementById('appointmentType').textContent = patient.appointmentType || '—';
+          document.getElementById('appointmentDate').textContent = patient.appointmentDate || '—';
+          document.getElementById('appointmentStatus').textContent = patient.appointmentStatus || '—';
+          document.getElementById('appointmentNotes').textContent = patient.appointmentNotes || 'No notes available';
+          
+          // Profile picture
+          const profilePictureImg = document.getElementById('profilePicture');
+          const profilePictureIcon = document.getElementById('profilePictureIcon');
+          if (patient.profilePicture) {
+            profilePictureImg.src = patient.profilePicture;
+            profilePictureImg.style.display = 'block';
+            profilePictureIcon.style.display = 'none';
+          } else {
+            profilePictureImg.style.display = 'none';
+            profilePictureIcon.style.display = 'block';
+          }
+          
+          // Meeting link
+          const meetingLinkSection = document.getElementById('meetingLinkSection');
+          const meetingLink = document.getElementById('meetingLink');
+          if (patient.appointmentMeetingLink) {
+            meetingLink.href = patient.appointmentMeetingLink;
+            meetingLinkSection.style.display = 'block';
+          } else {
+            meetingLinkSection.style.display = 'none';
+          }
+        }
+        
+        // Try to find and highlight the patient item in the list
+        const selectedPatientItem = document.querySelector('.patient-item[data-appointment-id="{{ selected_appointment.consultation_id }}"]');
+        if (selectedPatientItem) {
+          selectedPatientItem.style.backgroundColor = '#f0f9ff';
+          selectedPatientItem.style.borderColor = '#0ea5e9';
+          selectedPatientItem.style.borderWidth = '3px';
+          selectedPatientItem.style.boxShadow = '0 0 0 2px rgba(14, 165, 233, 0.2)';
+          selectedPatientItem.style.transform = 'scale(1.02)';
+          
+          const indicator = document.createElement('div');
+          indicator.innerHTML = '<i class="fas fa-video" style="color: #10b981; margin-left: 8px; font-size: 14px;"></i> <span style="color: #10b981; font-weight: 600; font-size: 12px;">LIVE SESSION</span>';
+          indicator.style.display = 'inline-block';
+          selectedPatientItem.querySelector('.meta').appendChild(indicator);
+        }
+        
+        // Show success notification
+        setTimeout(() => {
+          const notification = document.createElement('div');
+          notification.style.cssText = `
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            z-index: 1000;
+            animation: slideInRight 0.3s ease-out;
+          `;
+          notification.innerHTML = '<i class="fas fa-video" style="margin-right: 8px;"></i>Live session started for {{ selected_appointment.patient.userprofile.first_name|default:selected_appointment.patient.username }}{% if selected_appointment.patient.userprofile.last_name %} {{ selected_appointment.patient.userprofile.last_name }}{% endif %}';
+          document.body.appendChild(notification);
+          
+          setTimeout(() => {
+            notification.style.animation = 'slideOutRight 0.3s ease-in forwards';
+            setTimeout(() => notification.remove(), 300);
+          }, 3000);
+        }, 500);
+      }
+    });
+  </script>
+  <style>
+    @keyframes slideInRight {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+  @keyframes slideOutRight {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  </style>
+  {% endif %}
+</body>
+
+<script>// JS for Live Appointment panel: handles clicks and shows details. Includes a small fetch hook for future backend wiring.
+  (function(){
+    // --- CRUD logic ---
+    const deleteBtn = document.getElementById('deletePatient');
+  
+    // Helper: show success notification
+    function showSuccessNotification(message) {
+      const notification = document.createElement('div');
+      notification.className = 'success-notification';
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      setTimeout(() => {
+        notification.style.animation = 'slideUp 0.3s ease-out forwards';
+        setTimeout(() => notification.remove(), 300);
+      }, 2500);
+    }
+  
+  
+    // --- end CRUD logic ---
+    const details = document.getElementById('details');
+    const empty = document.getElementById('emptyState');
+    const closeBtn = document.getElementById('closeDetails');
+  
+    // Make showDetailsFromElement globally available
+    window.showDetailsFromElement = function(el){
+      const id = el.dataset.id || el.dataset.patientId || el.getAttribute('data-id') || '';
+      const first = el.dataset.first || el.dataset.firstname || '';
+      const middle = el.dataset.middle || '';
+      const last = el.dataset.last || el.dataset.lastname || '';
+      const name = (first + (middle ? ' ' + middle : '') + ' ' + last).trim();
+      const dob = el.dataset.dob || el.dataset.dobRaw || '';
+      const gender = el.dataset.gender || '';
+      const contact = el.dataset.contact || '';
+      const email = el.dataset.email || '';
+      const address = el.dataset.address || '';
+      const ecPerson = el.dataset.ecPerson || el.dataset.ec_name || '';
+      const ecNumber = el.dataset.ecNumber || el.dataset.ec_phone || '';
+      const profilePicture = el.dataset.profilePicture || '';
+
+    // Fill UI
+      document.getElementById('detailId').textContent = id;
+      document.getElementById('detailName').textContent = name;
+      
+      // Handle profile picture
+      const profilePictureImg = document.getElementById('profilePicture');
+      const profilePictureIcon = document.getElementById('profilePictureIcon');
+      if (profilePicture) {
+        profilePictureImg.src = profilePicture;
+        profilePictureImg.style.display = 'block';
+        profilePictureIcon.style.display = 'none';
+      } else {
+        profilePictureImg.style.display = 'none';
+        profilePictureIcon.style.display = 'block';
+      }
+      document.getElementById('detailDOB').textContent = dob || '—';
+      document.getElementById('detailGender').textContent = gender || '—';
+      document.getElementById('detailContact').textContent = contact;
+      document.getElementById('ecPhone').textContent = ecNumber;
+      
+      // Fill appointment information
+      const appointmentTime = el.dataset.appointmentTime || '';
+      const appointmentType = el.dataset.appointmentType || '';
+      const appointmentId = el.dataset.appointmentId || '';
+      const appointmentDate = el.dataset.appointmentDate || '';
+      const appointmentStatus = el.dataset.appointmentStatus || '';
+      const appointmentApproval = el.dataset.appointmentApproval || '';
+      const appointmentNotes = el.dataset.appointmentNotes || '';
+      const appointmentMeetingLink = el.dataset.appointmentMeetingLink || '';
+      
+      document.getElementById('appointmentTime').textContent = appointmentTime || '—';
+      document.getElementById('appointmentType').textContent = appointmentType || '—';
+      document.getElementById('appointmentDate').textContent = appointmentDate || '—';
+      document.getElementById('appointmentStatus').textContent = appointmentStatus || '—';
+      document.getElementById('appointmentNotes').textContent = appointmentNotes || 'No notes available';
+      
+      // Handle meeting link
+      const meetingLinkSection = document.getElementById('meetingLinkSection');
+      const meetingLink = document.getElementById('meetingLink');
+      if (appointmentMeetingLink) {
+        meetingLink.href = appointmentMeetingLink;
+        meetingLinkSection.style.display = 'block';
+      } else {
+        meetingLinkSection.style.display = 'none';
+      }
+      
+      // Apply saved profile overrides from sessionStorage if present
+      try{
+        var pKey = 'profile_' + id;
+        var raw = sessionStorage.getItem(pKey);
+        if(raw){
+          var saved = JSON.parse(raw);
+          if(saved.firstName||saved.lastName||saved.middleName) {
+            let displayName = (saved.firstName||'');
+            if(saved.middleName) displayName += ' ' + saved.middleName;
+            if(saved.lastName) displayName += ' ' + saved.lastName;
+            document.getElementById('detailName').textContent = displayName.trim();
+          }
+          if(saved.contact) document.getElementById('detailContact').textContent = saved.contact;
+          if(saved.email) document.getElementById('detailEmail').textContent = saved.email;
+          if(saved.address) document.getElementById('detailAddress').textContent = saved.address;
+          if(saved.dob) { document.getElementById('detailDOB').textContent = saved.dob; document.getElementById('inputDob').value = saved.dob; }
+          if(saved.gender) { document.getElementById('detailGender').textContent = saved.gender; document.getElementById('inputGender').value = saved.gender; }
+          if(saved.ecPerson) { document.getElementById('ecName').textContent = saved.ecPerson; document.getElementById('inputEcName').value = saved.ecPerson; }
+          if(saved.ecNumber) { document.getElementById('ecPhone').textContent = saved.ecNumber; document.getElementById('inputEcPhone').value = saved.ecNumber; }
+        }
+      }catch(e){}
+      
+    // DOB view + edit (note: DOB is now displayed as separate labeled field)
+    document.getElementById('inputDob').value = dob || '';
+    
+    // gender + emergency contact (initial from data-attrs)
+    // Note: gender is now displayed as separate labeled field
+    document.getElementById('inputGender').value = gender || '';
+    document.getElementById('ecName').textContent = ecPerson || '';
+    document.getElementById('inputEcName').value = ecPerson || '';
+    document.getElementById('ecPhone').textContent = ecNumber || '';
+    document.getElementById('inputEcPhone').value = ecNumber || '';
+  
+      // Simulate live vitals (or replace with fetch to backend for real data)
+      document.getElementById('bpVal').textContent = Math.floor(110 + Math.random()*20) + '/' + Math.floor(70 + Math.random()*12);
+      document.getElementById('hrVal').textContent = Math.floor(60 + Math.random()*30) + ' bpm';
+      document.getElementById('tempVal').textContent = (36 + Math.random()*1.6).toFixed(1) + ' °C';
+  
+    // Notes (persist locally to sessionStorage by patient id)
+    const notesKey = 'notes_' + id;
+    const notesSaved = sessionStorage.getItem(notesKey) || '';
+    document.getElementById('detailNotes').value = notesSaved;
+  
+    // Show details UI
+    if(details) { details.style.display = 'block'; details.setAttribute('aria-hidden', 'false'); }
+    if(empty) { empty.style.display = 'none'; }
+    
+    // Show patient profile in left panel
+    const patientProfile = document.getElementById('patientProfile');
+    const emptyPatientProfile = document.getElementById('emptyPatientProfile');
+    if (patientProfile && emptyPatientProfile) {
+      patientProfile.style.display = 'block';
+      emptyPatientProfile.style.display = 'none';
+    }
+    }
+  
+  
+  
+  })();
+
+  // Live Consultation System JavaScript
+  (function() {
+    let liveSessionId = null;
+    let prescriptionId = null;
+    let sessionStartTime = null;
+    let sessionTimer = null;
+    let autoSaveTimer = null;
+    let signatureCanvas = null;
+    let isDrawing = false;
+    let medicines = [];
+
+    // Initialize consultation system
+    function initConsultationSystem() {
+      // Get appointment ID from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const appointmentId = urlParams.get('appointment_id');
+      
+      if (!appointmentId) {
+        console.error('No appointment ID found in URL');
+        return;
+      }
+
+      // Initialize signature canvas
+      initSignatureCanvas();
+      
+      // Initialize signature upload
+      initSignatureUpload();
+      
+      // Check existing session state
+      checkSessionState(appointmentId);
+      
+      // Bind event listeners
+      bindEventListeners(appointmentId);
+    }
+    
+    // Check existing session state
+    async function checkSessionState(appointmentId) {
+      try {
+        const response = await fetch(`/doctors/start-consultation/${appointmentId}/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          }
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+          // Update UI based on session state
+          if (data.action === 'continue') {
+            liveSessionId = data.live_session_id;
+            sessionStartTime = new Date(data.started_at);
+            updateSessionStatus('in_progress', 'IN PROGRESS');
+            document.getElementById('startConsultationBtn').style.display = 'none';
+            document.getElementById('completeConsultationBtn').style.display = 'inline-block';
+            document.getElementById('consultationForm').style.display = 'block';
+            document.getElementById('prescriptionSection').style.display = 'block';
+            startSessionTimer();
+            loadExistingConsultationData();
+            showSessionInfo(data);
+          } else if (data.action === 'restart') {
+            // Show restart button; keep consultation form and prescription section visible
+            const startBtn = document.getElementById('startConsultationBtn');
+            startBtn.textContent = 'Restart Session';
+            startBtn.style.background = '#f15e2c';
+            updateSessionStatus('completed', 'COMPLETED');
+            // Ensure prescription and consultation sections remain visible even in completed state
+            document.getElementById('consultationForm').style.display = 'block';
+            document.getElementById('prescriptionSection').style.display = 'block';
+            loadExistingConsultationData();
+          }
+        }
+      } catch (error) {
+        console.error('Error checking session state:', error);
+      }
+    }
+    
+    // Load existing consultation data
+    async function loadExistingConsultationData() {
+      if (!liveSessionId) return;
+      
+      try {
+        const response = await fetch(`/doctors/update-consultation/${liveSessionId}/`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          }
+        });
+
+        const data = await response.json();
+        
+        if (data.success && data.consultation_data) {
+          const consultation = data.consultation_data;
+          
+          // Populate form fields
+          if (consultation.symptoms) {
+            document.getElementById('symptoms').value = consultation.symptoms;
+          }
+          if (consultation.diagnosis) {
+            document.getElementById('diagnosis').value = consultation.diagnosis;
+          }
+          if (consultation.clinical_notes) {
+            document.getElementById('clinicalNotes').value = consultation.clinical_notes;
+          }
+          if (consultation.treatment_plan) {
+            document.getElementById('treatmentPlan').value = consultation.treatment_plan;
+          }
+          if (consultation.doctor_notes) {
+            document.getElementById('doctorNotes').value = consultation.doctor_notes;
+          }
+          
+          // Load vital signs if available
+          if (consultation.vital_signs) {
+            const vitalSigns = consultation.vital_signs;
+            // Update the displayed vital signs
+            if (vitalSigns.blood_pressure) {
+              document.getElementById('bpVal').textContent = vitalSigns.blood_pressure;
+            }
+            if (vitalSigns.heart_rate) {
+              document.getElementById('hrVal').textContent = vitalSigns.heart_rate;
+            }
+            if (vitalSigns.temperature) {
+              document.getElementById('tempVal').textContent = vitalSigns.temperature;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading consultation data:', error);
+      }
+    }
+
+    // Initialize signature canvas
+    function initSignatureCanvas() {
+      signatureCanvas = document.getElementById('signatureCanvas');
+      if (!signatureCanvas) return;
+
+      const ctx = signatureCanvas.getContext('2d');
+      ctx.strokeStyle = '#2c2c2f';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+
+      // Mouse events
+      signatureCanvas.addEventListener('mousedown', startDrawing);
+      signatureCanvas.addEventListener('mousemove', draw);
+      signatureCanvas.addEventListener('mouseup', stopDrawing);
+      signatureCanvas.addEventListener('mouseout', stopDrawing);
+
+      // Touch events for mobile
+      signatureCanvas.addEventListener('touchstart', handleTouch);
+      signatureCanvas.addEventListener('touchmove', handleTouch);
+      signatureCanvas.addEventListener('touchend', stopDrawing);
+    }
+
+    // Initialize signature upload functionality
+    function initSignatureUpload() {
+      const uploadBtn = document.getElementById('uploadSignatureBtn');
+      const uploadInput = document.getElementById('signatureUpload');
+      const imagePreview = document.getElementById('signatureImagePreview');
+      const signatureImage = document.getElementById('signatureImage');
+      const canvas = document.getElementById('signatureCanvas');
+      
+      if (!uploadBtn || !uploadInput) return;
+      
+      uploadBtn.addEventListener('click', () => {
+        uploadInput.click();
+      });
+      
+      // Toggle between draw and upload modes
+      const drawBtn = document.getElementById('drawSignatureBtn');
+      if (drawBtn) {
+        drawBtn.addEventListener('click', () => {
+          if (canvas) canvas.style.display = 'block';
+          if (imagePreview) imagePreview.style.display = 'none';
+        });
+      }
+      
+      uploadInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            signatureImage.src = e.target.result;
+            imagePreview.style.display = 'block';
+            if (canvas) canvas.style.display = 'none';
+            
+            // Convert image to base64 for signature
+            const img = new Image();
+            img.onload = () => {
+              const tempCanvas = document.createElement('canvas');
+              const ctx = tempCanvas.getContext('2d');
+              tempCanvas.width = 300;
+              tempCanvas.height = 100;
+              ctx.drawImage(img, 0, 0, 300, 100);
+              window.uploadedSignature = tempCanvas.toDataURL('image/png');
+            };
+            img.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    }
+
+    // Signature drawing functions
+    function startDrawing(e) {
+      isDrawing = true;
+      const rect = signatureCanvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      const ctx = signatureCanvas.getContext('2d');
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+    }
+
+    function draw(e) {
+      if (!isDrawing) return;
+      
+      const rect = signatureCanvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      const ctx = signatureCanvas.getContext('2d');
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    }
+
+    function stopDrawing() {
+      isDrawing = false;
+    }
+
+    function handleTouch(e) {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 
+                                       e.type === 'touchmove' ? 'mousemove' : 'mouseup', {
+        clientX: touch.clientX,
+        clientY: touch.clientY
+      });
+      signatureCanvas.dispatchEvent(mouseEvent);
+    }
+
+    // Bind event listeners
+    function bindEventListeners(appointmentId) {
+      // Start consultation button
+      document.getElementById('startConsultationBtn').addEventListener('click', () => {
+        if (document.getElementById('startConsultationBtn').textContent === 'Restart Session') {
+          restartConsultation(appointmentId);
+        } else {
+          startConsultation(appointmentId);
+        }
+      });
+
+      // Complete consultation button
+      document.getElementById('completeConsultationBtn').addEventListener('click', () => {
+        completeConsultation();
+      });
+
+      // Save consultation button
+      document.getElementById('saveConsultationBtn').addEventListener('click', saveConsultationData);
+
+      // Prescription buttons
+      document.getElementById('createPrescriptionBtn').addEventListener('click', showPrescriptionForm);
+      document.getElementById('addMedicineBtn').addEventListener('click', addMedicine);
+      document.getElementById('addTemplateBtn').addEventListener('click', showMedicineTemplates);
+      document.getElementById('clearSignatureBtn').addEventListener('click', clearSignature);
+      document.getElementById('signPrescriptionBtn').addEventListener('click', signPrescription);
+      document.getElementById('savePrescriptionBtn').addEventListener('click', savePrescription);
+      document.getElementById('printPrescriptionBtn').addEventListener('click', printPrescription);
+      
+      // File upload buttons
+      document.getElementById('sendPrescriptionBtn').addEventListener('click', showPrescriptionFileUploadForm);
+      document.getElementById('prescriptionFileInput').addEventListener('change', onPrescriptionFileSelected);
+      document.getElementById('confirmFileUploadBtn').addEventListener('click', uploadPrescriptionFile);
+      document.getElementById('cancelFileUploadBtn').addEventListener('click', hidePrescriptionFileUploadForm);
+    }
+
+    // Start consultation
+    async function startConsultation(appointmentId) {
+      try {
+        const response = await fetch(`/doctors/start-consultation/${appointmentId}/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          }
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+          liveSessionId = data.live_session_id;
+          sessionStartTime = new Date(data.started_at);
+          
+          // Handle different actions
+          if (data.action === 'continue') {
+            showNotification('Continuing existing session...', 'info');
+            updateSessionStatus('in_progress', 'IN PROGRESS');
+            showSessionInfo(data);
+          } else if (data.action === 'restart') {
+            const confirmed = confirm(`Previous session was completed. Do you want to restart it?\n\nThis will reset the session timer but keep existing data.`);
+            if (!confirmed) {
+              return;
+            }
+            showNotification('Restarting session...', 'info');
+            updateSessionStatus('in_progress', 'IN PROGRESS');
+            showSessionInfo(data);
+          } else {
+            showNotification('Session started successfully!', 'success');
+            updateSessionStatus('in_progress', 'IN PROGRESS');
+            showSessionInfo(data);
+          }
+          
+          // Update UI: always keep consultation form and prescription section visible so doctor can create prescriptions
+          document.getElementById('startConsultationBtn').style.display = 'none';
+          document.getElementById('completeConsultationBtn').style.display = 'inline-block';
+          document.getElementById('consultationForm').style.display = 'block';
+          document.getElementById('prescriptionSection').style.display = 'block';
+          
+          // Start timers
+          startSessionTimer();
+          
+          // Auto-hide success message after 3 seconds
+          setTimeout(() => {
+            const notification = document.querySelector('.notification');
+            if (notification) {
+              notification.style.display = 'none';
+            }
+          }, 3000);
+          
+        } else {
+          showNotification(data.error || 'Failed to start consultation', 'error');
+        }
+      } catch (error) {
+        console.error('Error starting consultation:', error);
+        showNotification('Error starting consultation', 'error');
+      }
+    }
+
+    // Complete consultation
+    async function completeConsultation() {
+      if (!liveSessionId) {
+        showNotification('No active session to complete', 'error');
+        return;
+      }
+
+      const confirmed = confirm('Are you sure you want to complete this consultation?\n\nThis will finalize the session and allow you to restart it later if needed.');
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/doctors/complete-consultation/${liveSessionId}/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          }
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+          // Update UI: keep consultation form and prescription section visible for post-session work
+          updateSessionStatus('completed', 'COMPLETED');
+          document.getElementById('completeConsultationBtn').style.display = 'none';
+          document.getElementById('consultationForm').style.display = 'block';
+          document.getElementById('prescriptionSection').style.display = 'block';
+          
+          // Add restart button
+          const startBtn = document.getElementById('startConsultationBtn');
+          startBtn.style.display = 'inline-block';
+          startBtn.textContent = 'Restart Session';
+          startBtn.style.background = '#f15e2c';
+          
+          // Stop timers
+          stopSessionTimer();
+          
+          showNotification(`Consultation completed! Duration: ${data.duration} minutes`, 'success');
+          
+          // Auto-hide success message after 3 seconds
+          setTimeout(() => {
+            const notification = document.querySelector('.notification');
+            if (notification) {
+              notification.style.display = 'none';
+            }
+          }, 3000);
+        } else {
+          showNotification(data.error || 'Failed to complete consultation', 'error');
+        }
+      } catch (error) {
+        console.error('Error completing consultation:', error);
+        showNotification('Error completing consultation', 'error');
+      }
+    }
+
+    // Restart consultation
+    async function restartConsultation(appointmentId) {
+      const confirmed = confirm('Are you sure you want to restart this consultation?\n\nThis will reset the session timer but keep all existing data (symptoms, diagnosis, notes, etc.).');
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/doctors/restart-consultation/${appointmentId}/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          }
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+          liveSessionId = data.live_session_id;
+          sessionStartTime = new Date(data.started_at);
+          
+          // Update UI: keep consultation form and prescription section visible for work
+          updateSessionStatus('in_progress', 'IN PROGRESS');
+          document.getElementById('startConsultationBtn').style.display = 'none';
+          document.getElementById('completeConsultationBtn').style.display = 'inline-block';
+          document.getElementById('consultationForm').style.display = 'block';
+          document.getElementById('prescriptionSection').style.display = 'block';
+          
+          // Reset button text and style
+          const startBtn = document.getElementById('startConsultationBtn');
+          startBtn.textContent = 'Start Consultation';
+          startBtn.style.background = '#2c71b7';
+          
+          // Start timers
+          startSessionTimer();
+          
+          showNotification('Session restarted successfully!', 'success');
+          
+          // Auto-hide success message after 3 seconds
+          setTimeout(() => {
+            const notification = document.querySelector('.notification');
+            if (notification) {
+              notification.style.display = 'none';
+            }
+          }, 3000);
+        } else {
+          showNotification(data.error || 'Failed to restart consultation', 'error');
+        }
+      } catch (error) {
+        console.error('Error restarting consultation:', error);
+        showNotification('Error restarting consultation', 'error');
+      }
+    }
+    // Save consultation data manually
+    async function saveConsultationData() {
+      if (!liveSessionId) {
+        showNotification('No active session to save', 'error');
+        return;
+      }
+
+      try {
+        // Get form data with null checks
+        const symptoms = document.getElementById('symptoms');
+        const diagnosis = document.getElementById('diagnosis');
+        const clinicalNotes = document.getElementById('clinicalNotes');
+        const treatmentPlan = document.getElementById('treatmentPlan');
+        const doctorNotes = document.getElementById('doctorNotes');
+        
+        const data = {
+          symptoms: symptoms ? symptoms.value : '',
+          diagnosis: diagnosis ? diagnosis.value : '',
+          clinical_notes: clinicalNotes ? clinicalNotes.value : '',
+          treatment_plan: treatmentPlan ? treatmentPlan.value : '',
+          doctor_notes: doctorNotes ? doctorNotes.value : '',
+          vital_signs: {
+            blood_pressure: document.getElementById('bpVal') ? document.getElementById('bpVal').textContent : '',
+            heart_rate: document.getElementById('hrVal') ? document.getElementById('hrVal').textContent : '',
+            temperature: document.getElementById('tempVal') ? document.getElementById('tempVal').textContent : ''
+          }
+        };
+
+        console.log('Saving consultation data:', data);
+
+        const response = await fetch(`/doctors/update-consultation/${liveSessionId}/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        console.log('Save response:', result);
+        
+        if (result.success) {
+          showSaveIndicator();
+          showNotification('Consultation data saved successfully!', 'success');
+          // Auto-hide success message after 3 seconds
+          setTimeout(() => {
+            const notification = document.querySelector('.notification');
+            if (notification) {
+              notification.style.display = 'none';
+            }
+          }, 3000);
+        } else {
+          showNotification(result.error || 'Failed to save consultation data', 'error');
+        }
+      } catch (error) {
+        console.error('Error saving consultation data:', error);
+        showNotification('Error saving consultation data: ' + error.message, 'error');
+      }
+    }
+    
+    // Show save indicator
+    function showSaveIndicator() {
+      const indicator = document.getElementById('saveIndicator');
+      if (indicator) {
+        indicator.style.display = 'block';
+        setTimeout(() => {
+          indicator.style.display = 'none';
+        }, 2000);
+      }
+    }
+
+    // Session timer functions
+    function startSessionTimer() {
+      sessionTimer = setInterval(() => {
+        if (sessionStartTime) {
+          const now = new Date();
+          const diff = Math.floor((now - sessionStartTime) / 1000);
+          const minutes = Math.floor(diff / 60);
+          const seconds = diff % 60;
+          document.getElementById('sessionTimer').textContent = 
+            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+      }, 1000);
+    }
+
+    function stopSessionTimer() {
+      if (sessionTimer) {
+        clearInterval(sessionTimer);
+        sessionTimer = null;
+      }
+    }
+
+
+    // Prescription functions
+    function showPrescriptionForm() {
+      document.getElementById('prescriptionForm').style.display = 'block';
+      document.getElementById('createPrescriptionBtn').style.display = 'none';
+    }
+
+    function addMedicine() {
+      const medicineName = prompt('Enter medicine name:');
+      if (!medicineName) return;
+
+      const dosage = prompt('Enter dosage:');
+      const frequency = prompt('Enter frequency (e.g., "twice daily"):');
+      const duration = prompt('Enter duration (e.g., "7 days"):');
+
+      const medicine = {
+        id: Date.now(),
+        name: medicineName,
+        dosage: dosage || '',
+        frequency: frequency || '',
+        duration: duration || ''
+      };
+
+      medicines.push(medicine);
+      updateMedicineList();
+      showNotification('Medicine added successfully!', 'success');
+      // Auto-hide success message after 3 seconds
+      setTimeout(() => {
+        const notification = document.querySelector('.notification');
+        if (notification) {
+          notification.style.display = 'none';
+        }
+      }, 3000);
+    }
+
+    function showMedicineTemplates() {
+      const templates = [
+        { name: 'Paracetamol', dosage: '500mg', frequency: 'Twice daily', duration: '5 days' },
+        { name: 'Ibuprofen', dosage: '400mg', frequency: 'Three times daily', duration: '7 days' },
+        { name: 'Amoxicillin', dosage: '500mg', frequency: 'Three times daily', duration: '7 days' },
+        { name: 'Omeprazole', dosage: '20mg', frequency: 'Once daily', duration: '14 days' },
+        { name: 'Metformin', dosage: '500mg', frequency: 'Twice daily', duration: '30 days' },
+        { name: 'Lisinopril', dosage: '10mg', frequency: 'Once daily', duration: '30 days' }
+      ];
+
+      let templateList = 'Select a medicine template:\n\n';
+      templates.forEach((template, index) => {
+        templateList += `${index + 1}. ${template.name} (${template.dosage}, ${template.frequency}, ${template.duration})\n`;
+      });
+
+      const selection = prompt(templateList + '\nEnter number (1-6) or 0 to cancel:');
+      const selectedIndex = parseInt(selection) - 1;
+
+      if (selectedIndex >= 0 && selectedIndex < templates.length) {
+        const selectedTemplate = templates[selectedIndex];
+        const medicine = {
+          id: Date.now(),
+          name: selectedTemplate.name,
+          dosage: selectedTemplate.dosage,
+          frequency: selectedTemplate.frequency,
+          duration: selectedTemplate.duration
+        };
+
+        medicines.push(medicine);
+        updateMedicineList();
+        showNotification(`${selectedTemplate.name} added from template!`, 'success');
+        // Auto-hide success message after 3 seconds
+        setTimeout(() => {
+          const notification = document.querySelector('.notification');
+          if (notification) {
+            notification.style.display = 'none';
+          }
+        }, 3000);
+      }
+    }
+
+    function updateMedicineList() {
+      const medicineList = document.getElementById('medicineList');
+      if (medicines.length === 0) {
+        medicineList.innerHTML = '<div style="text-align:center;color:#6b7280;font-size:11px;padding:20px;">No medicines added yet. Click "Add Medicine" to start.</div>';
+        return;
+      }
+
+      medicineList.innerHTML = medicines.map(medicine => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:white;border-radius:4px;margin-bottom:4px;border:1px solid #d4cac9;">
+          <div>
+            <div style="font-weight:600;font-size:12px;">${medicine.name}</div>
+            <div style="font-size:10px;color:#6b7280;">${medicine.dosage} - ${medicine.frequency} - ${medicine.duration}</div>
+            </div>
+          <div style="display:flex;gap:4px;">
+            <button onclick="duplicateMedicine(${medicine.id})" style="background:#b7cce4;color:#2c2c2f;border:none;padding:2px 6px;border-radius:3px;font-size:10px;cursor:pointer;" title="Duplicate">
+              <i class="fas fa-copy"></i>
+            </button>
+            <button onclick="removeMedicine(${medicine.id})" style="background:#f15e2c;color:white;border:none;padding:2px 6px;border-radius:3px;font-size:10px;cursor:pointer;">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function removeMedicine(medicineId) {
+      medicines = medicines.filter(m => m.id !== medicineId);
+      updateMedicineList();
+    }
+
+    function duplicateMedicine(medicineId) {
+      const originalMedicine = medicines.find(m => m.id === medicineId);
+      if (originalMedicine) {
+        const duplicatedMedicine = {
+          id: Date.now(),
+          name: originalMedicine.name,
+          dosage: originalMedicine.dosage,
+          frequency: originalMedicine.frequency,
+          duration: originalMedicine.duration
+        };
+        medicines.push(duplicatedMedicine);
+        updateMedicineList();
+        showNotification('Medicine duplicated successfully!', 'success');
+        // Auto-hide success message after 3 seconds
+        setTimeout(() => {
+          const notification = document.querySelector('.notification');
+          if (notification) {
+            notification.style.display = 'none';
+          }
+        }, 3000);
+      }
+    }
+
+    function clearSignature() {
+      // Clear canvas if it exists
+      if (signatureCanvas) {
+        const ctx = signatureCanvas.getContext('2d');
+        ctx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+        signatureCanvas.style.display = 'block';
+      }
+      
+      // Clear uploaded signature
+      const imagePreview = document.getElementById('signatureImagePreview');
+      if (imagePreview) {
+        imagePreview.style.display = 'none';
+      }
+      
+      // Clear uploaded signature data
+      window.uploadedSignature = null;
+      
+      // Reset file input
+      const uploadInput = document.getElementById('signatureUpload');
+      if (uploadInput) {
+        uploadInput.value = '';
+      }
+    }
+
+    async function signPrescription() {
+      if (!prescriptionId) {
+        showNotification('Please save prescription first', 'error');
+        return;
+      }
+      
+      let signatureData = null;
+      
+      // Check if there's an uploaded signature
+      if (window.uploadedSignature) {
+        signatureData = window.uploadedSignature;
+      } else if (signatureCanvas) {
+        // Check if canvas has content
+        const ctx = signatureCanvas.getContext('2d');
+        const imageData = ctx.getImageData(0, 0, signatureCanvas.width, signatureCanvas.height);
+        const hasContent = imageData.data.some(channel => channel !== 0);
+        
+        if (!hasContent) {
+          showNotification('Please draw or upload a signature', 'error');
+          return;
+        }
+        
+        signatureData = signatureCanvas.toDataURL('image/png');
+      } else {
+        showNotification('Please draw or upload a signature', 'error');
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/doctors/sign-prescription/${prescriptionId}/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: JSON.stringify({ signature: signatureData })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          showNotification('Prescription signed successfully!', 'success');
+          document.getElementById('signPrescriptionBtn').style.display = 'none';
+          // Auto-hide success message after 3 seconds
+          setTimeout(() => {
+            const notification = document.querySelector('.notification');
+            if (notification) {
+              notification.style.display = 'none';
+            }
+          }, 3000);
+        } else {
+          showNotification(data.error || 'Failed to sign prescription', 'error');
+        }
+      } catch (error) {
+        console.error('Error signing prescription:', error);
+        showNotification('Error signing prescription', 'error');
+      }
+    }
+
+    async function savePrescription() {
+      if (!liveSessionId) return;
+
+      try {
+        const data = {
+          medicines: medicines,
+          instructions: document.getElementById('prescriptionInstructions').value,
+          follow_up_date: document.getElementById('followUpDate').value,
+          follow_up_instructions: document.getElementById('followUpInstructions').value
+        };
+
+        const response = await fetch(`/doctors/create-prescription/${liveSessionId}/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          prescriptionId = result.prescription_id;
+          showNotification('Prescription saved successfully!', 'success');
+          // Auto-hide success message after 3 seconds
+          setTimeout(() => {
+            const notification = document.querySelector('.notification');
+            if (notification) {
+              notification.style.display = 'none';
+            }
+          }, 3000);
+        } else {
+          showNotification(result.error || 'Failed to save prescription', 'error');
+        }
+      } catch (error) {
+        console.error('Error saving prescription:', error);
+        showNotification('Error saving prescription', 'error');
+      }
+    }
+
+    function printPrescription() {
+      // Get prescription data
+      const instructions = document.getElementById('prescriptionInstructions')?.value || '';
+      const followUpDate = document.getElementById('followUpDate')?.value || '';
+      const followUpInstructions = document.getElementById('followUpInstructions')?.value || '';
+      
+      // Get doctor's name from the page
+      const doctorNameElement = document.querySelector('.doctor-name');
+      const doctorNameInfoElement = document.getElementById('doctorNameInfo');
+      let doctorName = 'Dr. [Doctor Name]';
+      
+      // Try multiple methods to get doctor name
+      if (doctorNameInfoElement && doctorNameInfoElement.textContent.trim()) {
+        doctorName = doctorNameInfoElement.textContent.trim();
+      } else if (doctorNameElement && doctorNameElement.textContent.trim()) {
+        doctorName = doctorNameElement.textContent.trim();
+      } else if (window.doctorData && window.doctorData.name) {
+        doctorName = window.doctorData.name;
+      }
+      
+      // Debug: Log the doctor name for troubleshooting
+      console.log('Doctor name found:', doctorName);
+      console.log('Doctor name info element:', doctorNameInfoElement);
+      console.log('Doctor name element:', doctorNameElement);
+      console.log('Window doctor data:', window.doctorData);
+      
+      // Get signature data
+      let signatureHtml = '';
+      if (window.uploadedSignature) {
+        signatureHtml = `<img src="${window.uploadedSignature}" style="max-width: 200px; max-height: 80px; border: 1px solid #ccc;">`;
+      } else if (signatureCanvas) {
+        const signatureData = signatureCanvas.toDataURL('image/png');
+        signatureHtml = `<img src="${signatureData}" style="max-width: 200px; max-height: 80px; border: 1px solid #ccc;">`;
+      }
+      
+      // Create a professional print-friendly version of the prescription
+      const printWindow = window.open('', '_blank');
+      const currentDate = new Date();
+      const formattedDate = currentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      const formattedTime = currentDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Medisafe Diagnostic Center - Prescription</title>
+            <style>
+              @media print {
+                @page {
+                  margin: 0.5in;
+                  size: letter;
+                }
+                body {
+                  margin: 0;
+                  padding: 20px;
+                }
+              }
+              body { 
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                margin: 0;
+                padding: 30px;
+                line-height: 1.7;
+                color: #1a1a1a;
+                background: #fff;
+              }
+              .clinic-header {
+                text-align: center;
+                margin-bottom: 30px;
+                padding-bottom: 20px;
+                border-bottom: 3px solid #2c71b7;
+              }
+              .clinic-logo {
+                max-width: 120px;
+                height: auto;
+                margin-bottom: 15px;
+              }
+              .clinic-name {
+                color: #2c71b7;
+                font-size: 28px;
+                font-weight: 900;
+                margin: 10px 0 5px 0;
+                letter-spacing: 1px;
+              }
+              .clinic-subtitle {
+                color: #4a5568;
+                font-size: 14px;
+                font-weight: 600;
+                margin: 5px 0;
+              }
+              .clinic-details {
+                color: #64748b;
+                font-size: 12px;
+                margin: 8px 0;
+                line-height: 1.6;
+              }
+              .prescription-header {
+                background: linear-gradient(135deg, #2c71b7 0%, #1e5a9e 100%);
+                color: white;
+                padding: 20px;
+                border-radius: 8px;
+                margin: 25px 0;
+                text-align: center;
+              }
+              .prescription-header h2 {
+                margin: 0 0 10px 0;
+                font-size: 22px;
+                font-weight: 800;
+                letter-spacing: 0.5px;
+              }
+              .prescription-header p {
+                margin: 5px 0;
+                font-size: 14px;
+                opacity: 0.95;
+              }
+              .prescription-info {
+                background: #f8fafc;
+                padding: 20px;
+                margin: 20px 0;
+                border-radius: 8px;
+                border-left: 4px solid #2c71b7;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 15px;
+              }
+              .prescription-info p {
+                margin: 8px 0;
+                font-size: 14px;
+              }
+              .prescription-info strong {
+                color: #2c71b7;
+                font-weight: 700;
+              }
+              .medicines-section {
+                margin: 25px 0;
+              }
+              .medicines-section h3 {
+                color: #2c71b7;
+                font-size: 18px;
+                font-weight: 800;
+                margin-bottom: 15px;
+                padding-bottom: 8px;
+                border-bottom: 2px solid #e5e7eb;
+              }
+              .medicine { 
+                margin-bottom: 15px; 
+                padding: 18px; 
+                border: 2px solid #e5e7eb; 
+                border-radius: 8px;
+                background: #ffffff;
+                border-left: 4px solid #2c71b7;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+              }
+              .medicine-name {
+                font-weight: 800;
+                color: #1a1a1a;
+                font-size: 16px;
+                margin-bottom: 12px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+              }
+              .medicine-details {
+                margin-left: 0;
+                font-size: 14px;
+                line-height: 1.8;
+              }
+              .medicine-details strong {
+                color: #4a5568;
+                font-weight: 700;
+              }
+              .instructions { 
+                margin: 25px 0; 
+                padding: 20px;
+                background: #f0f9ff;
+                border-radius: 8px;
+                border-left: 4px solid #3b82f6;
+              }
+              .instructions h3 {
+                color: #1e40af;
+                font-size: 16px;
+                font-weight: 800;
+                margin-bottom: 12px;
+              }
+              .follow-up {
+                margin: 25px 0;
+                padding: 20px;
+                background: #fef3c7;
+                border-radius: 8px;
+                border-left: 4px solid #f59e0b;
+              }
+              .follow-up h3 {
+                color: #92400e;
+                font-size: 16px;
+                font-weight: 800;
+                margin-bottom: 12px;
+              }
+              .signature-section { 
+                margin-top: 50px; 
+                padding-top: 30px;
+                border-top: 2px solid #e5e7eb;
+              }
+              .signature-box {
+                text-align: right;
+                margin-top: 30px;
+              }
+              .signature-box img {
+                margin: 10px 0;
+                max-width: 250px;
+                max-height: 100px;
+                border: 1px solid #cbd5e1;
+                background: white;
+                padding: 5px;
+              }
+              .signature-line {
+                border-top: 2px solid #1a1a1a;
+                width: 250px;
+                margin: 40px 0 10px auto;
+                padding-top: 5px;
+              }
+              .signature-label {
+                font-weight: 700;
+                color: #1a1a1a;
+                font-size: 14px;
+                text-align: right;
+              }
+              .date-stamp {
+                margin-top: 15px;
+                text-align: right;
+                font-size: 13px;
+                color: #64748b;
+              }
+              .footer {
+                margin-top: 40px;
+                padding-top: 20px;
+                border-top: 1px solid #e5e7eb;
+                text-align: center;
+                font-size: 11px;
+                color: #94a3b8;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="clinic-header">
+              <img src="/media/logo/Medisafe%20Logo.jpg" alt="Medisafe Logo" class="clinic-logo" onerror="this.style.display='none'">
+              <div class="clinic-name">MEDISAFE DIAGNOSTIC CENTER</div>
+              <div class="clinic-subtitle">Comprehensive Healthcare Services</div>
+              <div class="clinic-details">
+                <div>📍 Location: Pateros, Metro Manila, Philippines</div>
+                <div>📞 Phone: (02) 8XXX-XXXX | Email: medisafe.medicalpateros@gmail.com</div>
+                <div>🌐 Website: www.medisafe.com</div>
+              </div>
+            </div>
+            
+            <div class="prescription-header">
+              <h2>PRESCRIPTION</h2>
+              <p><strong>Prescription #:</strong> ${prescriptionId || 'DRAFT'}</p>
+              <p><strong>Date Issued:</strong> ${formattedDate} at ${formattedTime}</p>
+            </div>
+            
+            <div class="prescription-info">
+              <div>
+                <p><strong>Patient Name:</strong> ${document.getElementById('detailName')?.textContent || 'N/A'}</p>
+                <p><strong>Doctor:</strong> ${doctorName}</p>
+              </div>
+              <div>
+                <p><strong>Specialization:</strong> ${window.doctorData?.specialization || 'General Medicine'}</p>
+                <p><strong>License Number:</strong> ${window.doctorData?.license || 'N/A'}</p>
+              </div>
+            </div>
+            
+            <div class="medicines-section">
+              <h3>PRESCRIBED MEDICATIONS</h3>
+              ${medicines.length > 0 ? medicines.map(medicine => `
+                <div class="medicine">
+                  <div class="medicine-name">${medicine.name || 'N/A'}</div>
+                  <div class="medicine-details">
+                    <strong>Dosage:</strong> ${medicine.dosage || 'N/A'}<br>
+                    <strong>Frequency:</strong> ${medicine.frequency || 'N/A'}<br>
+                    <strong>Duration:</strong> ${medicine.duration || 'N/A'}
+                  </div>
+                </div>
+              `).join('') : '<div class="medicine"><p style="font-style: italic; color: #64748b;">No medications prescribed</p></div>'}
+            </div>
+
+            ${instructions ? `
+            <div class="instructions">
+              <h3>SPECIAL INSTRUCTIONS</h3>
+              <p style="white-space: pre-wrap; margin: 0;">${instructions}</p>
+            </div>
+            ` : ''}
+            
+            ${followUpDate || followUpInstructions ? `
+            <div class="follow-up">
+              <h3>FOLLOW-UP INFORMATION</h3>
+              ${followUpDate ? `<p><strong>Follow-up Date:</strong> ${new Date(followUpDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>` : ''}
+              ${followUpInstructions ? `<p style="white-space: pre-wrap; margin-top: 10px;"><strong>Follow-up Instructions:</strong> ${followUpInstructions}</p>` : ''}
+            </div>
+            ` : ''}
+            
+            <div class="signature-section">
+              <div class="signature-box">
+                ${signatureHtml ? `
+                  <div>${signatureHtml}</div>
+                ` : `
+                  <div class="signature-line"></div>
+                `}
+                <div class="signature-label">${doctorName}</div>
+                <div class="date-stamp">
+                  <strong>Date:</strong> ${formattedDate}
+                </div>
+              </div>
+            </div>
+            
+            <div class="footer">
+              <p><strong>Medisafe Diagnostic Center</strong> | This prescription is valid for 30 days from the date of issue.</p>
+              <p>For inquiries, please contact us at (02) 8XXX-XXXX or visit our clinic.</p>
+            </div>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      
+      // Wait for content to load before printing
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
+    }
+
+    // Prescription file upload functions
+    function showPrescriptionFileUploadForm() {
+      const uploadForm = document.getElementById('prescriptionFileUploadForm');
+      if (uploadForm) {
+        uploadForm.style.display = 'block';
+        document.getElementById('prescriptionFileInput').focus();
+      }
+    }
+
+    function hidePrescriptionFileUploadForm() {
+      const uploadForm = document.getElementById('prescriptionFileUploadForm');
+      if (uploadForm) {
+        uploadForm.style.display = 'none';
+        document.getElementById('prescriptionFileInput').value = '';
+      }
+    }
+
+    function onPrescriptionFileSelected(e) {
+      const fileName = e.target.files[0]?.name || '';
+      if (fileName) {
+        console.log('Selected file:', fileName);
+      }
+    }
+
+    async function uploadPrescriptionFile() {
+      const fileInput = document.getElementById('prescriptionFileInput');
+      const file = fileInput.files[0];
+      
+      if (!file) {
+        showNotification('Please select a file to upload', 'error');
+        return;
+      }
+
+      // Validate file size (max 10MB)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        showNotification('File size exceeds 10MB limit', 'error');
+        return;
+      }
+
+      try {
+        // If prescription hasn't been saved yet, save it first
+        if (!prescriptionId) {
+          showNotification('Auto-saving prescription before upload...', 'info');
+          await savePrescription();
+          
+          // Wait a moment for prescriptionId to be set
+          if (!prescriptionId) {
+            showNotification('Failed to save prescription. Please save manually first.', 'error');
+            return;
+          }
+        }
+
+        // Create FormData to send file
+        const formData = new FormData();
+        formData.append('prescription_file', file);
+
+        const uploadBtn = document.getElementById('confirmFileUploadBtn');
+        const originalBtnText = uploadBtn.textContent;
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+
+        const response = await fetch(`/doctors/upload-prescription-file/${prescriptionId}/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          showNotification('Prescription created and file uploaded successfully!', 'success');
+          hidePrescriptionFileUploadForm();
+          
+          // Reload prescription data if function exists
+          if (typeof loadPrescriptions === 'function') {
+            loadPrescriptions();
+          }
+        } else {
+          showNotification(result.error || 'Failed to upload prescription file', 'error');
+        }
+      } catch (error) {
+        console.error('Error uploading prescription file:', error);
+        showNotification('Error uploading prescription file: ' + error.message, 'error');
+      } finally {
+        const uploadBtn = document.getElementById('confirmFileUploadBtn');
+        uploadBtn.disabled = false;
+        uploadBtn.textContent = 'Upload File';
+      }
+    }
+
+    // Show session information
+    function showSessionInfo(data) {
+      const sessionInfo = document.getElementById('sessionInfo');
+      if (sessionInfo) {
+        sessionInfo.style.display = 'block';
+        document.getElementById('sessionIdDisplay').textContent = data.live_session_id || '-';
+        document.getElementById('sessionStartDisplay').textContent = data.started_at ? new Date(data.started_at).toLocaleTimeString() : '-';
+        document.getElementById('sessionStatusDisplay').textContent = data.status || '-';
+        document.getElementById('sessionActionDisplay').textContent = data.action || '-';
+        
+        // Show doctor information
+        const doctorName = window.doctorData?.name || document.querySelector('.doctor-name')?.textContent || 'Dr. [Doctor Name]';
+        const doctorSpecialization = window.doctorData?.specialization || 'General Medicine';
+        document.getElementById('doctorNameDisplay').textContent = doctorName;
+        document.getElementById('doctorSpecializationDisplay').textContent = doctorSpecialization;
+      }
+    }
+
+    // Utility functions
+    function updateSessionStatus(status, text) {
+      const statusElement = document.getElementById('sessionStatus');
+      const statusText = document.getElementById('statusText');
+      const statusDot = document.getElementById('statusDot');
+      
+      statusText.textContent = text;
+      
+      // Update colors based on status
+      switch (status) {
+        case 'waiting':
+          statusElement.style.background = '#d4cac9';
+          break;
+        case 'in_progress':
+          statusElement.style.background = '#f15e2c';
+          break;
+        case 'completed':
+          statusElement.style.background = '#2c71b7';
+          break;
+      }
+    }
+
+    function showAutoSaveIndicator() {
+      const indicator = document.getElementById('autoSaveIndicator');
+      indicator.style.color = '#10b981';
+      indicator.innerHTML = '<i class="fas fa-save"></i> Auto-saved';
+      
+      setTimeout(() => {
+        indicator.style.color = '#6b7280';
+        indicator.innerHTML = '<i class="fas fa-save"></i> Auto-saving...';
+      }, 2000);
+    }
+
+    function showNotification(message, type) {
+      const notification = document.createElement('div');
+      notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'success' ? '#10b981' : '#f15e2c'};
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 1000;
+        animation: slideInRight 0.3s ease-out;
+      `;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.style.animation = 'slideOutRight 0.3s ease-in forwards';
+        setTimeout(() => notification.remove(), 300);
+      }, 3000);
+    }
+
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    // Initialize when DOM is loaded
+    document.addEventListener('DOMContentLoaded', initConsultationSystem);
+    
+    // Set minimum date for follow-up date input (disable past dates)
+    document.addEventListener('DOMContentLoaded', function() {
+      const followUpDateInput = document.getElementById('followUpDate');
+      if (followUpDateInput) {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const minDate = `${year}-${month}-${day}`;
+        followUpDateInput.setAttribute('min', minDate);
+      }
+    });
+    
+    // Validate follow-up date function
+    function validateFollowUpDate(input) {
+      const selectedDate = new Date(input.value);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      selectedDate.setHours(0, 0, 0, 0);
+      
+      if (selectedDate < today) {
+        alert('Follow-up date cannot be in the past. Please select today or a future date.');
+        input.value = '';
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        input.setAttribute('min', `${year}-${month}-${day}`);
+        input.focus();
+        return false;
+      }
+      return true;
+    }
+
+    // Test function to check doctor name retrieval
+    function testDoctorName() {
+      console.log('=== Doctor Name Test ===');
+      console.log('1. Doctor name element:', document.querySelector('.doctor-name'));
+      console.log('2. Doctor name text:', document.querySelector('.doctor-name')?.textContent);
+      console.log('3. Window doctor data:', window.doctorData);
+      console.log('4. Final doctor name:', window.doctorData?.name || document.querySelector('.doctor-name')?.textContent || 'Dr. [Doctor Name]');
+      return window.doctorData?.name || document.querySelector('.doctor-name')?.textContent || 'Dr. [Doctor Name]';
+    }
+    
+    // Make test function globally available
+    window.testDoctorName = testDoctorName;
+    
+    // Make functions globally available
+    window.removeMedicine = removeMedicine;
+    window.duplicateMedicine = duplicateMedicine;
+  })();
+  </script>
+</html>
+
+

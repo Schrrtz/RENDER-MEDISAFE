@@ -1,0 +1,2861 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Patient Records | MediSafe+</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link href="{% static 'css/mod_patients.css' %}" rel="stylesheet">
+  <script src="{% static 'js/mod_records_tabs.js' %}"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'healthcare-red': '#FF0000',
+            'healthcare-blue': '#003366',
+            'healthcare-light-blue': '#0066CC'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Send Message Modal (Admin -> Patient) -->
+  <div id="sendMessageModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl p-6 max-w-lg w-full shadow-2xl">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold text-healthcare-blue"><i class="fas fa-envelope mr-2"></i>Send Message</h3>
+        <button onclick="closeSendMessageModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+      </div>
+      <form id="sendMessageForm" onsubmit="return false;">
+        <input type="hidden" id="send_target_id" name="target_id">
+        <div class="mb-3">
+          <label class="block text-sm font-medium text-gray-700 mb-1">To</label>
+          <p id="send_target_name" class="font-medium text-gray-900">-</p>
+        </div>
+        <div class="mb-3">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+          <input id="send_title" type="text" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+        </div>
+        <div class="mb-3">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+          <textarea id="send_body" rows="5" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue"></textarea>
+        </div>
+        <div class="flex justify-end gap-3">
+          <button type="button" onclick="closeSendMessageModal()" class="px-4 py-2 border border-gray-300 rounded-lg">Cancel</button>
+          <button type="button" onclick="sendMessageToUser()" class="px-4 py-2 bg-healthcare-blue text-white rounded-lg">Send</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    function openSendMessageModal(userId, userName) {
+      document.getElementById('send_target_id').value = userId;
+      document.getElementById('send_target_name').textContent = userName;
+      document.getElementById('send_title').value = '';
+      document.getElementById('send_body').value = '';
+      document.getElementById('sendMessageModal').classList.remove('hidden');
+      document.getElementById('sendMessageModal').classList.add('flex');
+    }
+
+    function closeSendMessageModal() {
+      document.getElementById('sendMessageModal').classList.add('hidden');
+      document.getElementById('sendMessageModal').classList.remove('flex');
+    }
+
+    async function sendMessageToUser() {
+      const target_id = document.getElementById('send_target_id').value;
+      const title = document.getElementById('send_title').value.trim();
+      const body = document.getElementById('send_body').value.trim();
+      if (!target_id || !title || !body) {
+        alert('Please fill in title and message');
+        return;
+      }
+
+      const csrftoken = getCookie('csrftoken');
+
+      const form = new FormData();
+      form.append('action', 'send_message');
+      form.append('target_id', target_id);
+      form.append('title', title);
+      form.append('body', body);
+
+      try {
+        const resp = await fetch('{% url "admin_send_notification" %}', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrftoken },
+          body: form
+        });
+        // The view responds with a redirect (because it's same mod_patients endpoint). We'll interpret by reloading page.
+        if (resp.redirected) {
+          window.location.href = resp.url;
+          return;
+        }
+        // Fallback: reload to show messages
+        window.location.reload();
+      } catch (err) {
+        console.error(err);
+        alert('Error sending message');
+      }
+    }
+  </script>
+  <style>
+    /* Additional styles for tab transitions */
+    #patient-records-section,
+    #lab-results-section,
+    #booked-services-section,
+    #patient-prescriptions-section {
+      transition: opacity 0.3s ease-in-out;
+    }
+
+    .tab-section-hidden {
+      display: none;
+      opacity: 0;
+    }
+
+    .tab-section-visible {
+      display: block;
+      opacity: 1;
+    }
+
+    .tab-button {
+      transition: all 0.3s ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
+  <!-- Main Layout -->
+  <div class="flex h-screen bg-gray-50">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-healthcare-blue text-white shadow-lg">
+      <!-- Logo -->
+      <div class="p-4 border-b border-healthcare-light-blue/30">
+        <div class="flex items-center space-x-3">
+          <div style="display:flex;align-items:center;gap:10px">
+            <img src="/media/logo/Medisafe%20Logo.jpg" alt="MediSafe" style="height:44px;width:auto;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.06)" />
+            <span class="font-bold text-lg">MediSafe+</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="p-4">
+        <div class="mb-4">
+          <div class="relative">
+            <input type="text" 
+                   placeholder="Search..." 
+                   class="w-full bg-white/10 text-white placeholder-white/60 px-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-white/30">
+            <i class="fas fa-search absolute right-3 top-2.5 text-white/60"></i>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <a href="{% url 'moddashboard' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-chart-pie"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="{% url 'mod_doctors' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-users-cog"></i>
+            <span>Medisafe Team</span>
+          </a>
+          <a href="{% url 'mod_records' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg bg-white/20 text-white">
+            <i class="fas fa-hospital-user"></i>
+            <span>Patient Records</span>
+          </a>
+          <a href="{% url 'mod_users' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-users"></i>
+            <span>User Management</span>
+          </a>
+          <a href="{% url 'mod_consultations' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-calendar-check"></i>
+            <span>Appointments</span>
+          </a>
+          <a href="{% url 'mod_analytics' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-chart-line"></i>
+            <span>Analytics</span>
+          </a>
+        </div>
+      </nav>
+
+      <!-- User Profile -->
+      <div class="mt-auto p-4 border-t border-healthcare-light-blue/30">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="bg-white/10 p-2 rounded-full">
+              <i class="fas fa-user-md"></i>
+            </div>
+            <div class="text-sm">
+              <p class="font-semibold">Admin</p>
+              <p class="text-white/60 text-xs">Online</p>
+            </div>
+          </div>
+          <a href="{% url 'logout' %}" class="text-white/60 hover:text-white">
+            <i class="fas fa-sign-out-alt"></i>
+          </a>
+        </div>
+        
+        <!-- Super Admin Component Include -->
+        {% include 'super_admin_component.html' %}
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-8">
+      {% if messages %}
+      <div class="mb-4">
+        {% for message in messages %}
+        <div class="px-4 py-3 rounded {{ message.tags|default:'info' }} {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+          {{ message }}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <!-- Header -->
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-healthcare-blue mb-2">Patient Records</h1>
+        <p class="text-gray-600">View and manage patient records, lab results, and booked services</p>
+      </div>
+
+      <!-- Patient Stats -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <!-- Total Patients -->
+        <div class="dashboard-card p-6 rounded-xl">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 mb-1">Total Patients</p>
+              <h3 class="text-2xl font-bold text-healthcare-blue">{{ total_count }}</h3>
+            </div>
+            <div class="bg-healthcare-blue/10 p-3 rounded-lg">
+              <i class="fas fa-hospital-user text-2xl text-healthcare-blue"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Patients -->
+        <div class="dashboard-card p-6 rounded-xl">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 mb-1">Active Patients</p>
+              <h3 class="text-2xl font-bold text-green-600">{{ active_count }}</h3>
+            </div>
+            <div class="bg-green-100 p-3 rounded-lg">
+              <i class="fas fa-user-check text-2xl text-green-600"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="mb-8">
+        <div class="border-b border-gray-200">
+          <nav class="-mb-px flex space-x-4" aria-label="Tabs">
+            <button id="patient-records-tab" 
+                    onclick="switchTab('patient-records')"
+                    class="border-healthcare-blue text-healthcare-blue border-b-2 py-4 px-6 text-sm font-medium">
+              Patient Records
+            </button>
+            <button id="lab-results-tab" 
+                    onclick="switchTab('lab-results')"
+                    class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 py-4 px-6 text-sm font-medium">
+              Lab Results
+            </button>
+            <button id="booked-services-tab" 
+                    onclick="switchTab('booked-services')"
+                    class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 py-4 px-6 text-sm font-medium">
+              Booked Services
+            </button>
+            <button id="patient-prescriptions-tab" 
+                    onclick="switchTab('patient-prescriptions')"
+                    class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 py-4 px-6 text-sm font-medium">
+              Patient Prescriptions
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      <!-- Patient Records -->
+      <section id="patient-records-section" class="space-y-6">
+        <!-- Search Bar -->
+        <div class="dashboard-card rounded-xl mb-6">
+          <div class="p-6">
+            <form method="GET" class="flex space-x-4" onsubmit="return false;">
+              <div class="flex-1">
+                <input type="text" 
+                       name="search" 
+                       id="patientsLiveSearch"
+                       value="{{ search_query }}"
+                       placeholder="Search by first name, last name, username, email, or contact number..." 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+              </div>
+              <button type="button" 
+                      class="px-6 py-2 bg-healthcare-blue text-white rounded-lg opacity-60 cursor-default flex items-center space-x-2">
+                <i class="fas fa-search"></i>
+                <span>Live</span>
+              </button>
+              {% if search_query %}
+              <a href="{% url 'mod_records' %}" 
+                 class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center space-x-2">
+                <i class="fas fa-times"></i>
+                <span>Clear</span>
+              </a>
+              {% endif %}
+            </form>
+          </div>
+        </div>
+
+        <!-- Patient List -->
+        <div class="dashboard-card rounded-xl overflow-hidden">
+          <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-healthcare-blue">Patient Records</h2>
+            <div class="flex space-x-4">
+              <button onclick="openAddPatientModal()" 
+                      class="px-4 py-2 bg-healthcare-blue text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+                <i class="fas fa-plus"></i>
+                <span>Add Patient</span>
+              </button>
+              <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center space-x-2">
+                <i class="fas fa-download"></i>
+                <span>Export</span>
+              </button>
+            </div>
+          </div>
+        <div class="p-6">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left">
+              <thead>
+                <tr class="border-b border-gray-200">
+                  <th class="pb-3 font-semibold text-gray-600">Name</th>
+                  <th class="pb-3 font-semibold text-gray-600">Username</th>
+                  <th class="pb-3 font-semibold text-gray-600">Email</th>
+                  <th class="pb-3 font-semibold text-gray-600">Contact</th>
+                  <th class="pb-3 font-semibold text-gray-600">Sex</th>
+                  <th class="pb-3 font-semibold text-gray-600">Status</th>
+                  <th class="pb-3 font-semibold text-gray-600">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for patient in patients %}
+                <tr class="border-b border-gray-100">
+                  <td class="py-3">
+                    <div class="flex items-center">
+                      <div class="bg-healthcare-blue/10 w-8 h-8 rounded-full flex items-center justify-center mr-3">
+                        <i class="fas fa-user text-healthcare-blue"></i>
+                      </div>
+                      <div>
+                        <div class="font-medium">
+                          {% if patient.userprofile.first_name and patient.userprofile.last_name %}
+                            {{ patient.userprofile.first_name }} {{ patient.userprofile.last_name }}
+                          {% else %}
+                            {{ patient.username }}
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="py-3 text-gray-600">{{ patient.username }}</td>
+                  <td class="py-3 text-gray-600">{{ patient.email }}</td>
+                  <td class="py-3 text-gray-600">{{ patient.userprofile.contact_number|default:"-" }}</td>
+                  <td class="py-3 text-gray-600">{{ patient.userprofile.sex|default:"-" }}</td>
+                  <td class="py-3">
+                    <span class="px-2 py-1 rounded-full text-xs font-medium 
+                      {% if patient.is_active %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                      {% if patient.is_active %}Active{% else %}Inactive{% endif %}
+                    </span>
+                  </td>
+                  <td class="py-3">
+                    <div class="flex space-x-2">
+                      <button onclick="openViewPatientDetailsModal('{{ patient.user_id }}', '{{ patient.userprofile.first_name|default:"" }}', '{{ patient.userprofile.last_name|default:"" }}', '{{ patient.userprofile.sex|default:"" }}', '{{ patient.is_active|yesno:"active,inactive" }}', '{{ patient.userprofile.contact_number|default:"" }}', '{{ patient.userprofile.address|default:"" }}', '{{ patient.date_joined|date:"Y-m-d" }}')" 
+                              class="p-1 text-blue-600 hover:text-blue-800" title="View Details">
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      <button onclick="openEditPatientModal('{{ patient.user_id }}', '{{ patient.userprofile.first_name|default:"" }}', '{{ patient.userprofile.last_name|default:"" }}', '{{ patient.userprofile.sex|default:"" }}', '{{ patient.is_active|yesno:"active,inactive" }}')" 
+                              class="p-1 text-green-600 hover:text-green-800" title="Edit">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button onclick="openUploadLabResultModal('{{ patient.user_id }}', '{{ patient.username }}')" 
+                              class="p-1 text-purple-600 hover:text-purple-800" title="Upload Lab Result">
+                        <i class="fas fa-upload"></i>
+                      </button>
+
+                      <!-- Quick Message Button -->
+                      <button onclick="openSendMessageModal('{{ patient.user_id }}', '{{ patient.userprofile.first_name|default:patient.username }} {{ patient.userprofile.last_name|default:"" }}')" 
+                              class="p-1 text-indigo-600 hover:text-indigo-800" title="Send Message">
+                        <i class="fas fa-envelope"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Lab Results -->
+      <section id="lab-results-section" class="space-y-6 mt-12">
+        <h2 class="text-2xl font-bold text-healthcare-blue">Lab Results</h2>
+
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div class="dashboard-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-500 mb-1">Total Lab Results</p>
+                <h3 class="text-2xl font-bold text-purple-600">{{ all_lab_results|length }}</h3>
+              </div>
+              <div class="bg-purple-100 p-3 rounded-lg">
+                <i class="fas fa-flask text-2xl text-purple-600"></i>
+              </div>
+            </div>
+          </div>
+          <div class="dashboard-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-500 mb-1">This Month</p>
+                <h3 class="text-2xl font-bold text-blue-600" id="labResultsThisMonth">0</h3>
+              </div>
+              <div class="bg-blue-100 p-3 rounded-lg">
+                <i class="fas fa-calendar text-2xl text-blue-600"></i>
+              </div>
+            </div>
+          </div>
+          <div class="dashboard-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-500 mb-1">Unique Patients</p>
+                <h3 class="text-2xl font-bold text-green-600" id="labResultsUniquePatients">0</h3>
+              </div>
+              <div class="bg-green-100 p-3 rounded-lg">
+                <i class="fas fa-users text-2xl text-green-600"></i>
+              </div>
+            </div>
+          </div>
+          <div class="dashboard-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-500 mb-1">Lab Types</p>
+                <h3 class="text-2xl font-bold text-orange-600" id="labResultsTypes">0</h3>
+              </div>
+              <div class="bg-orange-100 p-3 rounded-lg">
+                <i class="fas fa-vial text-2xl text-orange-600"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-card rounded-xl overflow-hidden">
+          <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-healthcare-blue">All Lab Results</h2>
+            <div class="flex space-x-4">
+              <button onclick="exportLabResults()" 
+                      class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+                <i class="fas fa-file-export"></i>
+                <span>Export CSV</span>
+              </button>
+              <button onclick="openUploadLabResultModal()" 
+                      class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2">
+                <i class="fas fa-upload"></i>
+                <span>Upload Lab Result</span>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Search and Filter Controls -->
+          <div class="p-6 border-b border-gray-200 bg-gray-50">
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Search Lab Results</label>
+              <input type="text" id="labResultSearch" placeholder="Search by patient name, file name, lab type, or uploaded by..." 
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Date From</label>
+                <input type="date" id="labResultDateFrom" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Date To</label>
+                <input type="date" id="labResultDateTo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Filter by Lab Type</label>
+                <select id="labResultTypeFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+                  <option value="">All Types</option>
+                  <option value="Blood Test">Blood Test</option>
+                  <option value="Urine Test">Urine Test</option>
+                  <option value="X-Ray">X-Ray</option>
+                  <option value="MRI">MRI</option>
+                  <option value="CT Scan">CT Scan</option>
+                  <option value="Ultrasound">Ultrasound</option>
+                  <option value="ECG">ECG</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+                <select id="labResultSortOrder" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+                  <option value="date-desc">Newest First</option>
+                  <option value="date-asc">Oldest First</option>
+                  <option value="type-asc">Lab Type (A-Z)</option>
+                  <option value="type-desc">Lab Type (Z-A)</option>
+                  <option value="patient-asc">Patient (A-Z)</option>
+                </select>
+              </div>
+              <div class="flex items-end">
+                <button onclick="clearLabResultFilters()" class="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                  <i class="fas fa-times mr-2"></i>Clear All
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="p-6">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left" id="labResultsTable">
+                <thead>
+                  <tr class="border-b border-gray-200">
+                    <th class="pb-3 font-semibold text-gray-600">ID</th>
+                    <th class="pb-3 font-semibold text-gray-600">Date</th>
+                    <th class="pb-3 font-semibold text-gray-600">Patient</th>
+                    <th class="pb-3 font-semibold text-gray-600">Lab Type</th>
+                    <th class="pb-3 font-semibold text-gray-600">File Name</th>
+                    <th class="pb-3 font-semibold text-gray-600">Uploaded By</th>
+                    <th class="pb-3 font-semibold text-gray-600">Notes</th>
+                    <th class="pb-3 font-semibold text-gray-600">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for lab_result in all_lab_results %}
+                  <tr class="border-b border-gray-100 lab-result-row" 
+                      data-date="{{ lab_result.upload_date|date:'Y-m-d' }}" 
+                      data-type="{{ lab_result.lab_type }}"
+                      data-patient="{% if lab_result.user.userprofile.first_name and lab_result.user.userprofile.last_name %}{{ lab_result.user.userprofile.first_name }} {{ lab_result.user.userprofile.last_name }}{% else %}{{ lab_result.user.username }}{% endif %}"
+                      data-filename="{{ lab_result.file_name }}"
+                      data-uploaded-by="{% if lab_result.uploaded_by %}{{ lab_result.uploaded_by.username }}{% else %}System{% endif %}"
+                      data-email="{{ lab_result.user.email }}"
+                      data-id="{{ lab_result.lab_result_id }}">
+                    <td class="py-3 text-gray-600">#{{ lab_result.lab_result_id }}</td>
+                    <td class="py-3 text-gray-600">{{ lab_result.upload_date|date:"Y-m-d H:i" }}</td>
+                    <td class="py-3">
+                      <div class="flex items-center">
+                        <div class="bg-healthcare-blue/10 w-8 h-8 rounded-full flex items-center justify-center mr-3">
+                          <i class="fas fa-user text-healthcare-blue"></i>
+                        </div>
+                        <div>
+                          <div class="font-medium">
+                            {% if lab_result.user.userprofile.first_name and lab_result.user.userprofile.last_name %}
+                              {{ lab_result.user.userprofile.first_name }} {{ lab_result.user.userprofile.last_name }}
+                            {% else %}
+                              {{ lab_result.user.username }}
+                            {% endif %}
+                          </div>
+                          <div class="text-sm text-gray-500">{{ lab_result.user.email }}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="py-3 text-gray-600">
+                      <span class="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                        {{ lab_result.lab_type }}
+                      </span>
+                    </td>
+                    <td class="py-3 text-gray-600">
+                      <div class="flex items-center">
+                        <i class="fas fa-file mr-2 text-gray-400"></i>
+                        <span class="truncate max-w-xs" title="{{ lab_result.file_name }}">{{ lab_result.file_name }}</span>
+                      </div>
+                    </td>
+                    <td class="py-3 text-gray-600">
+                      {% if lab_result.uploaded_by %}
+                        <span class="text-sm">{{ lab_result.uploaded_by.username }}</span>
+                      {% else %}
+                        <span class="text-sm text-gray-400">System</span>
+                      {% endif %}
+                    </td>
+                    <td class="py-3 text-gray-600">
+                      {% if lab_result.notes %}
+                        <button onclick="viewLabResultNotes('{{ lab_result.lab_result_id }}', '{{ lab_result.notes|escapejs }}')" 
+                                class="text-blue-600 hover:text-blue-800 text-sm">
+                          <i class="fas fa-eye mr-1"></i>View Notes
+                        </button>
+                      {% else %}
+                        <span class="text-gray-400 text-sm">-</span>
+                      {% endif %}
+                    </td>
+                    <td class="py-3">
+                      <div class="flex space-x-2">
+                        <a href="{% url 'admin_lab_result_download' lab_result.lab_result_id %}" 
+                           class="p-1 text-blue-600 hover:text-blue-800" title="Download" download>
+                          <i class="fas fa-download"></i>
+                        </a>
+                        <form method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this lab result?');">
+                          {% csrf_token %}
+                          <input type="hidden" name="action" value="delete_lab_result">
+                          <input type="hidden" name="lab_result_id" value="{{ lab_result.lab_result_id }}">
+                          <button type="submit" class="p-1 text-red-600 hover:text-red-800" title="Delete">
+                            <i class="fas fa-trash"></i>
+                          </button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr>
+                    <td colspan="8" class="py-8 text-center text-gray-500">
+                      <i class="fas fa-flask text-4xl mb-4"></i>
+                      <p>No lab results found.</p>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Booked Services -->
+      <section id="booked-services-section" class="space-y-6 mt-12">
+        <h2 class="text-2xl font-bold text-healthcare-blue">Booked Services</h2>
+
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div class="dashboard-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-500 mb-1">Total Bookings</p>
+                <h3 class="text-2xl font-bold text-orange-600">{{ booked_services_total|default:0 }}</h3>
+              </div>
+              <div class="bg-orange-100 p-3 rounded-lg">
+                <i class="fas fa-calendar-check text-2xl text-orange-600"></i>
+              </div>
+            </div>
+          </div>
+          <div class="dashboard-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-500 mb-1">Pending</p>
+                <h3 class="text-2xl font-bold text-yellow-600">{{ booked_services_pending|default:0 }}</h3>
+              </div>
+              <div class="bg-yellow-100 p-3 rounded-lg">
+                <i class="fas fa-clock text-2xl text-yellow-600"></i>
+              </div>
+            </div>
+          </div>
+          <div class="dashboard-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-500 mb-1">Confirmed</p>
+                <h3 class="text-2xl font-bold text-green-600">{{ booked_services_confirmed|default:0 }}</h3>
+              </div>
+              <div class="bg-green-100 p-3 rounded-lg">
+                <i class="fas fa-check-circle text-2xl text-green-600"></i>
+              </div>
+            </div>
+          </div>
+          <div class="dashboard-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-500 mb-1">Completed</p>
+                <h3 class="text-2xl font-bold text-blue-600">{{ booked_services_completed|default:0 }}</h3>
+              </div>
+              <div class="bg-blue-100 p-3 rounded-lg">
+                <i class="fas fa-check-double text-2xl text-blue-600"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-card rounded-xl overflow-hidden">
+          <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-healthcare-blue">All Booked Services</h2>
+            <div class="flex space-x-4">
+              <button onclick="openAddBookedServiceModal()" 
+                      class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2">
+                <i class="fas fa-plus"></i>
+                <span>Add Booking</span>
+              </button>
+              <button onclick="exportBookedServices()" 
+                      class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+                <i class="fas fa-file-export"></i>
+                <span>Export CSV</span>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Search and Filter Controls -->
+          <div class="p-6 border-b border-gray-200 bg-gray-50">
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Search Booked Services</label>
+              <input type="text" id="bookedServiceSearch" placeholder="Search by patient name, service name, email, or notes..." 
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Date From</label>
+                <input type="date" id="bookedServiceDateFrom" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Date To</label>
+                <input type="date" id="bookedServiceDateTo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Filter by Status</label>
+                <select id="bookedServiceStatusFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+                  <option value="">All Statuses</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Confirmed">Confirmed</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Cancelled">Cancelled</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+                <select id="bookedServiceSortOrder" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+                  <option value="date-desc">Newest First</option>
+                  <option value="date-asc">Oldest First</option>
+                  <option value="status-asc">Status (A-Z)</option>
+                  <option value="service-asc">Service (A-Z)</option>
+                  <option value="patient-asc">Patient (A-Z)</option>
+                </select>
+              </div>
+              <div class="flex items-end">
+                <button onclick="clearBookedServiceFilters()" class="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                  <i class="fas fa-times mr-2"></i>Clear All
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="p-6">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left" id="bookedServicesTable">
+                <thead>
+                  <tr class="border-b border-gray-200">
+                    <th class="pb-3 font-semibold text-gray-600">ID</th>
+                    <th class="pb-3 font-semibold text-gray-600">Date</th>
+                    <th class="pb-3 font-semibold text-gray-600">Time</th>
+                    <th class="pb-3 font-semibold text-gray-600">Patient</th>
+                    <th class="pb-3 font-semibold text-gray-600">Service Name</th>
+                    <th class="pb-3 font-semibold text-gray-600">Status</th>
+                    <th class="pb-3 font-semibold text-gray-600">Notes</th>
+                    <th class="pb-3 font-semibold text-gray-600">Created At</th>
+                    <th class="pb-3 font-semibold text-gray-600">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for booking in all_booked_services %}
+                  <tr class="border-b border-gray-100 booked-service-row" 
+                      data-date="{{ booking.booking_date|date:'Y-m-d' }}" 
+                      data-status="{{ booking.status }}"
+                      data-booking-id="{{ booking.booking_id }}"
+                      data-patient="{% if booking.user.userprofile.first_name and booking.user.userprofile.last_name %}{{ booking.user.userprofile.first_name }} {{ booking.user.userprofile.last_name }}{% else %}{{ booking.user.username }}{% endif %}"
+                      data-service="{{ booking.service_name }}"
+                      data-email="{{ booking.user.email }}"
+                      data-notes="{{ booking.notes|default:'' }}">
+                    <td class="py-3 text-gray-600">#{{ booking.booking_id }}</td>
+                    <td class="py-3 text-gray-600">{{ booking.booking_date|date:"Y-m-d" }}</td>
+                    <td class="py-3 text-gray-600">{{ booking.booking_time|time:"H:i" }}</td>
+                    <td class="py-3">
+                      <div class="flex items-center">
+                        <div class="bg-healthcare-blue/10 w-8 h-8 rounded-full flex items-center justify-center mr-3">
+                          <i class="fas fa-user text-healthcare-blue"></i>
+                        </div>
+                        <div>
+                          <div class="font-medium">
+                            {% if booking.user.userprofile.first_name and booking.user.userprofile.last_name %}
+                              {{ booking.user.userprofile.first_name }} {{ booking.user.userprofile.last_name }}
+                            {% else %}
+                              {{ booking.user.username }}
+                            {% endif %}
+                          </div>
+                          <div class="text-sm text-gray-500">{{ booking.user.email }}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="py-3 text-gray-600">
+                      <span class="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                        {{ booking.service_name }}
+                      </span>
+                    </td>
+                    <td class="py-3">
+                      <span class="px-2 py-1 rounded-full text-xs font-medium 
+                        {% if booking.status == 'Confirmed' %}bg-green-100 text-green-700
+                        {% elif booking.status == 'Completed' %}bg-blue-100 text-blue-700
+                        {% elif booking.status == 'Cancelled' %}bg-red-100 text-red-700
+                        {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                        {{ booking.status }}
+                      </span>
+                    </td>
+                    <td class="py-3 text-gray-600">
+                      {% if booking.notes %}
+                        <span class="text-sm">{{ booking.notes|truncatewords:10 }}</span>
+                      {% else %}
+                        <span class="text-gray-400 text-sm">-</span>
+                      {% endif %}
+                    </td>
+                    <td class="py-3 text-gray-600">{{ booking.created_at|date:"Y-m-d H:i" }}</td>
+                    <td class="py-3">
+                      <div class="flex space-x-2">
+                        {% if booking.status == 'Pending' %}
+                        <button onclick="updateBookedServiceStatus({{ booking.booking_id }}, 'Confirmed')" 
+                                class="p-1 text-green-600 hover:text-green-800" title="Confirm">
+                          <i class="fas fa-check"></i>
+                        </button>
+                        {% endif %}
+                        {% if booking.status != 'Completed' and booking.status != 'Cancelled' %}
+                        <button onclick="updateBookedServiceStatus({{ booking.booking_id }}, 'Completed')" 
+                                class="p-1 text-blue-600 hover:text-blue-800" title="Mark Complete">
+                          <i class="fas fa-check-double"></i>
+                        </button>
+                        {% endif %}
+                        <button onclick="openEditBookedServiceModal({{ booking.booking_id }}, '{{ booking.service_name|escapejs }}', '{{ booking.booking_date|date:"Y-m-d" }}', '{{ booking.booking_time|time:"H:i" }}', '{{ booking.status|escapejs }}', '{{ booking.notes|default:""|escapejs }}')" 
+                                class="p-1 text-yellow-600 hover:text-yellow-800" title="Edit">
+                          <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteBookedService({{ booking.booking_id }})" 
+                                class="p-1 text-red-600 hover:text-red-800" title="Delete">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr>
+                    <td colspan="9" class="py-8 text-center text-gray-500">
+                      <i class="fas fa-calendar-check text-4xl mb-4"></i>
+                      <p>No booked services found.</p>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Patient Prescriptions Section -->
+      <section id="patient-prescriptions-section" class="space-y-6 mt-12 hidden">
+        <h2 class="text-2xl font-bold text-healthcare-blue">Patient Prescriptions</h2>
+
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div class="dashboard-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-500 mb-1">Total Prescriptions</p>
+                <h3 class="text-2xl font-bold text-purple-600" id="totalPrescriptions">0</h3>
+              </div>
+              <div class="bg-purple-100 p-3 rounded-lg">
+                <i class="fas fa-prescription-bottle-medical text-2xl text-purple-600"></i>
+              </div>
+            </div>
+          </div>
+          <div class="dashboard-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-500 mb-1">Draft</p>
+                <h3 class="text-2xl font-bold text-yellow-600" id="draftPrescriptions">0</h3>
+              </div>
+              <div class="bg-yellow-100 p-3 rounded-lg">
+                <i class="fas fa-file-alt text-2xl text-yellow-600"></i>
+              </div>
+            </div>
+          </div>
+          <div class="dashboard-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-500 mb-1">Signed</p>
+                <h3 class="text-2xl font-bold text-green-600" id="signedPrescriptions">0</h3>
+              </div>
+              <div class="bg-green-100 p-3 rounded-lg">
+                <i class="fas fa-check-circle text-2xl text-green-600"></i>
+              </div>
+            </div>
+          </div>
+          <div class="dashboard-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-500 mb-1">With Files</p>
+                <h3 class="text-2xl font-bold text-blue-600" id="withFilesPrescriptions">0</h3>
+              </div>
+              <div class="bg-blue-100 p-3 rounded-lg">
+                <i class="fas fa-file-download text-2xl text-blue-600"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Prescriptions Table -->
+        <div class="dashboard-card rounded-xl overflow-hidden">
+          <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-healthcare-blue">All Prescriptions</h2>
+            <div class="flex space-x-4">
+              <button onclick="refreshPrescriptions()" 
+                      class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+                <i class="fas fa-sync"></i>
+                <span>Refresh</span>
+              </button>
+              <button onclick="exportPrescriptions()" 
+                      class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2">
+                <i class="fas fa-file-csv"></i>
+                <span>Export CSV</span>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Search and Filter Controls -->
+          <div class="p-6 border-b border-gray-200 bg-gray-50">
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Search Prescriptions</label>
+              <input type="text" id="prescriptionSearch" placeholder="Search by patient name, prescription number, doctor name, or medicines..." 
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Date From</label>
+                <input type="date" id="prescriptionDateFrom" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Date To</label>
+                <input type="date" id="prescriptionDateTo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Filter by Status</label>
+                <select id="prescriptionStatusFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+                  <option value="">All Statuses</option>
+                  <option value="draft">Draft</option>
+                  <option value="signed">Signed</option>
+                  <option value="printed">Printed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Has File</label>
+                <select id="prescriptionFileFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+                  <option value="">All</option>
+                  <option value="with_file">With File</option>
+                  <option value="no_file">No File</option>
+                </select>
+              </div>
+              <div class="flex items-end">
+                <button onclick="clearPrescriptionFilters()" class="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                  Clear Filters
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div class="overflow-x-auto">
+            <table class="w-full" id="prescriptionsTable">
+              <thead class="bg-gray-100 border-b border-gray-200">
+                <tr>
+                  <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Rx #</th>
+                  <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Patient Name</th>
+                  <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Doctor</th>
+                  <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Date</th>
+                  <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Status</th>
+                  <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">File</th>
+                  <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Medicines</th>
+                  <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="prescriptionsTableBody" class="divide-y divide-gray-200">
+                <tr>
+                  <td colspan="8" class="px-6 py-8 text-center text-gray-500">
+                    <i class="fas fa-spinner fa-spin"></i> Loading prescriptions...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- View Patient Details Modal -->
+  <div id="viewPatientDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl p-8 max-w-2xl w-full shadow-2xl" style="max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="flex justify-between items-center mb-6 pb-4 border-b-2 border-healthcare-light-blue">
+        <h3 class="text-2xl font-bold text-healthcare-blue flex items-center">
+          <i class="fas fa-user-circle mr-3 text-healthcare-light-blue"></i>Patient Details
+        </h3>
+        <button onclick="closeViewPatientDetailsModal()" class="text-gray-400 hover:text-gray-600 text-xl transition">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="flex-1 overflow-y-auto pr-2" style="min-height: 0;">
+        <div class="space-y-4">
+          <!-- Personal Information -->
+          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg">
+            <h4 class="text-sm font-bold text-healthcare-blue mb-3 flex items-center">
+              <i class="fas fa-id-card mr-2"></i>Personal Information
+            </h4>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="text-xs font-semibold text-gray-600 uppercase">First Name</label>
+                <p id="view_first_name" class="text-gray-800 mt-1 font-medium">-</p>
+              </div>
+              <div>
+                <label class="text-xs font-semibold text-gray-600 uppercase">Last Name</label>
+                <p id="view_last_name" class="text-gray-800 mt-1 font-medium">-</p>
+              </div>
+              <div>
+                <label class="text-xs font-semibold text-gray-600 uppercase">Gender</label>
+                <p id="view_sex" class="text-gray-800 mt-1 font-medium">-</p>
+              </div>
+              <div>
+                <label class="text-xs font-semibold text-gray-600 uppercase">Status</label>
+                <p id="view_status" class="text-gray-800 mt-1 font-medium"><span id="view_status_badge" class="px-2 py-1 rounded-full text-xs font-bold">-</span></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Contact Information -->
+          <div class="bg-gradient-to-r from-emerald-50 to-teal-50 p-4 rounded-lg">
+            <h4 class="text-sm font-bold text-healthcare-blue mb-3 flex items-center">
+              <i class="fas fa-phone mr-2"></i>Contact Information
+            </h4>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="text-xs font-semibold text-gray-600 uppercase">Contact Number</label>
+                <p id="view_contact" class="text-gray-800 mt-1 font-medium">-</p>
+              </div>
+              <div>
+                <label class="text-xs font-semibold text-gray-600 uppercase">Joined Date</label>
+                <p id="view_joined" class="text-gray-800 mt-1 font-medium">-</p>
+              </div>
+            </div>
+            <div class="mt-3">
+              <label class="text-xs font-semibold text-gray-600 uppercase block mb-1">Address</label>
+              <p id="view_address" class="text-gray-800 font-medium text-sm line-clamp-2">-</p>
+            </div>
+          </div>
+
+          <!-- Statistics -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-gradient-to-br from-blue-500 to-blue-600 p-4 rounded-lg text-white shadow-lg">
+              <div class="text-3xl font-bold" id="view_appointments">0</div>
+              <div class="text-sm text-blue-100 mt-1"><i class="fas fa-calendar-check mr-1"></i>Appointments</div>
+            </div>
+            <div class="bg-gradient-to-br from-green-500 to-green-600 p-4 rounded-lg text-white shadow-lg">
+              <div class="text-3xl font-bold" id="view_services">0</div>
+              <div class="text-sm text-green-100 mt-1"><i class="fas fa-tasks mr-1"></i>Services Booked</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
+        <button onclick="closeViewPatientDetailsModal()" 
+                class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Patient Modal -->
+  <div id="editPatientModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-8 max-w-md w-full">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-bold text-healthcare-blue">Edit Patient</h3>
+        <button onclick="closeEditPatientModal()" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <form method="POST" class="space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="edit">
+        <input type="hidden" name="patient_id" id="edit_patient_id">
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+          <input type="text" name="first_name" id="edit_first_name" required
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+          <input type="text" name="last_name" id="edit_last_name" required
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Sex</label>
+          <select name="sex" id="edit_sex" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+            <option value="">Select Sex</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <select name="status" id="edit_status" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+
+        <div class="flex justify-end space-x-3 mt-6">
+          <button type="button" onclick="closeEditPatientModal()"
+                  class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+            Cancel
+          </button>
+          <button type="submit"
+                  class="px-4 py-2 bg-healthcare-blue text-white rounded-lg hover:bg-blue-700">
+            Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Patient Modal -->
+  <div id="addPatientModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-8 max-w-md w-full">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-bold text-healthcare-blue">Add New Patient</h3>
+        <button onclick="closeAddPatientModal()" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <form method="POST" class="space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add">
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+          <input type="text" name="first_name" required
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+          <input type="text" name="last_name" required
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Sex</label>
+          <select name="sex" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+            <option value="">Select Sex</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <select name="status" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+            <option value="">Select Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+
+        <div class="flex justify-end space-x-3 mt-6">
+          <button type="button" onclick="closeAddPatientModal()"
+                  class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+            Cancel
+          </button>
+          <button type="submit"
+                  class="px-4 py-2 bg-healthcare-blue text-white rounded-lg hover:bg-blue-700">
+            Add Patient
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Patient Modal -->
+  <div id="addPatientModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-8 max-w-md w-full">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-bold text-healthcare-blue">Add New Patient</h3>
+        <button onclick="closeAddPatientModal()" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <form method="POST" class="space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add">
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+          <input type="text" name="first_name" required
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+          <input type="text" name="last_name" required
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Sex</label>
+          <select name="sex" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+            <option value="">Select Sex</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <select name="status" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+            <option value="">Select Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Age</label>
+          <input type="number" name="age" required min="0" max="150"
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+        </div>
+
+        <div class="flex justify-end space-x-3 mt-6">
+          <button type="button" onclick="closeAddPatientModal()"
+                  class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+            Cancel
+          </button>
+          <button type="submit"
+                  class="px-4 py-2 bg-healthcare-blue text-white rounded-lg hover:bg-blue-700">
+            Add Patient
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Upload Lab Result Modal -->
+  <div id="uploadLabResultModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-8 max-w-md w-full">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-bold text-healthcare-blue">Upload Lab Result</h3>
+        <button onclick="closeUploadLabResultModal()" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <form method="POST" enctype="multipart/form-data" class="space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="upload_lab_result">
+        <input type="hidden" name="patient_id" id="upload_patient_id">
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Patient</label>
+          <input type="text" id="upload_patient_name" list="patientsDatalist" placeholder="Type to search patient..."
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+          <datalist id="patientsDatalist">
+            {% for p in patients %}
+            <option data-id="{{ p.user_id }}" value="{% if p.userprofile.first_name and p.userprofile.last_name %}{{ p.userprofile.first_name }} {{ p.userprofile.last_name }}{% else %}{{ p.username }}{% endif %}">
+            {% endfor %}
+          </datalist>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Lab Type</label>
+          <select name="lab_type" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+            <option value="">Select Lab Type</option>
+            <option value="Blood Test">Blood Test</option>
+            <option value="Urine Test">Urine Test</option>
+            <option value="X-Ray">X-Ray</option>
+            <option value="MRI">MRI</option>
+            <option value="CT Scan">CT Scan</option>
+            <option value="Ultrasound">Ultrasound</option>
+            <option value="ECG">ECG</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Lab Result File</label>
+          <input type="file" name="lab_file" required accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+          <p class="text-xs text-gray-500 mt-1">Accepted formats: PDF, JPG, PNG, DOC, DOCX</p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
+          <textarea name="notes" rows="3"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue"
+                    placeholder="Add any additional notes about this lab result..."></textarea>
+        </div>
+
+        <div class="flex justify-end space-x-3 mt-6">
+          <button type="button" onclick="closeUploadLabResultModal()"
+                  class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+            Cancel
+          </button>
+          <button type="submit"
+                  class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+            Upload Result
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Lab Result Notes Modal -->
+  <div id="labResultNotesModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-8 max-w-md w-full">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-bold text-healthcare-blue">Lab Result Notes</h3>
+        <button onclick="closeLabResultNotesModal()" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+          <div id="labResultNotesContent" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 min-h-32">
+            <!-- Notes content will be inserted here -->
+          </div>
+        </div>
+        <div class="flex justify-end space-x-3 mt-6">
+          <button type="button" onclick="closeLabResultNotesModal()"
+                  class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Booked Service Modal -->
+  <div id="addBookedServiceModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl max-w-2xl w-full shadow-2xl" style="max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="flex justify-between items-center mb-6 p-8 pb-4 border-b-2 border-healthcare-light-blue bg-gradient-to-r from-blue-50 to-indigo-50">
+        <h3 class="text-2xl font-bold text-healthcare-blue flex items-center">
+          <i class="fas fa-plus-circle mr-3 text-healthcare-light-blue"></i>Add Service Booking
+        </h3>
+        <button onclick="closeAddBookedServiceModal()" class="text-gray-400 hover:text-gray-600 text-xl transition">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <form method="POST" class="flex-1 overflow-y-auto p-8 space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_booked_service">
+        
+        <div>
+          <label class="block text-sm font-bold text-gray-700 mb-2 flex items-center">
+            <i class="fas fa-user mr-2 text-healthcare-blue"></i>Patient Name
+          </label>
+          <input type="text" id="add_booking_patient_name" list="addBookingPatientsDatalist" placeholder="Type patient name..." required
+                 class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-healthcare-blue transition">
+          <input type="hidden" name="patient_id" id="add_booking_patient_id">
+          <datalist id="addBookingPatientsDatalist">
+            {% for p in patients %}
+            <option data-id="{{ p.user_id }}" value="{% if p.userprofile.first_name and p.userprofile.last_name %}{{ p.userprofile.first_name }} {{ p.userprofile.last_name }}{% else %}{{ p.username }}{% endif %}">
+            {% endfor %}
+          </datalist>
+        </div>
+
+        <div>
+          <label class="block text-sm font-bold text-gray-700 mb-2 flex items-center">
+            <i class="fas fa-stethoscope mr-2 text-healthcare-blue"></i>Service Name (Searchable)
+          </label>
+          <div class="relative">
+            <input type="text" id="add_service_search" placeholder="Search or select service..." 
+                   class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-healthcare-blue transition"
+                   style="background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23999%22 stroke-width=%222%22><path d=%22M10 18a8 8 0 1 0-8-8m0 0l-3-3m3 3l3-3%22/></svg>'); background-repeat: no-repeat; background-position: right 8px center; background-size: 20px; padding-right: 36px;">
+            <div id="serviceDropdown" class="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg mt-1 max-h-48 overflow-y-auto z-10 hidden shadow-lg">
+              <!-- Services will be populated here -->
+            </div>
+          </div>
+          <input type="hidden" name="service_name" id="add_service_name" required>
+          <p class="text-xs text-gray-500 mt-1">💡 Tip: Type to search available lab services</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-bold text-gray-700 mb-2 flex items-center">
+              <i class="fas fa-calendar mr-2 text-healthcare-blue"></i>Booking Date
+            </label>
+            <input type="date" name="booking_date" id="add_booking_date" required
+                   class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-healthcare-blue transition">
+          </div>
+
+          <div>
+            <label class="block text-sm font-bold text-gray-700 mb-2 flex items-center">
+              <i class="fas fa-clock mr-2 text-healthcare-blue"></i>Booking Time
+            </label>
+            <input type="time" name="booking_time" id="add_booking_time" required
+                   class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-healthcare-blue transition">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-bold text-gray-700 mb-2 flex items-center">
+            <i class="fas fa-flag mr-2 text-healthcare-blue"></i>Status
+          </label>
+          <select name="status" id="add_booking_status" required
+                  class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-healthcare-blue transition">
+            <option value="Pending" selected>Pending</option>
+            <option value="Confirmed">Confirmed</option>
+            <option value="Completed">Completed</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-bold text-gray-700 mb-2 flex items-center">
+            <i class="fas fa-sticky-note mr-2 text-healthcare-blue"></i>Notes (Optional)
+          </label>
+          <textarea name="notes" id="add_booking_notes" rows="2"
+                    class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-healthcare-blue transition resize-none"
+                    placeholder="Add any additional notes..."></textarea>
+        </div>
+
+        <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
+          <button type="button" onclick="closeAddBookedServiceModal()"
+                  class="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium">
+            Cancel
+          </button>
+          <button type="submit"
+                  class="px-6 py-2 bg-gradient-to-r from-healthcare-blue to-healthcare-light-blue text-white rounded-lg hover:shadow-lg transition font-bold">
+            <i class="fas fa-check mr-2"></i>Add Booking
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Booked Service Modal -->
+  <div id="editBookedServiceModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-8 max-w-md w-full max-h-96 overflow-y-auto">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-bold text-healthcare-blue">Edit Booking</h3>
+        <button onclick="closeEditBookedServiceModal()" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <form class="space-y-4">
+        <input type="hidden" name="booking_id" id="edit_booking_id">
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Service Name</label>
+          <input type="text" name="service_name" id="edit_service_name" required
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Booking Date</label>
+          <input type="date" name="booking_date" id="edit_booking_date" required
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Booking Time</label>
+          <input type="time" name="booking_time" id="edit_booking_time" required
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <select name="status" id="edit_booking_status" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+            <option value="Pending">Pending</option>
+            <option value="Confirmed">Confirmed</option>
+            <option value="Completed">Completed</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
+          <textarea name="notes" id="edit_booking_notes" rows="3"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue"
+                    placeholder="Add notes about this booking..."></textarea>
+        </div>
+
+        <div class="flex justify-end space-x-3 mt-6">
+          <button type="button" onclick="closeEditBookedServiceModal()"
+                  class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+            Cancel
+          </button>
+          <button type="button" onclick="saveBookedService()"
+                  class="px-4 py-2 bg-healthcare-blue text-white rounded-lg hover:bg-blue-700">
+            Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const input = document.getElementById('patientsLiveSearch');
+      if (!input) return;
+      input.addEventListener('input', () => {
+        const term = input.value.toLowerCase();
+        document.querySelectorAll('#patient-records-section table tbody tr').forEach(row => {
+          const text = row.textContent.toLowerCase();
+          row.style.display = text.includes(term) ? '' : 'none';
+        });
+      });
+    })();
+
+    function openAddPatientModal() {
+      const modal = document.getElementById('addPatientModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+
+    function closeAddPatientModal() {
+      const modal = document.getElementById('addPatientModal');
+      if (modal) {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+      }
+    }
+
+    function openEditPatientModal(id, firstName, lastName, sex, status) {
+      const modal = document.getElementById('editPatientModal');
+      if (!modal) return;
+      document.getElementById('edit_patient_id').value = id;
+      document.getElementById('edit_first_name').value = firstName || '';
+      document.getElementById('edit_last_name').value = lastName || '';
+      document.getElementById('edit_sex').value = sex || '';
+      document.getElementById('edit_status').value = (status || 'active').toLowerCase();
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeEditPatientModal() {
+      const modal = document.getElementById('editPatientModal');
+      if (modal) {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+      }
+    }
+
+    function openViewPatientDetailsModal(patientId, firstName, lastName, sex, status, contact, address, joinedDate) {
+      document.getElementById('view_first_name').textContent = firstName || '-';
+      document.getElementById('view_last_name').textContent = lastName || '-';
+      document.getElementById('view_sex').textContent = sex ? sex.charAt(0).toUpperCase() + sex.slice(1) : '-';
+      
+      // Format status with badge styling
+      const statusText = status ? status.charAt(0).toUpperCase() + status.slice(1) : '-';
+      const statusBadge = document.getElementById('view_status_badge');
+      if (statusBadge) {
+        statusBadge.textContent = statusText;
+        if (status && status.toLowerCase() === 'active') {
+          statusBadge.className = 'px-2 py-1 rounded-full text-xs font-bold bg-green-200 text-green-800';
+        } else {
+          statusBadge.className = 'px-2 py-1 rounded-full text-xs font-bold bg-red-200 text-red-800';
+        }
+      }
+      
+      document.getElementById('view_contact').textContent = contact || '-';
+      document.getElementById('view_address').textContent = address || '-';
+      document.getElementById('view_joined').textContent = joinedDate || '-';
+      
+      // Fetch appointment and services count
+      fetch(`/admin/api/patient-stats/${patientId}/`)
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('view_appointments').textContent = data.appointments_count || 0;
+          document.getElementById('view_services').textContent = data.services_count || 0;
+        })
+        .catch(error => {
+          console.log('Error fetching stats:', error);
+          document.getElementById('view_appointments').textContent = 0;
+          document.getElementById('view_services').textContent = 0;
+        });
+      
+      const modal = document.getElementById('viewPatientDetailsModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+
+    function closeViewPatientDetailsModal() {
+      const modal = document.getElementById('viewPatientDetailsModal');
+      if (modal) {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+      }
+    }
+
+    function openUploadLabResultModal(patientId = null, patientName = null) {
+      const idField = document.getElementById('upload_patient_id');
+      const nameField = document.getElementById('upload_patient_name');
+      if (idField) idField.value = patientId || '';
+      if (nameField) nameField.value = patientName || '';
+      const modal = document.getElementById('uploadLabResultModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+
+    function closeUploadLabResultModal() {
+      const modal = document.getElementById('uploadLabResultModal');
+      if (modal) {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+      }
+    }
+
+    (function() {
+      const input = document.getElementById('upload_patient_name');
+      const hidden = document.getElementById('upload_patient_id');
+      if (!input || !hidden) return;
+      input.addEventListener('change', () => {
+        const val = input.value.toLowerCase();
+        const options = document.getElementById('patientsDatalist')?.children || [];
+        let matched = false;
+        for (let i = 0; i < options.length; i++) {
+          const opt = options[i];
+          if ((opt.value || '').toLowerCase() === val) {
+            hidden.value = opt.getAttribute('data-id') || '';
+            matched = true;
+            break;
+          }
+        }
+        if (!matched) {
+          hidden.value = '';
+        }
+      });
+    })();
+
+    function viewLabResultNotes(resultId, notes) {
+      const content = document.getElementById('labResultNotesContent');
+      if (content) {
+        content.textContent = notes || '';
+      }
+      const modal = document.getElementById('labResultNotesModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+
+    function closeLabResultNotesModal() {
+      const modal = document.getElementById('labResultNotesModal');
+      if (modal) {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+      }
+    }
+
+    function openEditLabResultModal(labResultId, labType, notes) {
+      document.getElementById('edit_lab_result_id').value = labResultId;
+      document.getElementById('edit_lab_result_type').value = labType || '';
+      document.getElementById('edit_lab_result_notes').value = notes || '';
+      const modal = document.getElementById('editLabResultModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+
+    function closeEditLabResultModal() {
+      const modal = document.getElementById('editLabResultModal');
+      if (modal) {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+      }
+    }
+
+    function openAddBookedServiceModal() {
+      const idField = document.getElementById('add_booking_patient_id');
+      const nameField = document.getElementById('add_booking_patient_name');
+      if (idField) idField.value = '';
+      if (nameField) nameField.value = '';
+      document.getElementById('add_service_name').value = '';
+      document.getElementById('add_service_search').value = '';
+      document.getElementById('add_booking_date').value = '';
+      document.getElementById('add_booking_time').value = '';
+      document.getElementById('add_booking_status').value = 'Pending';
+      document.getElementById('add_booking_notes').value = '';
+      
+      // Initialize service dropdown
+      initializeServiceDropdown();
+      
+      const modal = document.getElementById('addBookedServiceModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+
+    function closeAddBookedServiceModal() {
+      const modal = document.getElementById('addBookedServiceModal');
+      if (modal) {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+      }
+    }
+
+    // Lab services list from homepage
+    const LAB_SERVICES = [
+      // Clinical Chemistry - In-House
+      'FBS/RBS', 'Lipid Profile', 'Total Cholesterol', 'Triglycerides', 'HDL/LDL', 'Creatinine', 'BUN', 'BUA', 'AST/SGOT', 'ALT/SGPT',
+      // Clinical Chemistry - Send-out (Electrolytes)
+      'Sodium', 'Potassium', 'Chloride', 'Total Calcium', 'Ionized Calcium', 'Magnesium', 'Inorganic Phosphorus', 'HbA1c', 'OGTT 75g',
+      // Clinical Chemistry - Send-out (Others)
+      'Albumin', 'Bilirubin Total (B1+B2)', 'LDH', 'Lipase', 'Total Protein', 'TPAG', 'Total CPK', 'CK-MB', 'CK-MM', 'Troponin I', 'Troponin T', 'Total Iron', 'TIBC + Total Iron', 'Ferritin', 'Lithium', 'Ammonia', 'ALP', 'Amylase', 'GGT',
+      // Hematology - In-House
+      'CBC', 'CBC with Platelet Count', 'Bleeding Time', 'Clotting Time', 'ABO/Rh Typing', 'Reticulocyte Count',
+      // Hematology - Send-out
+      'PBS', 'ESR', 'Malarial Smear', 'LE Screening', 'Protime (PT)', 'APTT', 'RH Factor',
+      // Clinical Microscopy - In-House
+      'Urinalysis', 'Fecalysis', 'PT Serum', 'PT Urine', 'Occult Blood (FOBT)',
+      // Clinical Microscopy - Send-out
+      'Microalbumin', '24 Hour Urine', 'Creatinine Total (Urine)', 'Creatinine Clearance', 'Protein (Urine)', 'Na/K/Ca/Cl/Mg (each)', 'Uric Acid (Urine)',
+      // Bacteriology (Send-out)
+      'C/S', 'Gram Stain', 'Culture Only', 'KOH',
+      // Immuno/Sero - In-House
+      'HBsAg (Screening)', 'HAV IgM', 'VDRL/RPR', 'HIV (Screening)', 'H. pylori',
+      // Immuno/Sero - Send-out
+      'Dengue NS1', 'Dengue IgG', 'Dengue IgM', 'PSA', 'HIV w/ Titer', 'TPHA Rapid Test', 'TPHA w/ Titer', 'Widal Test', 'Thyphidot', 'ASO Latex', 'CRP', 'RA RF', 'HBsAg w/ Titer', 'HBsAb', 'Anti-HBS', 'Anti-HBe', 'Anti-HBc IgM', 'Anti-HBc IgG', 'Anti-HAV IgG', 'Anti-HCV', 'C3', 'VDRL/RPR Titer', 'Anti-W Titer', 'Leptospiral IgM/G', 'Rubella IgM', 'Rubella IgG', 'CMV IgM', 'CMV IgG', 'Toxoplasma IgM', 'Toxoplasma IgG', 'HSV 1&2 IgM', 'HSV 1&2 IgG', 'Varicella IgM', 'Varicella IgG', 'TORCH IgM/IgG', 'Insulin', 'Vitamin D 25OH', 'Mumps IgG', 'Rubeola IgG',
+      // Tumor Markers (Send-out)
+      'AFP', 'CEA', 'B-HCG', 'CA-125', 'CA-15.3', 'CA-19.9',
+      // Hormones (Send-out)
+      'FSH/LH', 'Prolactin', 'Estrogen', 'Progesterone', 'Testosterone', 'Cortisol',
+      // Thyroid Function (Send-out)
+      'TSH', 'T3', 'T4', 'FT3', 'FT4', 'Thyroglobulin',
+      // Histopathology (Send-out)
+      'PAP Smear',
+      // Drug Test (In-House)
+      'Drug Test',
+      // Pre-Employment Package
+      'PACKAGE A (BASIC 5)', 'PACKAGE B (BASIC 5 + ECG)', 'PACKAGE C (BASIC 5 + ECG + PAPSMEAR)', 'PACKAGE D (BASIC 5 + DRUG TEST)', 'PACKAGE E (BASIC 5 + PREGNANCY TEST)', 'PACKAGE F (BASIC 5 + PREGNANCY + DRUG TEST)', 'PACKAGE G (BASIC 5 + HEPA B SCREENING)', 'PACKAGE H (BASIC 5 + HEPA B + DRUG TEST)', 'PACKAGE I (BASIC 5 + HEPA B + PREGNANCY)', 'PACKAGE J (BASIC 5 + HEPA B + PREGNANCY + DRUG TEST)', 'PACKAGE K (BASIC 5 + HEPA B + DRUG + ANTIGEN)', 'Food Handler', 'Non-Food Handler',
+      // Clinical Chemistry Package
+      'CHEM 5', 'CHEM 7', 'CHEM 8', 'CHEM 10', 'CHEM 12', 'CHEM 13',
+      // Routine Laboratory Package
+      'ROUTINE A', 'ROUTINE B', 'ROUTINE C',
+      // Pre-Natal Package
+      'PRE-NATAL A', 'PRE-NATAL B',
+      // Thyroid Function Package
+      'THYROID A', 'THYROID B',
+      // Kidney Function Package
+      'KIDNEY A', 'KIDNEY B', 'KIDNEY C', 'KIDNEY D',
+      // Liver Function Package
+      'LIVER A', 'LIVER B', 'LIVER C',
+      // Heart Check Package
+      'HEART CHECK',
+      // Hypertension Package
+      'HYPERT. A', 'HYPERT. B',
+      // Others Package
+      'STD SCRN.', 'BASIC HEALTH & DIABETES', 'DENGUE Package',
+      // X-Ray
+      'ABD UP/SUPPINE', 'Ankle AP/O or AP/L', 'Ankle Mortise/AP', 'Apiclordotic View', 'Arm AP/LAT', 'Cervical AP/LAT', 'Chest X-ray', 'Chest X-ray PA/LAT', 'Chest X-ray PA/O/LAT', 'Clavicle AP', 'Cocxic', 'Cranial AP/LAT', 'Elbow AP/LAT', 'Foot AP/O/LAT', 'Hand AP/O/LAT', 'Hand AP or AP/L', 'Knee AP/LAT', 'Leg AP/LAT', 'Lumbar AP/LAT', 'Pelvis', 'Shoulder AP', 'T-Cage', 'Thigh AP/LAT', 'Thoracic AP/LAT', 'Thoracolumbar AP/LAT', 'Wrist PA/LAT',
+      // Ultrasound
+      'Biophysical Profile Score (BPS)', 'Breast', 'Chest', 'Hepatobiliary Tract (HBT)', 'Inguinoscrotal', 'Kidney Urinary Bladder (KUB)', 'Liver', 'Lower Abdomen - FEMALE', 'Lower Abdomen - MALE', 'Neck CF', 'Pelvic', 'Prostate (TRS)', 'Right Lower Quadrant (RLQ)', 'Soft Tissue', 'Transvaginal (TVS)', 'Transrectal', 'Thyroid CF', 'Upper Abdomen', 'Whole Abdomen (WAB)',
+      // ECG
+      '12 LED ECG',
+      // Echo
+      '2D Echo with Doppler',
+      // Vaccines
+      'Hexaxim 6-in-1', 'Infanrix Hexa', 'Engerix Adult', 'Engerix Pedia', 'Genevac Adult', 'Genevac Pedia', 'Avaxim Pedia', 'Havrix Adult', 'Havrix Pedia', 'Mevac A - A&P', 'Hep A & B Twinrix', 'Prevnar PCV 13', 'PCV 15', 'Rotateq', 'Rotarix', 'M-Vac Measles', 'Teresivac', 'MMR III', 'Proquad', 'VZ Vax', 'Varivax', 'Menquadfi', 'Nimenrix', 'Typbar', 'Typhim', 'Gardasil', 'Gardasil Nano', 'Abhaytox Toxoid', 'Bett Toxoid', 'Chickenpox', 'Tdap', 'PPD Skin test'
+    ].sort();
+
+    function initializeServiceDropdown() {
+      const searchInput = document.getElementById('add_service_search');
+      const dropdown = document.getElementById('serviceDropdown');
+      const serviceNameHidden = document.getElementById('add_service_name');
+      
+      if (!searchInput || !dropdown) return;
+
+      // Show all services initially
+      function renderServices(filter = '') {
+        const filtered = LAB_SERVICES.filter(s => s.toLowerCase().includes(filter.toLowerCase()));
+        dropdown.innerHTML = '';
+        
+        if (filtered.length === 0) {
+          dropdown.innerHTML = '<div style="padding: 12px; text-align: center; color: #999;">No services found</div>';
+          return;
+        }
+
+        filtered.forEach(service => {
+          const item = document.createElement('div');
+          item.className = 'px-4 py-2 cursor-pointer hover:bg-blue-100 transition';
+          item.textContent = service;
+          item.onclick = () => {
+            searchInput.value = service;
+            serviceNameHidden.value = service;
+            dropdown.classList.add('hidden');
+          };
+          dropdown.appendChild(item);
+        });
+      }
+
+      // Event listeners
+      searchInput.addEventListener('focus', () => {
+        renderServices(searchInput.value);
+        dropdown.classList.remove('hidden');
+      });
+
+      searchInput.addEventListener('input', () => {
+        renderServices(searchInput.value);
+        dropdown.classList.remove('hidden');
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+          dropdown.classList.add('hidden');
+        }
+      });
+
+      // Hide dropdown when clicking outside
+      searchInput.addEventListener('blur', () => {
+        setTimeout(() => dropdown.classList.add('hidden'), 200);
+      });
+    }
+
+    (function() {
+      const input = document.getElementById('add_booking_patient_name');
+      const hidden = document.getElementById('add_booking_patient_id');
+      if (!input || !hidden) return;
+      input.addEventListener('change', () => {
+        const val = input.value.toLowerCase();
+        const options = document.getElementById('addBookingPatientsDatalist')?.children || [];
+        let matched = false;
+        for (let i = 0; i < options.length; i++) {
+          const opt = options[i];
+          if ((opt.value || '').toLowerCase() === val) {
+            hidden.value = opt.getAttribute('data-id') || '';
+            matched = true;
+            break;
+          }
+        }
+        if (!matched) {
+          hidden.value = '';
+        }
+      });
+    })();
+
+    function openEditBookedServiceModal(bookingId, serviceName, bookingDate, bookingTime, status, notes) {
+      document.getElementById('edit_booking_id').value = bookingId;
+      document.getElementById('edit_service_name').value = serviceName || '';
+      document.getElementById('edit_booking_date').value = bookingDate || '';
+      document.getElementById('edit_booking_time').value = bookingTime || '';
+      document.getElementById('edit_booking_status').value = status || 'Pending';
+      document.getElementById('edit_booking_notes').value = notes || '';
+      const modal = document.getElementById('editBookedServiceModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+
+    function closeEditBookedServiceModal() {
+      const modal = document.getElementById('editBookedServiceModal');
+      if (modal) {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+      }
+    }
+
+    async function saveBookedService() {
+      const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+      if (!csrftoken) return;
+      const bookingId = document.getElementById('edit_booking_id').value;
+      const payload = {
+        booking_id: bookingId,
+        service_name: document.getElementById('edit_service_name').value,
+        booking_date: document.getElementById('edit_booking_date').value,
+        booking_time: document.getElementById('edit_booking_time').value,
+        status: document.getElementById('edit_booking_status').value,
+        notes: document.getElementById('edit_booking_notes').value
+      };
+
+      try {
+        const response = await fetch('/api/update-booked-service/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          alert(data.message || 'Booked service updated successfully');
+          closeEditBookedServiceModal();
+          window.location.reload();
+        } else {
+          throw new Error(data.error || data.message || 'Failed to update booked service');
+        }
+      } catch (error) {
+        alert(error.message);
+      }
+    }
+
+    async function updateBookedServiceStatus(bookingId, newStatus) {
+      if (!confirm(`Are you sure you want to update this booking status to ${newStatus}?`)) {
+        return;
+      }
+
+      try {
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+        if (!csrftoken) throw new Error('Missing CSRF token');
+        const response = await fetch('/api/update-booked-service/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+          },
+          body: JSON.stringify({
+            booking_id: bookingId,
+            status: newStatus
+          })
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          alert(data.message || 'Booking status updated successfully');
+          window.location.reload();
+        } else {
+          throw new Error(data.error || data.message || 'Failed to update booking status');
+        }
+      } catch (error) {
+        alert(error.message);
+      }
+    }
+
+    async function deleteBookedService(bookingId) {
+      // Permission check
+      if (!isSuperAdmin) {
+        showRecordsPermissionWarning();
+        return;
+      }
+
+      if (!confirm('Are you sure you want to delete this booked service?')) {
+        return;
+      }
+
+      try {
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+        if (!csrftoken) throw new Error('Missing CSRF token');
+        const response = await fetch('/api/delete-booked-service/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+          },
+          body: JSON.stringify({
+            booking_id: bookingId
+          })
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          const row = document.querySelector(`tr[data-booking-id="${bookingId}"]`);
+          if (row) {
+            row.remove();
+            filterBookedServices();
+          }
+          alert(data.message || 'Booked service deleted successfully');
+        } else {
+          throw new Error(data.error || data.message || 'Failed to delete booked service');
+        }
+      } catch (error) {
+        alert(error.message);
+      }
+    }
+
+    function filterLabResults() {
+      const searchTerm = (document.getElementById('labResultSearch')?.value || '').toLowerCase();
+      const dateFrom = document.getElementById('labResultDateFrom')?.value || '';
+      const dateTo = document.getElementById('labResultDateTo')?.value || '';
+      const typeFilter = document.getElementById('labResultTypeFilter')?.value || '';
+      const sortOrder = document.getElementById('labResultSortOrder')?.value || 'date-desc';
+      const rows = Array.from(document.querySelectorAll('#labResultsTable tbody .lab-result-row'));
+
+      const now = new Date();
+      const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      let thisMonthCount = 0;
+      const uniquePatients = new Set();
+      const uniqueTypes = new Set();
+
+      rows.forEach(row => {
+        const rowDate = row.getAttribute('data-date') || '';
+        const rowType = row.getAttribute('data-type') || '';
+        const patientLabel = row.getAttribute('data-patient') || '';
+        const patient = patientLabel.toLowerCase();
+        const filename = (row.getAttribute('data-filename') || '').toLowerCase();
+        const uploadedBy = (row.getAttribute('data-uploaded-by') || '').toLowerCase();
+        const email = (row.getAttribute('data-email') || '').toLowerCase();
+
+        let show = true;
+
+        if (searchTerm) {
+          const matches =
+            patient.includes(searchTerm) ||
+            filename.includes(searchTerm) ||
+            rowType.toLowerCase().includes(searchTerm) ||
+            uploadedBy.includes(searchTerm) ||
+            email.includes(searchTerm);
+
+          if (!matches) show = false;
+        }
+
+        if (rowDate) {
+          if (dateFrom && rowDate < dateFrom) show = false;
+          if (dateTo && rowDate > dateTo) show = false;
+        } else if (dateFrom || dateTo) {
+          show = false;
+        }
+
+        if (typeFilter && rowType !== typeFilter) {
+          show = false;
+        }
+
+        row.style.display = show ? '' : 'none';
+
+        if (show) {
+          if (rowDate) {
+            const rowDateValue = Date.parse(`${rowDate}T00:00:00`);
+            if (!Number.isNaN(rowDateValue) && rowDateValue >= thisMonthStart.getTime()) {
+              thisMonthCount++;
+            }
+          }
+          if (patientLabel) uniquePatients.add(patientLabel);
+          if (rowType) uniqueTypes.add(rowType);
+        }
+      });
+
+      const thisMonthEl = document.getElementById('labResultsThisMonth');
+      if (thisMonthEl) thisMonthEl.textContent = thisMonthCount;
+      const uniquePatientsEl = document.getElementById('labResultsUniquePatients');
+      if (uniquePatientsEl) uniquePatientsEl.textContent = uniquePatients.size;
+      const typesEl = document.getElementById('labResultsTypes');
+      if (typesEl) typesEl.textContent = uniqueTypes.size;
+
+      const tbody = document.querySelector('#labResultsTable tbody');
+      if (tbody) {
+        const visibleRows = rows.filter(row => row.style.display !== 'none');
+        visibleRows.sort((a, b) => {
+          const dateAttrA = a.getAttribute('data-date') || '';
+          const dateAttrB = b.getAttribute('data-date') || '';
+          const dateA = dateAttrA ? Date.parse(`${dateAttrA}T00:00:00`) : NaN;
+          const dateB = dateAttrB ? Date.parse(`${dateAttrB}T00:00:00`) : NaN;
+          const typeA = (a.getAttribute('data-type') || '').toLowerCase();
+          const typeB = (b.getAttribute('data-type') || '').toLowerCase();
+          const patientA = (a.getAttribute('data-patient') || '').toLowerCase();
+          const patientB = (b.getAttribute('data-patient') || '').toLowerCase();
+
+          switch (sortOrder) {
+            case 'date-asc':
+              return (Number.isNaN(dateA) ? 0 : dateA) - (Number.isNaN(dateB) ? 0 : dateB);
+            case 'date-desc':
+              return (Number.isNaN(dateB) ? 0 : dateB) - (Number.isNaN(dateA) ? 0 : dateA);
+            case 'type-asc':
+              return typeA.localeCompare(typeB);
+            case 'type-desc':
+              return typeB.localeCompare(typeA);
+            case 'patient-asc':
+              return patientA.localeCompare(patientB);
+            default:
+              return 0;
+          }
+        });
+        visibleRows.forEach(row => tbody.appendChild(row));
+      }
+    }
+
+    function clearLabResultFilters() {
+      const search = document.getElementById('labResultSearch');
+      const dateFrom = document.getElementById('labResultDateFrom');
+      const dateTo = document.getElementById('labResultDateTo');
+      const typeFilter = document.getElementById('labResultTypeFilter');
+      const sortOrder = document.getElementById('labResultSortOrder');
+
+      if (search) search.value = '';
+      if (dateFrom) dateFrom.value = '';
+      if (dateTo) dateTo.value = '';
+      if (typeFilter) typeFilter.value = '';
+      if (sortOrder) sortOrder.value = 'date-desc';
+
+      document.querySelectorAll('#labResultsTable tbody .lab-result-row').forEach(row => {
+        row.style.display = '';
+      });
+
+      filterLabResults();
+    }
+
+    function exportLabResults() {
+      const rows = Array.from(document.querySelectorAll('#labResultsTable tbody .lab-result-row'));
+      const visibleRows = rows.filter(row => row.style.display !== 'none');
+
+      if (visibleRows.length === 0) {
+        alert('No lab results to export');
+        return;
+      }
+
+      let csv = 'Date,Patient,Email,Lab Type,File Name,Uploaded By\n';
+      visibleRows.forEach(row => {
+        const dateCell = row.querySelector('td:nth-child(2)');
+        const dateText = dateCell ? dateCell.textContent.trim() : '';
+        const patient = row.getAttribute('data-patient') || '';
+        const email = row.getAttribute('data-email') || '';
+        const labType = row.getAttribute('data-type') || '';
+        const filename = row.getAttribute('data-filename') || '';
+        const uploadedBy = row.getAttribute('data-uploaded-by') || '';
+        csv += `"${dateText}","${patient}","${email}","${labType}","${filename}","${uploadedBy}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `lab_results_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }
+
+    function filterBookedServices() {
+      const searchTerm = (document.getElementById('bookedServiceSearch')?.value || '').toLowerCase();
+      const dateFrom = document.getElementById('bookedServiceDateFrom')?.value || '';
+      const dateTo = document.getElementById('bookedServiceDateTo')?.value || '';
+      const statusFilter = document.getElementById('bookedServiceStatusFilter')?.value || '';
+      const sortOrder = document.getElementById('bookedServiceSortOrder')?.value || 'date-desc';
+      const rows = Array.from(document.querySelectorAll('#bookedServicesTable tbody .booked-service-row'));
+
+      rows.forEach(row => {
+        const rowDate = row.getAttribute('data-date') || '';
+        const rowStatus = (row.getAttribute('data-status') || '').toLowerCase();
+        const patient = (row.getAttribute('data-patient') || '').toLowerCase();
+        const service = (row.getAttribute('data-service') || '').toLowerCase();
+        const email = (row.getAttribute('data-email') || '').toLowerCase();
+        const notes = (row.getAttribute('data-notes') || '').toLowerCase();
+
+        let show = true;
+
+        if (searchTerm) {
+          const matches =
+            patient.includes(searchTerm) ||
+            service.includes(searchTerm) ||
+            email.includes(searchTerm) ||
+            notes.includes(searchTerm);
+
+          if (!matches) show = false;
+        }
+
+        if (rowDate) {
+          if (dateFrom && rowDate < dateFrom) show = false;
+          if (dateTo && rowDate > dateTo) show = false;
+        } else if (dateFrom || dateTo) {
+          show = false;
+        }
+
+        if (statusFilter && rowStatus !== statusFilter.toLowerCase()) {
+          show = false;
+        }
+
+        row.style.display = show ? '' : 'none';
+      });
+
+      const tbody = document.querySelector('#bookedServicesTable tbody');
+      if (tbody) {
+        const visibleRows = rows.filter(row => row.style.display !== 'none');
+        visibleRows.sort((a, b) => {
+          const dateAttrA = a.getAttribute('data-date') || '';
+          const dateAttrB = b.getAttribute('data-date') || '';
+          const dateA = dateAttrA ? Date.parse(`${dateAttrA}T00:00:00`) : NaN;
+          const dateB = dateAttrB ? Date.parse(`${dateAttrB}T00:00:00`) : NaN;
+          const statusA = (a.getAttribute('data-status') || '').toLowerCase();
+          const statusB = (b.getAttribute('data-status') || '').toLowerCase();
+          const serviceA = (a.getAttribute('data-service') || '').toLowerCase();
+          const serviceB = (b.getAttribute('data-service') || '').toLowerCase();
+          const patientA = (a.getAttribute('data-patient') || '').toLowerCase();
+          const patientB = (b.getAttribute('data-patient') || '').toLowerCase();
+
+          switch (sortOrder) {
+            case 'date-asc':
+              return (Number.isNaN(dateA) ? 0 : dateA) - (Number.isNaN(dateB) ? 0 : dateB);
+            case 'date-desc':
+              return (Number.isNaN(dateB) ? 0 : dateB) - (Number.isNaN(dateA) ? 0 : dateA);
+            case 'status-asc':
+              return statusA.localeCompare(statusB);
+            case 'service-asc':
+              return serviceA.localeCompare(serviceB);
+            case 'patient-asc':
+              return patientA.localeCompare(patientB);
+            default:
+              return 0;
+          }
+        });
+        visibleRows.forEach(row => tbody.appendChild(row));
+      }
+    }
+
+    function clearBookedServiceFilters() {
+      const search = document.getElementById('bookedServiceSearch');
+      const dateFrom = document.getElementById('bookedServiceDateFrom');
+      const dateTo = document.getElementById('bookedServiceDateTo');
+      const statusFilter = document.getElementById('bookedServiceStatusFilter');
+      const sortOrder = document.getElementById('bookedServiceSortOrder');
+
+      if (search) search.value = '';
+      if (dateFrom) dateFrom.value = '';
+      if (dateTo) dateTo.value = '';
+      if (statusFilter) statusFilter.value = '';
+      if (sortOrder) sortOrder.value = 'date-desc';
+
+      document.querySelectorAll('#bookedServicesTable tbody .booked-service-row').forEach(row => {
+        row.style.display = '';
+      });
+
+      filterBookedServices();
+    }
+
+    function exportBookedServices() {
+      const rows = Array.from(document.querySelectorAll('#bookedServicesTable tbody .booked-service-row'));
+      const visibleRows = rows.filter(row => row.style.display !== 'none');
+
+      if (visibleRows.length === 0) {
+        alert('No booked services to export');
+        return;
+      }
+
+      let csv = 'ID,Date,Time,Patient,Email,Service Name,Status,Notes,Created At\n';
+      visibleRows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const id = cells[0]?.textContent.trim() || '';
+        const date = cells[1]?.textContent.trim() || '';
+        const time = cells[2]?.textContent.trim() || '';
+        const patient = row.getAttribute('data-patient') || '';
+        const email = row.getAttribute('data-email') || '';
+        const service = row.getAttribute('data-service') || '';
+        const status = row.getAttribute('data-status') || '';
+        const notes = row.getAttribute('data-notes') || '';
+        const createdAt = cells[7]?.textContent.trim() || '';
+        csv += `"${id}","${date}","${time}","${patient}","${email}","${service}","${status}","${notes}","${createdAt}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `booked_services_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeAddPatientModal();
+        closeEditPatientModal();
+        closeViewPatientDetailsModal();
+        closeUploadLabResultModal();
+        closeLabResultNotesModal();
+        closeEditBookedServiceModal();
+        closeAddBookedServiceModal();
+      }
+    });
+
+    [
+      ['addPatientModal', closeAddPatientModal],
+      ['editPatientModal', closeEditPatientModal],
+      ['viewPatientDetailsModal', closeViewPatientDetailsModal],
+      ['uploadLabResultModal', closeUploadLabResultModal],
+      ['labResultNotesModal', closeLabResultNotesModal],
+      ['editBookedServiceModal', closeEditBookedServiceModal],
+      ['addBookedServiceModal', closeAddBookedServiceModal]
+    ].forEach(([id, closeFn]) => {
+      const modal = document.getElementById(id);
+      if (modal) {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) {
+            closeFn();
+          }
+        });
+      }
+    });
+
+    // Add Booking Form Handler
+    document.addEventListener('submit', function(e) {
+      if (e.target.getAttribute('method') === 'POST' && e.target.getAttribute('action') === undefined) {
+        const action = e.target.querySelector('input[name="action"]')?.value;
+        if (action === 'add_booking') {
+          e.preventDefault();
+          const patientId = document.getElementById('add_booking_patient_id').value;
+          const serviceName = document.getElementById('add_service_name').value;
+          const bookingDate = document.getElementById('add_booking_date').value;
+          const bookingTime = document.getElementById('add_booking_time').value;
+          const status = document.getElementById('add_booking_status').value;
+          const notes = document.getElementById('add_booking_notes').value;
+          
+          if (!patientId) {
+            alert('Please select a patient');
+            return;
+          }
+          
+          const formData = new FormData();
+          formData.append('action', 'add_booked_service');
+          formData.append('patient_id', patientId);
+          formData.append('service_name', serviceName);
+          formData.append('booking_date', bookingDate);
+          formData.append('booking_time', bookingTime);
+          formData.append('status', status);
+          formData.append('notes', notes);
+          
+          fetch('/admin/manage/patients/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            }
+          }).then(response => {
+            if (response.ok) {
+              alert('Booking added successfully');
+              closeAddBookedServiceModal();
+              window.location.reload();
+            } else {
+              alert('Error adding booking');
+            }
+          }).catch(error => {
+            alert('Error: ' + error.message);
+          });
+        }
+      }
+    }, true);
+
+    // ============= SUPER ADMIN PERMISSION CHECKS =============
+    let isSuperAdmin = false;
+    async function checkSuperAdminStatus() {
+      try {
+        const response = await fetch('/check-super-admin-status/');
+        const data = await response.json();
+        isSuperAdmin = data.is_super_admin;
+        updatePatientRecordsPermissionUI();
+      } catch (error) {
+        console.log('Could not check super admin status');
+      }
+    }
+
+    function updatePatientRecordsPermissionUI() {
+      if (!isSuperAdmin) {
+        // Hide/disable export buttons
+        document.querySelectorAll('[onclick*="exportLabResults"], [onclick*="exportBookedServices"], [onclick*="exportPrescriptions"]').forEach(btn => {
+          btn.innerHTML = btn.innerHTML + ' <span style="margin-left: 5px; font-size: 0.8em;">(Super Admin Only)</span>';
+          btn.style.opacity = '0.6';
+          btn.style.cursor = 'not-allowed';
+          btn.onclick = function(e) { e.preventDefault(); showPermissionWarning('Export is for Super Admin only'); return false; };
+        });
+
+        // Hide/disable delete buttons for Lab Results
+        document.querySelectorAll('[onclick*="deleteLabResult"]').forEach(btn => {
+          btn.style.opacity = '0.5';
+          btn.style.cursor = 'not-allowed';
+          btn.disabled = true;
+          btn.title = 'Only Super Admin can delete lab results';
+          btn.onclick = function(e) { e.preventDefault(); showRecordsPermissionWarning(); return false; };
+        });
+
+        // Disable delete forms for Lab Results (form-based deletion)
+        document.querySelectorAll('form input[value="delete_lab_result"]').forEach(input => {
+          const form = input.closest('form');
+          if (form) {
+            const deleteBtn = form.querySelector('button[type="submit"]');
+            if (deleteBtn) {
+              deleteBtn.style.opacity = '0.5';
+              deleteBtn.style.cursor = 'not-allowed';
+              deleteBtn.disabled = true;
+              deleteBtn.title = 'Only Super Admin can delete lab results';
+              form.onsubmit = function(e) {
+                e.preventDefault();
+                showRecordsPermissionWarning();
+                return false;
+              };
+            }
+          }
+        });
+
+        // Hide/disable delete buttons for Booked Services
+        document.querySelectorAll('[onclick*="deleteBookedService"]').forEach(btn => {
+          btn.style.opacity = '0.5';
+          btn.style.cursor = 'not-allowed';
+          btn.disabled = true;
+          btn.title = 'Only Super Admin can delete booked services';
+          btn.onclick = function(e) { e.preventDefault(); showRecordsPermissionWarning(); return false; };
+        });
+
+        // Hide/disable edit patient button
+        document.querySelectorAll('[onclick*="openEditPatientModal"]').forEach(btn => {
+          btn.style.opacity = '0.5';
+          btn.style.cursor = 'not-allowed';
+          btn.title = 'Edit patient details - Super Admin Only';
+          btn.onclick = function(e) { e.preventDefault(); showPermissionWarning('Editing patient details is for Super Admin only'); return false; };
+        });
+
+        // Hide/disable delete buttons for Prescriptions
+        document.querySelectorAll('[onclick*="deletePrescription"]').forEach(btn => {
+          btn.style.opacity = '0.5';
+          btn.style.cursor = 'not-allowed';
+          btn.disabled = true;
+          btn.title = 'Only Super Admin can delete prescriptions';
+          btn.onclick = function(e) { e.preventDefault(); showRecordsPermissionWarning(); return false; };
+        });
+      }
+    }
+
+    function showPermissionWarning(message) {
+      const alertDiv = document.createElement('div');
+      alertDiv.className = 'fixed top-4 right-4 bg-yellow-500 text-white px-6 py-3 rounded shadow-lg z-50 max-w-md';
+      alertDiv.innerHTML = `<i class="fas fa-lock mr-2"></i>${message}`;
+      document.body.appendChild(alertDiv);
+      setTimeout(() => alertDiv.remove(), 3000);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      checkSuperAdminStatus(); // Check permissions on page load
+      const labResultSearch = document.getElementById('labResultSearch');
+      const labResultDateFrom = document.getElementById('labResultDateFrom');
+      const labResultDateTo = document.getElementById('labResultDateTo');
+      const labResultTypeFilter = document.getElementById('labResultTypeFilter');
+      const labResultSortOrder = document.getElementById('labResultSortOrder');
+
+      if (labResultSearch) labResultSearch.addEventListener('input', filterLabResults);
+      if (labResultDateFrom) labResultDateFrom.addEventListener('change', filterLabResults);
+      if (labResultDateTo) labResultDateTo.addEventListener('change', filterLabResults);
+      if (labResultTypeFilter) labResultTypeFilter.addEventListener('change', filterLabResults);
+      if (labResultSortOrder) labResultSortOrder.addEventListener('change', filterLabResults);
+
+      const bookedServiceSearch = document.getElementById('bookedServiceSearch');
+      const bookedServiceDateFrom = document.getElementById('bookedServiceDateFrom');
+      const bookedServiceDateTo = document.getElementById('bookedServiceDateTo');
+      const bookedServiceStatusFilter = document.getElementById('bookedServiceStatusFilter');
+      const bookedServiceSortOrder = document.getElementById('bookedServiceSortOrder');
+
+      if (bookedServiceSearch) bookedServiceSearch.addEventListener('input', filterBookedServices);
+      if (bookedServiceDateFrom) bookedServiceDateFrom.addEventListener('change', filterBookedServices);
+      if (bookedServiceDateTo) bookedServiceDateTo.addEventListener('change', filterBookedServices);
+      if (bookedServiceStatusFilter) bookedServiceStatusFilter.addEventListener('change', filterBookedServices);
+      if (bookedServiceSortOrder) bookedServiceSortOrder.addEventListener('change', filterBookedServices);
+
+      const prescriptionSearch = document.getElementById('prescriptionSearch');
+      const prescriptionDateFrom = document.getElementById('prescriptionDateFrom');
+      const prescriptionDateTo = document.getElementById('prescriptionDateTo');
+      const prescriptionStatusFilter = document.getElementById('prescriptionStatusFilter');
+      const prescriptionFileFilter = document.getElementById('prescriptionFileFilter');
+
+      if (prescriptionSearch) prescriptionSearch.addEventListener('input', loadAndFilterPrescriptions);
+      if (prescriptionDateFrom) prescriptionDateFrom.addEventListener('change', loadAndFilterPrescriptions);
+      if (prescriptionDateTo) prescriptionDateTo.addEventListener('change', loadAndFilterPrescriptions);
+      if (prescriptionStatusFilter) prescriptionStatusFilter.addEventListener('change', loadAndFilterPrescriptions);
+      if (prescriptionFileFilter) prescriptionFileFilter.addEventListener('change', loadAndFilterPrescriptions);
+
+      filterLabResults();
+      filterBookedServices();
+      loadAndFilterPrescriptions();
+    });
+
+    // Prescription functions
+    async function loadAndFilterPrescriptions() {
+      try {
+        const response = await fetch('/api/get-all-prescriptions/', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch prescriptions');
+        }
+
+        const data = await response.json();
+        const prescriptions = data.prescriptions || [];
+
+        // Filter prescriptions based on search criteria
+        const searchTerm = (document.getElementById('prescriptionSearch')?.value || '').toLowerCase();
+        const dateFrom = document.getElementById('prescriptionDateFrom')?.value || '';
+        const dateTo = document.getElementById('prescriptionDateTo')?.value || '';
+        const statusFilter = document.getElementById('prescriptionStatusFilter')?.value || '';
+        const fileFilter = document.getElementById('prescriptionFileFilter')?.value || '';
+
+        let filteredPrescriptions = prescriptions.filter(rx => {
+          // Search filter
+          if (searchTerm) {
+            const searchableText = (
+              rx.patient_name + ' ' +
+              rx.prescription_number + ' ' +
+              rx.doctor_name + ' ' +
+              (rx.medicines_summary || '')
+            ).toLowerCase();
+            if (!searchableText.includes(searchTerm)) return false;
+          }
+
+          // Date range filter
+          if (dateFrom) {
+            const rxDate = rx.created_at ? rx.created_at.split('T')[0] : '';
+            if (rxDate < dateFrom) return false;
+          }
+          if (dateTo) {
+            const rxDate = rx.created_at ? rx.created_at.split('T')[0] : '';
+            if (rxDate > dateTo) return false;
+          }
+
+          // Status filter
+          if (statusFilter && rx.status !== statusFilter) return false;
+
+          // File filter
+          if (fileFilter === 'with_file' && !rx.has_file) return false;
+          if (fileFilter === 'no_file' && rx.has_file) return false;
+
+          return true;
+        });
+
+        // Update statistics
+        updatePrescriptionStats(prescriptions);
+
+        // Render table
+        renderPrescriptionsTable(filteredPrescriptions);
+      } catch (error) {
+        console.error('Error loading prescriptions:', error);
+        const tbody = document.getElementById('prescriptionsTableBody');
+        if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-8 text-center text-red-500"><i class="fas fa-exclamation-circle"></i> Error loading prescriptions</td></tr>';
+        }
+      }
+    }
+
+    function updatePrescriptionStats(prescriptions) {
+      let total = prescriptions.length;
+      let draft = prescriptions.filter(r => r.status === 'draft').length;
+      let signed = prescriptions.filter(r => r.status === 'signed').length;
+      let withFiles = prescriptions.filter(r => r.has_file).length;
+
+      document.getElementById('totalPrescriptions').textContent = total;
+      document.getElementById('draftPrescriptions').textContent = draft;
+      document.getElementById('signedPrescriptions').textContent = signed;
+      document.getElementById('withFilesPrescriptions').textContent = withFiles;
+    }
+
+    function renderPrescriptionsTable(prescriptions) {
+      const tbody = document.getElementById('prescriptionsTableBody');
+      if (!tbody) return;
+
+      if (prescriptions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-8 text-center text-gray-500">No prescriptions found</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = prescriptions.map(rx => `
+        <tr class="hover:bg-gray-50 transition-colors" data-prescription-id="${rx.prescription_id}">
+          <td class="px-6 py-4 text-sm font-medium text-gray-900">${rx.prescription_number}</td>
+          <td class="px-6 py-4 text-sm text-gray-600">${rx.patient_name}</td>
+          <td class="px-6 py-4 text-sm text-gray-600">${rx.doctor_name}</td>
+          <td class="px-6 py-4 text-sm text-gray-600">${rx.created_at ? new Date(rx.created_at).toLocaleDateString() : 'N/A'}</td>
+          <td class="px-6 py-4 text-sm">
+            <span class="px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadgeClass(rx.status)}">${rx.status}</span>
+          </td>
+          <td class="px-6 py-4 text-sm">
+            ${rx.has_file ? '<span title="File attached"><i class="fas fa-check-circle text-green-600 text-lg"></i></span>' : '<span title="No file"><i class="fas fa-times-circle text-gray-400 text-lg"></i></span>'}
+          </td>
+          <td class="px-6 py-4 text-sm text-gray-600">
+            <span class="line-clamp-2" title="${rx.medicines_summary || 'N/A'}" style="font-size: 12px;">${rx.medicines_summary ? rx.medicines_summary.substring(0, 50) + (rx.medicines_summary.length > 50 ? '...' : '') : 'No medicines'}</span>
+          </td>
+          <td class="px-6 py-4 text-sm space-x-2 flex flex-wrap gap-2">
+            ${rx.has_file ? `<button onclick="downloadPrescriptionFile(${rx.prescription_id})" class="px-3 py-1 bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors rounded-lg text-xs font-semibold" title="Download File"><i class="fas fa-download"></i> Download</button>` : `<span class="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded-lg cursor-not-allowed" title="No file to download">No File</span>`}
+            <button onclick="viewPrescriptionDetails(${rx.prescription_id})" class="px-3 py-1 bg-green-100 text-green-600 hover:bg-green-200 transition-colors rounded-lg text-xs font-semibold" title="View Details"><i class="fas fa-eye"></i> View</button>
+            <button onclick="deletePrescription(${rx.prescription_id})" class="px-3 py-1 bg-red-100 text-red-600 hover:bg-red-200 transition-colors rounded-lg text-xs font-semibold" title="Delete Prescription"><i class="fas fa-trash"></i> Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function getStatusBadgeClass(status) {
+      const statusClasses = {
+        'draft': 'bg-yellow-100 text-yellow-800',
+        'signed': 'bg-green-100 text-green-800',
+        'printed': 'bg-blue-100 text-blue-800',
+        'cancelled': 'bg-red-100 text-red-800'
+      };
+      return statusClasses[status] || 'bg-gray-100 text-gray-800';
+    }
+
+    function downloadPrescriptionFile(prescriptionId) {
+      // Show loading indicator
+      const btn = event.target.closest('button');
+      const originalHTML = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
+      btn.disabled = true;
+
+      // Direct download from admin API endpoint
+      fetch(`/api/admin-prescription-download/${prescriptionId}/`, {
+        method: 'GET',
+        headers: {
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+        }
+      })
+      .then(res => {
+        if (!res.ok) {
+          return res.json().then(data => {
+            alert(data.error || 'No prescription file available for this prescription.');
+            throw new Error(data.error || 'Failed to download');
+          });
+        }
+        // Get filename from headers if available
+        const disposition = res.headers.get('content-disposition');
+        let filename = 'prescription.pdf';
+        if (disposition) {
+          const matches = /filename[^;=\n]*=([^;\n]*)/i.exec(disposition);
+          if (matches && matches[1]) {
+            filename = matches[1].replace(/['"]/g, '');
+          }
+        }
+        return res.blob().then(blob => ({ blob, filename }));
+      })
+      .then(({ blob, filename }) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      })
+      .catch(err => {
+        console.error('Download error:', err);
+      })
+      .finally(() => {
+        btn.innerHTML = originalHTML;
+        btn.disabled = false;
+      });
+    }
+
+    function viewPrescriptionDetails(prescriptionId) {
+      // Modal or detailed view for prescription
+      fetch(`/api/admin-prescription-details/${prescriptionId}/`, {
+        method: 'GET',
+        headers: {
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          const rx = data.prescription;
+          const modal = document.createElement('div');
+          modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+          `;
+          modal.innerHTML = `
+            <div style="background: white; border-radius: 12px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+              <div style="background: #2c71b7; color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 700;">Prescription Details</h2>
+                <button onclick="this.closest('div').parentElement.remove()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0;"><i class="fas fa-times"></i></button>
+              </div>
+              <div style="padding: 24px; color: #2c2c2f;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                  <div>
+                    <label style="display: block; font-weight: 600; color: #64748b; font-size: 12px; margin-bottom: 4px; text-transform: uppercase;">Prescription #</label>
+                    <p style="margin: 0; font-size: 16px; font-weight: 600; color: #2c71b7;">${rx.prescription_number}</p>
+                  </div>
+                  <div>
+                    <label style="display: block; font-weight: 600; color: #64748b; font-size: 12px; margin-bottom: 4px; text-transform: uppercase;">Status</label>
+                    <span style="display: inline-block; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; ${
+                      rx.status === 'draft' ? 'background: #fef3c7; color: #92400e;' :
+                      rx.status === 'signed' ? 'background: #d1fae5; color: #065f46;' :
+                      rx.status === 'printed' ? 'background: #dbeafe; color: #1e40af;' :
+                      'background: #fee2e2; color: #991b1b;'
+                    }">${rx.status.charAt(0).toUpperCase() + rx.status.slice(1)}</span>
+                  </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                  <div>
+                    <label style="display: block; font-weight: 600; color: #64748b; font-size: 12px; margin-bottom: 4px; text-transform: uppercase;">Patient</label>
+                    <p style="margin: 0; font-size: 14px; font-weight: 500;">${rx.patient_name}</p>
+                  </div>
+                  <div>
+                    <label style="display: block; font-weight: 600; color: #64748b; font-size: 12px; margin-bottom: 4px; text-transform: uppercase;">Doctor</label>
+                    <p style="margin: 0; font-size: 14px; font-weight: 500;">${rx.doctor_name}</p>
+                  </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                  <div>
+                    <label style="display: block; font-weight: 600; color: #64748b; font-size: 12px; margin-bottom: 4px; text-transform: uppercase;">Created Date</label>
+                    <p style="margin: 0; font-size: 14px; font-weight: 500;">${new Date(rx.created_at).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <label style="display: block; font-weight: 600; color: #64748b; font-size: 12px; margin-bottom: 4px; text-transform: uppercase;">File Status</label>
+                    <p style="margin: 0; font-size: 14px; font-weight: 500;">${rx.has_file ? '<span style="color: #10b981;"><i class="fas fa-check-circle"></i> File Attached</span>' : '<span style="color: #ef4444;"><i class="fas fa-times-circle"></i> No File</span>'}</p>
+                  </div>
+                </div>
+                <div style="margin-bottom: 20px;">
+                  <label style="display: block; font-weight: 600; color: #64748b; font-size: 12px; margin-bottom: 8px; text-transform: uppercase;">Medicines</label>
+                  <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border-left: 3px solid #2c71b7;">
+                    <p style="margin: 0; font-size: 14px; color: #2c2c2f; line-height: 1.6;">${rx.medicines_summary || 'No medicines listed'}</p>
+                  </div>
+                </div>
+                ${rx.instructions ? `
+                  <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-weight: 600; color: #64748b; font-size: 12px; margin-bottom: 8px; text-transform: uppercase;">Instructions</label>
+                    <div style="background: #f0f3f6; padding: 12px; border-radius: 8px; border-left: 3px solid #2c71b7;">
+                      <p style="margin: 0; font-size: 14px; color: #2c2c2f; line-height: 1.6;">${rx.instructions}</p>
+                    </div>
+                  </div>
+                ` : ''}
+                ${rx.follow_up_date ? `
+                  <div style="background: #f3f4f6; padding: 12px; border-radius: 8px; margin-bottom: 20px;">
+                    <label style="display: block; font-weight: 600; color: #64748b; font-size: 12px; margin-bottom: 4px; text-transform: uppercase;">Follow-up Date</label>
+                    <p style="margin: 0; font-size: 14px; font-weight: 500; color: #2c71b7;">${new Date(rx.follow_up_date).toLocaleDateString()}</p>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+          `;
+          document.body.appendChild(modal);
+          modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+          });
+        } else {
+          alert('Error loading prescription details');
+        }
+      })
+      .catch(err => {
+        console.error('Error:', err);
+        alert('Failed to load prescription details');
+      });
+    }
+
+    function clearPrescriptionFilters() {
+      document.getElementById('prescriptionSearch').value = '';
+      document.getElementById('prescriptionDateFrom').value = '';
+      document.getElementById('prescriptionDateTo').value = '';
+      document.getElementById('prescriptionStatusFilter').value = '';
+      document.getElementById('prescriptionFileFilter').value = '';
+      loadAndFilterPrescriptions();
+    }
+
+    function refreshPrescriptions() {
+      loadAndFilterPrescriptions();
+    }
+
+    function exportPrescriptions() {
+      const tbody = document.getElementById('prescriptionsTableBody');
+      if (!tbody || tbody.querySelectorAll('tr').length === 0) {
+        alert('No prescriptions to export');
+        return;
+      }
+
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const csv = [
+        ['Rx Number', 'Patient Name', 'Doctor Name', 'Date', 'Status', 'Has File', 'Medicines'].join(','),
+        ...rows.map(row => {
+          const cells = row.querySelectorAll('td');
+          return [
+            cells[0]?.textContent?.trim() || '',
+            cells[1]?.textContent?.trim() || '',
+            cells[2]?.textContent?.trim() || '',
+            cells[3]?.textContent?.trim() || '',
+            cells[4]?.textContent?.trim() || '',
+            cells[5]?.textContent?.includes('check-circle') ? 'Yes' : 'No',
+            cells[6]?.textContent?.trim() || ''
+          ].map(cell => `"${cell}"`).join(',');
+        })
+      ].join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `prescriptions_${new Date().getTime()}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // Delete Prescription Function
+    async function deletePrescription(prescriptionId) {
+      // Permission check
+      if (!isSuperAdmin) {
+        showRecordsPermissionWarning();
+        return;
+      }
+
+      if (!confirm('Are you sure you want to delete this prescription? This action cannot be undone.')) {
+        return;
+      }
+
+      try {
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const response = await fetch(`/api/delete-prescription/${prescriptionId}/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+          }
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || data.message || 'Failed to delete prescription');
+        }
+
+        alert(data.message || 'Prescription deleted successfully');
+        loadAndFilterPrescriptions();
+      } catch (error) {
+        console.error('Delete error:', error);
+        alert(error.message || 'Error deleting prescription');
+      }
+    }
+  </script>
+
+</body>
+</html>

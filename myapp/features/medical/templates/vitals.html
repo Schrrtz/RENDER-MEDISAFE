@@ -1,0 +1,676 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Vitals - MediSafe{% endblock %}
+
+{% block extra_css %}
+<style>
+        body {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #b7cce4 0%, #f0f3f6 100%);
+            color: #2c2c2f;
+            min-height: 100%;
+        }
+
+        html {
+            height: 100%;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #2c71b7 0%, #4a8bc2 100%);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(44, 113, 183, 0.3);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 700;
+            color: #2c71b7;
+        }
+
+        .header-title {
+            font-size: 28px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .search-input {
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            width: 250px;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .search-btn {
+            padding: 12px 20px;
+            background: #f15e2c;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+
+        .search-btn:hover {
+            background: #d54a1f;
+        }
+
+        /* Main Layout */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 30px;
+        }
+
+        /* Patient Info Card */
+        .patient-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin-bottom: 25px;
+            border-left: 4px solid #f15e2c;
+        }
+
+        .patient-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .patient-photo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #b7cce4, #2c71b7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: white;
+            font-weight: 600;
+        }
+
+        .patient-info h2 {
+            margin: 0 0 5px 0;
+            font-size: 24px;
+            font-weight: 600;
+            color: #2c2c2f;
+        }
+
+        .patient-id {
+            color: #666;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .patient-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .detail-item {
+            background: #f0f3f6;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .detail-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c2c2f;
+        }
+
+        /* Vital Signs Grid */
+        .vitals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .vital-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .vital-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        .vital-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .vital-icon {
+            font-size: 32px;
+            margin-right: 15px;
+        }
+
+        .vital-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: #666;
+            margin: 0;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-normal { background: #22c55e; }
+        .status-warning { background: #f59e0b; }
+        .status-critical { background: #ef4444; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .vital-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: #2c2c2f;
+            margin: 10px 0;
+        }
+
+        .vital-unit {
+            font-size: 14px;
+            color: #666;
+            font-weight: 400;
+        }
+
+        .vital-range {
+            font-size: 12px;
+            color: #888;
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: #f0f3f6;
+            border-radius: 6px;
+        }
+
+        .vital-trend {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 18px;
+        }
+
+        .trend-up { color: #ef4444; }
+        .trend-down { color: #22c55e; }
+        .trend-stable { color: #6b7280; }
+
+        /* Side Panel */
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .panel-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2c2c2f;
+            border-bottom: 2px solid #f0f3f6;
+            padding-bottom: 10px;
+        }
+
+        .alert-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #fef2f2;
+            border-left: 4px solid #ef4444;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .alert-icon {
+            color: #ef4444;
+            font-size: 18px;
+        }
+
+        .alert-text {
+            font-size: 14px;
+            color: #2c2c2f;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+            font-size: 14px;
+            border-top: 1px solid #d4cac9;
+            margin-top: 40px;
+            background: white;
+            border-radius: 16px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+            
+            .side-panel {
+                order: -1;
+            }
+            
+            .vitals-grid {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .search-input {
+                width: 200px;
+            }
+            
+            .patient-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .patient-details {
+                grid-template-columns: 1fr;
+            }
+            
+            .vitals-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+  </style>
+{% endblock %}
+
+{% block content %}
+  {% if not is_logged_in %}
+      <!-- Compact Encouraging Message for Non-Logged-In Users -->
+      <div style="background: linear-gradient(135deg, #2c71b7 0%, #2c71b7 100%); color: white; padding: 20px; border-radius: 12px; margin: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+          <div style="flex: 1; min-width: 250px;">
+            <h3 style="font-size: 20px; font-weight: 700; margin: 0 0 8px 0;">Welcome to MediSafe+ Vitals Monitor</h3>
+            <p style="font-size: 14px; opacity: 0.9; margin: 0; line-height: 1.4;">{{ encouraging_message }}</p>
+          </div>
+                    <button class="standard-login-btn" onclick="document.getElementById('loginBtn')?.click();" aria-label="Login to Monitor Vitals">
+                        <i class="fas fa-sign-in-alt" style="margin-right: 6px;"></i>Login to Monitor Vitals
+                    </button>
+        </div>
+      </div>
+      
+      <!-- Quick Stats for Non-Logged-In Users -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px; padding: 20px;">
+        <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center;">
+          <div style="font-size: 32px; margin-bottom: 8px;">❤️</div>
+          <h4 style="color: #2c71b7; margin: 0 0 8px 0;">Heart Rate</h4>
+          <p style="color: #64748b; font-size: 14px; margin: 0;">Monitor your pulse and heart health</p>
+        </div>
+        <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center;">
+          <div style="font-size: 32px; margin-bottom: 8px;">🩸</div>
+          <h4 style="color: #2c71b7; margin: 0 0 8px 0;">Blood Pressure</h4>
+          <p style="color: #64748b; font-size: 14px; margin: 0;">Track systolic and diastolic readings</p>
+        </div>
+        <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center;">
+          <div style="font-size: 32px; margin-bottom: 8px;">🌡️</div>
+          <h4 style="color: #2c71b7; margin: 0 0 8px 0;">Temperature</h4>
+          <p style="color: #64748b; font-size: 14px; margin: 0;">Monitor body temperature changes</p>
+        </div>
+        <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center;">
+          <div style="font-size: 32px; margin-bottom: 8px;">🫁</div>
+          <h4 style="color: #2c71b7; margin: 0 0 8px 0;">Oxygen Saturation</h4>
+          <p style="color: #64748b; font-size: 14px; margin: 0;">Track SpO2 levels and breathing</p>
+        </div>
+      </div>
+      
+            <!-- Login Button now triggers standardized header login modal -->
+  {% else %}
+    <!-- Full Vitals Content for Logged-In Users -->
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo">M+</div>
+                    <h1 class="header-title">MEDISAFE Vital Signs Monitor</h1>
+                </div>
+                <div class="search-bar">
+                    <input type="text" class="search-input" placeholder="Search patient ID or name...">
+                    <button class="search-btn">Search</button>
+                </div>
+            </div>
+        </header>
+
+        
+
+        <!-- Main Layout -->
+        <div class="main-layout">
+            <!-- Main Content -->
+            <main>
+                <!-- Patient Info -->
+                <div class="patient-card">
+                    <div class="patient-header">
+                        <div class="patient-photo">
+                            {% if user_profile.photo_url %}
+                            <img src="{{ user_profile.photo_url }}" alt="Profile" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">
+                            {% else %}
+                            {{ user_profile.first_name|default:user.username|slice:":1" }}{{ user_profile.last_name|default:""|slice:":1" }}
+                            {% endif %}
+                        </div>
+                        <div class="patient-info">
+                            <h2>{{ user_profile.first_name|default:user.username }} {{ user_profile.last_name }}</h2>
+                            <p class="patient-id">Patient ID: {{ user.user_id }}</p>
+                        </div>
+                    </div>
+                    <div class="patient-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Age</div>
+                            <div class="detail-value">{% if user_profile.age %}{{ user_profile.age }}{% elif computed_age %}{{ computed_age }}{% else %}N/A{% endif %}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Gender</div>
+                            <div class="detail-value">{{ user_profile.gender|title|default:"N/A" }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Contact Number</div>
+                            <div class="detail-value">{{ user_profile.contact_number|default:"N/A" }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Role</div>
+                            <div class="detail-value">{{ user.role|title|default:"N/A" }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vital Signs Grid -->
+                <div class="vitals-grid">
+                    <!-- Heart Rate -->
+                    <div class="vital-card">
+                        <div class="vital-trend trend-stable">→</div>
+                        <div class="vital-header">
+                            <div style="display: flex; align-items: center;">
+                                <span class="vital-icon">❤️</span>
+                                <h3 class="vital-title">Heart Rate</h3>
+                            </div>
+                            <div class="status-indicator status-normal"></div>
+                        </div>
+                        <div class="vital-value">72 <span class="vital-unit">bpm</span></div>
+                        <div class="vital-range">Normal: 60-100 bpm</div>
+                    </div>
+
+                    <!-- Blood Pressure -->
+                    <div class="vital-card">
+                        <div class="vital-trend trend-up">↗</div>
+                        <div class="vital-header">
+                            <div style="display: flex; align-items: center;">
+                                <span class="vital-icon">💉</span>
+                                <h3 class="vital-title">Blood Pressure</h3>
+                            </div>
+                            <div class="status-indicator status-warning"></div>
+                        </div>
+                        <div class="vital-value">138/89 <span class="vital-unit">mmHg</span></div>
+                        <div class="vital-range">Normal: <120/80 mmHg</div>
+                    </div>
+
+                    <!-- Oxygen Saturation -->
+                    <div class="vital-card">
+                        <div class="vital-trend trend-stable">→</div>
+                        <div class="vital-header">
+                            <div style="display: flex; align-items: center;">
+                                <span class="vital-icon">🫁</span>
+                                <h3 class="vital-title">Oxygen Saturation</h3>
+                            </div>
+                            <div class="status-indicator status-normal"></div>
+                        </div>
+                        <div class="vital-value">98 <span class="vital-unit">%</span></div>
+                        <div class="vital-range">Normal: 95-100%</div>
+                    </div>
+
+                    <!-- Temperature -->
+                    <div class="vital-card">
+                        <div class="vital-trend trend-down">↘</div>
+                        <div class="vital-header">
+                            <div style="display: flex; align-items: center;">
+                                <span class="vital-icon">🌡️</span>
+                                <h3 class="vital-title">Temperature</h3>
+                            </div>
+                            <div class="status-indicator status-normal"></div>
+                        </div>
+                        <div class="vital-value">98.6 <span class="vital-unit">°F</span></div>
+                        <div class="vital-range">Normal: 97.8-99.1°F</div>
+                    </div>
+
+                    <!-- Respiration Rate -->
+                    <div class="vital-card">
+                        <div class="vital-trend trend-stable">→</div>
+                        <div class="vital-header">
+                            <div style="display: flex; align-items: center;">
+                                <span class="vital-icon">💨</span>
+                                <h3 class="vital-title">Respiration Rate</h3>
+                            </div>
+                            <div class="status-indicator status-normal"></div>
+                        </div>
+                        <div class="vital-value">16 <span class="vital-unit">breaths/min</span></div>
+                        <div class="vital-range">Normal: 12-20 breaths/min</div>
+                    </div>
+
+                    <!-- Blood Glucose -->
+                    <div class="vital-card">
+                        <div class="vital-trend trend-up">↗</div>
+                        <div class="vital-header">
+                            <div style="display: flex; align-items: center;">
+                                <span class="vital-icon">🩸</span>
+                                <h3 class="vital-title">Blood Glucose</h3>
+                            </div>
+                            <div class="status-indicator status-critical"></div>
+                        </div>
+                        <div class="vital-value">180 <span class="vital-unit">mg/dL</span></div>
+                        <div class="vital-range">Normal: 70-140 mg/dL</div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Side Panel -->
+            <aside class="side-panel">
+                <!-- Alerts -->
+                <div class="panel-card">
+                    <h3 class="panel-title">🚨 Active Alerts</h3>
+                    <div class="alert-item">
+                        <span class="alert-icon">⚠️</span>
+                        <span class="alert-text">Elevated blood pressure detected</span>
+                    </div>
+                    <div class="alert-item">
+                        <span class="alert-icon">🔴</span>
+                        <span class="alert-text">High blood glucose level</span>
+                    </div>
+                </div>
+
+                <!-- Recent Readings -->
+                <div class="panel-card">
+                    <h3 class="panel-title">📊 Recent Readings</h3>
+                    <div style="font-size: 14px; line-height: 1.6;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>14:30 - Heart Rate:</span>
+                            <span style="font-weight: 600;">74 bpm</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>14:15 - Blood Pressure:</span>
+                            <span style="font-weight: 600;">135/87 mmHg</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>14:00 - Temperature:</span>
+                            <span style="font-weight: 600;">98.8°F</span>
+  </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>13:45 - SpO₂:</span>
+                            <span style="font-weight: 600;">97%</span>
+      </div>
+      </div>
+      </div>
+
+                <!-- Medical Team -->
+                <div class="panel-card">
+                    <h3 class="panel-title">👥 Medical Team</h3>
+                    <div style="font-size: 14px; line-height: 1.8;">
+                        <div><strong>Dr. Sarah Johnson</strong><br>Attending Physician</div>
+                        <div style="margin-top: 12px;"><strong>Nurse Maria Garcia</strong><br>Primary Nurse</div>
+                        <div style="margin-top: 12px;"><strong>Dr. Michael Chen</strong><br>Cardiologist</div>
+      </div>
+    </div>
+            </aside>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Powered by MEDISAFE Health System | Last updated: December 15, 2024 at 2:45 PM</p>
+        </footer>
+    </div>
+
+    {% block extra_js %}{% endblock %}
+    <script>
+        // Simulate real-time updates
+        function updateVitalSigns() {
+            const heartRate = document.querySelector('.vital-card:nth-child(1) .vital-value');
+            const currentRate = parseInt(heartRate.textContent);
+            const newRate = currentRate + Math.floor(Math.random() * 6) - 3; // ±3 variation
+            
+            if (newRate >= 60 && newRate <= 100) {
+                heartRate.innerHTML = `${newRate} <span class="vital-unit">bpm</span>`;
+            }
+        }
+
+        // Update every 5 seconds
+        setInterval(updateVitalSigns, 5000);
+
+        // Search functionality
+        document.querySelector('.search-btn').addEventListener('click', function() {
+            const searchTerm = document.querySelector('.search-input').value;
+            if (searchTerm.trim()) {
+                alert(`Searching for: ${searchTerm}`);
+            }
+        });
+
+        // Enter key for search
+        document.querySelector('.search-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.querySelector('.search-btn').click();
+            }
+        });
+    </script>
+    {% endif %}
+
+    {# Removed duplicate login modal; base.html includes shared auth modals for guests #}
+
+    <script>
+        // Modal elements
+        const loginBtn = document.getElementById('loginBtn');
+        const loginModal = document.getElementById('loginModal');
+        const closeLogin = document.getElementById('closeLogin');
+        const loginForm = document.getElementById('loginForm');
+        
+        // Show modal with animation
+        function showModal(modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            modal.style.opacity = '0';
+            modal.style.transition = 'opacity 0.3s ease-in';
+            setTimeout(() => {
+                modal.style.opacity = '1';
+            }, 50);
+        }
+
+        // Hide modal with animation
+        function hideModal(modal) {
+            modal.style.opacity = '0';
+            modal.style.transition = 'opacity 0.3s ease-out';
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                modal.style.opacity = '1';
+            }, 300);
+        }
+
+        // Page no longer manages modal directly; base.html handles it
+    </script>
+{% endblock %}

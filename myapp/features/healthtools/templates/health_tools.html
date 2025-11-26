@@ -1,0 +1,1880 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Health Tools - MediSafe{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    'healthcare-red': '#FF6B35',
+                    'healthcare-blue': '#003366',
+                    'healthcare-light-blue': '#0066CC'
+                }
+            }
+        }
+    }
+</script>
+<style>
+        body {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background: #f0f3f6;
+            color: #2c2c2f;
+            min-height: 100%;
+            line-height: 1.6;
+        }
+
+        html {
+            height: 100%;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        /* using base.html navbar; no standalone nav here */
+
+        /* Page Header */
+        .page-header {
+            background: linear-gradient(135deg, #2c71b7 0%, #b7cce4 100%);
+            padding: 3rem 2rem;
+            color: white;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .page-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .page-header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0 0 1rem 0;
+            letter-spacing: -1px;
+        }
+
+        .page-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin: 0;
+            font-weight: 400;
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        /* Tools Grid */
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+        }
+
+        .tool-card {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(44, 113, 183, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tool-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #2c71b7, #f15e2c);
+        }
+
+        .tool-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+        }
+
+        .tool-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .tool-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #b7cce4, #2c71b7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+
+        .tool-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #2c2c2f;
+            margin: 0;
+        }
+
+        .tool-description {
+            color: #666;
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .tool-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: #2c2c2f;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-tooltip {
+            cursor: help;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-input, .form-select {
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #2c71b7;
+            box-shadow: 0 0 0 3px rgba(44, 113, 183, 0.1);
+        }
+
+        .calculate-btn {
+            background: linear-gradient(135deg, #2c71b7, #4a8bc2);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1rem;
+            margin-top: 1rem;
+        }
+
+        .calculate-btn:hover {
+            background: linear-gradient(135deg, #f15e2c, #ff7849);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(241, 94, 44, 0.3);
+        }
+
+        .result-panel {
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #f0f3f6, #e8f2ff);
+            border-radius: 12px;
+            border-left: 4px solid #2c71b7;
+            display: none;
+        }
+
+        .result-panel.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        .result-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2c71b7;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-category {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            display: inline-block;
+            font-size: 0.85rem;
+        }
+
+        .category-normal {
+            background: rgba(34, 197, 94, 0.1);
+            color: #16a34a;
+        }
+
+        .category-warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: #d97706;
+        }
+
+        .category-high {
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+        }
+
+        .result-description {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .save-result-btn {
+            background: #f15e2c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: all 0.3s;
+        }
+
+        .save-result-btn:hover {
+            background: #d54a1f;
+        }
+
+        /* Progress Indicators */
+        .progress-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: conic-gradient(#2c71b7 0deg, #e5e7eb 0deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 1rem auto;
+            position: relative;
+        }
+
+        .progress-circle::before {
+            content: '';
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: white;
+            position: absolute;
+        }
+
+        .progress-text {
+            position: relative;
+            z-index: 1;
+            font-weight: 700;
+            color: #2c71b7;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .tools-grid {
+                grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            }
+
+            .page-title {
+                font-size: 2rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 2rem 1rem;
+            }
+
+            .tools-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tool-card {
+                padding: 1.5rem;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .page-header {
+                padding: 2rem 1rem;
+            }
+
+            .page-title {
+                font-size: 1.8rem;
+            }
+        }
+
+        /* Animations */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .tool-card {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        .tool-card:nth-child(2) { animation-delay: 0.1s; }
+        .tool-card:nth-child(3) { animation-delay: 0.2s; }
+        .tool-card:nth-child(4) { animation-delay: 0.3s; }
+        .tool-card:nth-child(5) { animation-delay: 0.4s; }
+        .tool-card:nth-child(6) { animation-delay: 0.5s; }
+        .tool-card:nth-child(7) { animation-delay: 0.6s; }
+        .tool-card:nth-child(8) { animation-delay: 0.7s; }
+        .tool-card:nth-child(9) { animation-delay: 0.8s; }
+    </style>
+{% endblock %}
+
+{% block content %}
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <div class="page-header-content">
+            <h1 class="page-title">Health Tools</h1>
+            <p class="page-subtitle">Quick calculators for everyday health decisions</p>
+        </div>
+    </section>
+
+    {% if not is_logged_in %}
+      <!-- Compact Encouraging Message for Non-Logged-In Users -->
+      <div style="background: linear-gradient(135deg, #2c71b7 0%, #2c71b7 100%); color: white; padding: 20px; border-radius: 12px; margin: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+          <div style="flex: 1; min-width: 250px;">
+            <h3 style="font-size: 20px; font-weight: 700; margin: 0 0 8px 0;">Welcome to MediSafe+ Health Tools</h3>
+            <p style="font-size: 14px; opacity: 0.9; margin: 0; line-height: 1.4;">{{ encouraging_message }}</p>
+          </div>
+                    <button class="standard-login-btn" onclick="document.getElementById('loginBtn')?.click();" aria-label="Login to Access Tools">
+                        <i class="fas fa-sign-in-alt" style="margin-right: 6px;"></i>Login to Access Tools
+                    </button>
+        </div>
+      </div>
+      
+            <!-- Login Button now triggers standardized header login modal -->
+    {% endif %}
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Quick Search for Health Tools -->
+        <div style="margin-bottom: 30px; text-align: center;">
+            <div style="position: relative; max-width: 500px; margin: 0 auto;">
+                <input type="text" id="toolSearch" placeholder="Search health tools..." 
+                       style="width: 100%; padding: 15px 20px; border: 2px solid #e2e8f0; border-radius: 25px; font-size: 16px; outline: none; transition: all 0.3s;"
+                       onkeyup="searchTools()">
+                <i class="fas fa-search" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); color: #64748b;"></i>
+            </div>
+        </div>
+        
+        <div class="tools-grid" id="toolsGrid">
+            <!-- BMI Calculator -->
+            <div class="tool-card">
+                <div class="tool-header">
+                    <div class="tool-icon">⚖️</div>
+                    <h3 class="tool-title">BMI Calculator</h3>
+                </div>
+                <p class="tool-description">Calculate your Body Mass Index to assess if you're in a healthy weight range.</p>
+                
+                <form class="tool-form" id="bmi-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">
+                                Height (cm)
+                                <span class="info-tooltip" title="Enter your height in centimeters">ℹ️</span>
+                            </label>
+                            <input type="number" class="form-input" id="height" placeholder="170" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                Weight (kg)
+                                <span class="info-tooltip" title="Enter your weight in kilograms">ℹ️</span>
+                            </label>
+                            <input type="number" class="form-input" id="weight" placeholder="70" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="calculate-btn">Calculate BMI</button>
+                </form>
+
+                <div class="result-panel" id="bmi-result">
+                    <div class="result-value" id="bmi-value"></div>
+                    <div class="result-category" id="bmi-category"></div>
+                    <p class="result-description" id="bmi-description"></p>
+                    <button class="save-result-btn">Save Result</button>
+                </div>
+            </div>
+
+            <!-- Daily Calorie Calculator -->
+            <div class="tool-card">
+                <div class="tool-header">
+                    <div class="tool-icon">🍎</div>
+                    <h3 class="tool-title">Daily Calorie Needs</h3>
+                </div>
+                <p class="tool-description">Estimate your daily caloric needs based on age, gender, and activity level.</p>
+                
+                <form class="tool-form" id="calorie-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Age</label>
+                            <input type="number" class="form-input" id="age" placeholder="30" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Gender</label>
+                            <select class="form-select" id="gender" required>
+                                <option value="">Select</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Activity Level</label>
+                        <select class="form-select" id="activity" required>
+                            <option value="">Select Activity Level</option>
+                            <option value="sedentary">Sedentary (little/no exercise)</option>
+                            <option value="light">Light (light exercise 1-3 days/week)</option>
+                            <option value="moderate">Moderate (moderate exercise 3-5 days/week)</option>
+                            <option value="active">Active (hard exercise 6-7 days/week)</option>
+                            <option value="very-active">Very Active (very hard exercise, physical job)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="calculate-btn">Calculate Calories</button>
+                </form>
+
+                <div class="result-panel" id="calorie-result">
+                    <div class="result-value" id="calorie-value"></div>
+                    <p class="result-description" id="calorie-description"></p>
+                    <button class="save-result-btn">Save Result</button>
+                </div>
+            </div>
+
+            <!-- Blood Pressure Tracker -->
+            <div class="tool-card">
+                <div class="tool-header">
+                    <div class="tool-icon">🩸</div>
+                    <h3 class="tool-title">Blood Pressure Tracker</h3>
+                </div>
+                <p class="tool-description">Track your blood pressure readings and get categorized results.</p>
+                
+                <form class="tool-form" id="bp-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">
+                                Systolic (mmHg)
+                                <span class="info-tooltip" title="The top number in your blood pressure reading">ℹ️</span>
+                            </label>
+                            <input type="number" class="form-input" id="systolic" placeholder="120" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                Diastolic (mmHg)
+                                <span class="info-tooltip" title="The bottom number in your blood pressure reading">ℹ️</span>
+                            </label>
+                            <input type="number" class="form-input" id="diastolic" placeholder="80" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="calculate-btn">Analyze Blood Pressure</button>
+                </form>
+
+                <div class="result-panel" id="bp-result">
+                    <div class="result-value" id="bp-value"></div>
+                    <div class="result-category" id="bp-category"></div>
+                    <p class="result-description" id="bp-description"></p>
+                    <button class="save-result-btn">Save Reading</button>
+                </div>
+            </div>
+
+            <!-- Heart Rate Monitor -->
+            <div class="tool-card">
+                <div class="tool-header">
+                    <div class="tool-icon">💓</div>
+                    <h3 class="tool-title">Heart Rate Monitor</h3>
+                </div>
+                <p class="tool-description">Record and analyze your resting and active heart rates.</p>
+                
+                <form class="tool-form" id="hr-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Resting HR (bpm)</label>
+                            <input type="number" class="form-input" id="resting-hr" placeholder="70" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Active HR (bpm)</label>
+                            <input type="number" class="form-input" id="active-hr" placeholder="140">
+                        </div>
+                    </div>
+                    <button type="submit" class="calculate-btn">Analyze Heart Rate</button>
+                </form>
+
+                <div class="result-panel" id="hr-result">
+                    <div class="result-value" id="hr-value"></div>
+                    <div class="result-category" id="hr-category"></div>
+                    <p class="result-description" id="hr-description"></p>
+                    <button class="save-result-btn">Save Reading</button>
+                </div>
+            </div>
+
+            <!-- Water Intake Tracker -->
+            <div class="tool-card">
+                <div class="tool-header">
+                    <div class="tool-icon">💧</div>
+                    <h3 class="tool-title">Water Intake Tracker</h3>
+                </div>
+                <p class="tool-description">Calculate your daily hydration goals based on your body weight and activity.</p>
+                
+                <form class="tool-form" id="water-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Body Weight (kg)</label>
+                            <input type="number" class="form-input" id="body-weight" placeholder="70" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Exercise Duration (min)</label>
+                            <input type="number" class="form-input" id="exercise-duration" placeholder="30">
+                        </div>
+                    </div>
+                    <button type="submit" class="calculate-btn">Calculate Water Needs</button>
+                </form>
+
+                <div class="result-panel" id="water-result">
+                    <div class="result-value" id="water-value"></div>
+                    <div class="progress-circle" id="water-progress">
+                        <span class="progress-text">0%</span>
+                    </div>
+                    <p class="result-description" id="water-description"></p>
+                    <button class="save-result-btn">Set Daily Goal</button>
+                </div>
+            </div>
+
+            <!-- Sleep Duration Calculator -->
+            <div class="tool-card">
+                <div class="tool-header">
+                    <div class="tool-icon">🌙</div>
+                    <h3 class="tool-title">Sleep Duration Calculator</h3>
+                </div>
+                <p class="tool-description">Analyze your sleep quality and total rest time for optimal health.</p>
+                
+                <form class="tool-form" id="sleep-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Bedtime</label>
+                            <input type="time" class="form-input" id="bedtime" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Wake Time</label>
+                            <input type="time" class="form-input" id="waketime" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Sleep Quality (1-10)</label>
+                        <input type="range" class="form-input" id="sleep-quality" min="1" max="10" value="7">
+                        <span id="quality-display">7</span>
+                    </div>
+                    <button type="submit" class="calculate-btn">Analyze Sleep</button>
+                </form>
+
+                <div class="result-panel" id="sleep-result">
+                    <div class="result-value" id="sleep-value"></div>
+                    <div class="result-category" id="sleep-category"></div>
+                    <p class="result-description" id="sleep-description"></p>
+                    <button class="save-result-btn">Save Sleep Data</button>
+                </div>
+            </div>
+
+            <!-- Body Fat Percentage Estimator -->
+            <div class="tool-card">
+                <div class="tool-header">
+                    <div class="tool-icon">📏</div>
+                    <h3 class="tool-title">Body Fat Percentage</h3>
+                </div>
+                <p class="tool-description">Estimate body fat percentage using waist and neck measurements.</p>
+                
+                <form class="tool-form" id="bodyfat-form">
+                    <div class="form-group">
+                        <label class="form-label">Gender</label>
+                        <select class="form-select" id="bf-gender" required>
+                            <option value="">Select</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Waist (cm)</label>
+                            <input type="number" class="form-input" id="waist" placeholder="85" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Neck (cm)</label>
+                            <input type="number" class="form-input" id="neck" placeholder="38" required>
+                        </div>
+                    </div>
+                    <div class="form-group" id="hip-group" style="display: none;">
+                        <label class="form-label">Hip (cm) - For Women</label>
+                        <input type="number" class="form-input" id="hip" placeholder="95">
+                    </div>
+                    <button type="submit" class="calculate-btn">Calculate Body Fat</button>
+                </form>
+
+                <div class="result-panel" id="bodyfat-result">
+                    <div class="result-value" id="bodyfat-value"></div>
+                    <div class="result-category" id="bodyfat-category"></div>
+                    <p class="result-description" id="bodyfat-description"></p>
+                    <button class="save-result-btn">Save Result</button>
+                </div>
+            </div>
+
+            <!-- Ovulation Calculator -->
+            <div class="tool-card">
+                <div class="tool-header">
+                    <div class="tool-icon">🌸</div>
+                    <h3 class="tool-title">Ovulation Calculator</h3>
+                </div>
+                <p class="tool-description">Predict your most fertile days based on your menstrual cycle.</p>
+                
+                <form class="tool-form" id="ovulation-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Last Period Date</label>
+                            <input type="date" class="form-input" id="last-period" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Cycle Length (days)</label>
+                            <input type="number" class="form-input" id="cycle-length" placeholder="28" value="28" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="calculate-btn">Calculate Ovulation</button>
+                </form>
+
+                <div class="result-panel" id="ovulation-result">
+                    <div class="result-value" id="ovulation-value"></div>
+                    <p class="result-description" id="ovulation-description"></p>
+                    <button class="save-result-btn">Save to Calendar</button>
+                </div>
+            </div>
+
+            <!-- Pregnancy Calendar -->
+            <div class="tool-card">
+                <div class="tool-header">
+                    <div class="tool-icon">👶</div>
+                    <h3 class="tool-title">Pregnancy Calendar</h3>
+                </div>
+                <p class="tool-description">Track your pregnancy journey with important milestones and due date.</p>
+                
+                <form class="tool-form" id="pregnancy-form">
+                    <div class="form-group">
+                        <label class="form-label">Last Menstrual Period</label>
+                        <input type="date" class="form-input" id="lmp-date" required>
+                    </div>
+                    <button type="submit" class="calculate-btn">Calculate Due Date</button>
+                </form>
+
+                <div class="result-panel" id="pregnancy-result">
+                    <div class="result-value" id="pregnancy-value"></div>
+                    <p class="result-description" id="pregnancy-description"></p>
+                    <button class="save-result-btn">Save to Calendar</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    {% block extra_js %}{% endblock %}
+    <script>
+        // Enhanced tooltip system
+        function showTooltip(message, type = 'info') {
+            const tooltip = document.createElement('div');
+            tooltip.className = `tooltip tooltip-${type}`;
+            tooltip.textContent = message;
+            tooltip.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 500;
+                z-index: 10000;
+                animation: slideIn 0.3s ease-out;
+                max-width: 300px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            `;
+            
+            if (type === 'success') {
+                tooltip.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+            } else if (type === 'error') {
+                tooltip.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+            } else {
+                tooltip.style.background = 'linear-gradient(135deg, #3b82f6, #2563eb)';
+            }
+            
+            document.body.appendChild(tooltip);
+            
+            setTimeout(() => {
+                tooltip.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => {
+                    document.body.removeChild(tooltip);
+                }, 300);
+            }, 3000);
+        }
+        
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Load saved BMI data
+        function loadSavedBMI() {
+            if (typeof(Storage) !== "undefined" && localStorage.getItem('lastBMI')) {
+                const savedData = JSON.parse(localStorage.getItem('lastBMI'));
+                document.getElementById('height').value = savedData.height;
+                document.getElementById('weight').value = savedData.weight;
+                showTooltip('Previous BMI data loaded!', 'info');
+            }
+        }
+        
+        // Load saved data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+          loadSavedBMI();
+          
+          // Add input validation for all forms
+          const forms = document.querySelectorAll('form');
+          forms.forEach(form => {
+            const inputs = form.querySelectorAll('input[required]');
+            inputs.forEach(input => {
+              input.addEventListener('blur', function() {
+                validateInput(this);
+              });
+            });
+          });
+        });
+        
+        // Search functionality for health tools
+        function searchTools() {
+          const searchTerm = document.getElementById('toolSearch').value.toLowerCase();
+          const toolCards = document.querySelectorAll('.tool-card');
+          
+          toolCards.forEach(card => {
+            const title = card.querySelector('.tool-title').textContent.toLowerCase();
+            const description = card.querySelector('.tool-description').textContent.toLowerCase();
+            
+            if (title.includes(searchTerm) || description.includes(searchTerm)) {
+              card.style.display = 'block';
+              card.style.animation = 'fadeIn 0.3s ease-in';
+            } else {
+              card.style.display = 'none';
+            }
+          });
+          
+          // Show message if no results found
+          const visibleCards = Array.from(toolCards).filter(card => card.style.display !== 'none');
+          const noResultsMsg = document.getElementById('noResultsMsg');
+          
+          if (visibleCards.length === 0 && searchTerm !== '') {
+            if (!noResultsMsg) {
+              const msg = document.createElement('div');
+              msg.id = 'noResultsMsg';
+              msg.style.textAlign = 'center';
+              msg.style.padding = '40px';
+              msg.style.color = '#64748b';
+              msg.innerHTML = '<i class="fas fa-search" style="font-size: 48px; margin-bottom: 20px; opacity: 0.5;"></i><p>No health tools found matching your search.</p>';
+              document.getElementById('toolsGrid').appendChild(msg);
+            }
+          } else if (noResultsMsg) {
+            noResultsMsg.remove();
+          }
+        }
+        
+        // Enhanced input validation
+        function validateInput(input) {
+          const value = input.value.trim();
+          const type = input.type;
+          const name = input.name;
+          
+          // Remove existing error styling
+          input.style.borderColor = '';
+          const existingError = input.parentNode.querySelector('.error-message');
+          if (existingError) {
+            existingError.remove();
+          }
+          
+          let isValid = true;
+          let errorMessage = '';
+          
+          if (!value) {
+            isValid = false;
+            errorMessage = 'This field is required';
+          } else if (type === 'email') {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(value)) {
+              isValid = false;
+              errorMessage = 'Please enter a valid email address';
+            }
+          } else if (type === 'tel') {
+            const phoneRegex = /^[\+]?[0-9\s\-\(\)]{10,}$/;
+            if (!phoneRegex.test(value)) {
+              isValid = false;
+              errorMessage = 'Please enter a valid phone number';
+            }
+          } else if (name === 'height' && value) {
+            const height = parseFloat(value);
+            if (height < 50 || height > 300) {
+              isValid = false;
+              errorMessage = 'Please enter a realistic height (50-300 cm)';
+            }
+          } else if (name === 'weight' && value) {
+            const weight = parseFloat(value);
+            if (weight < 20 || weight > 500) {
+              isValid = false;
+              errorMessage = 'Please enter a realistic weight (20-500 kg)';
+            }
+          }
+          
+          if (!isValid) {
+            input.style.borderColor = '#ef4444';
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.style.color = '#ef4444';
+            errorDiv.style.fontSize = '12px';
+            errorDiv.style.marginTop = '4px';
+            errorDiv.textContent = errorMessage;
+            input.parentNode.appendChild(errorDiv);
+          }
+          
+          return isValid;
+        }
+        
+        // BMI Calculator with enhanced functionality
+        document.getElementById('bmi-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const height = parseFloat(document.getElementById('height').value) / 100; // Convert to meters
+            const weight = parseFloat(document.getElementById('weight').value);
+            
+            // Enhanced validation
+            if (!height || !weight || height <= 0 || weight <= 0) {
+                showTooltip('Please enter valid height and weight values.', 'error');
+                return;
+            }
+            
+            if (height < 0.5 || height > 3.0) {
+                showTooltip('Please enter a realistic height (50-300 cm).', 'error');
+                return;
+            }
+            
+            if (weight < 20 || weight > 500) {
+                showTooltip('Please enter a realistic weight (20-500 kg).', 'error');
+                return;
+            }
+            
+            const bmi = (weight / (height * height)).toFixed(1);
+            let category, categoryClass, description, recommendations;
+            
+            if (bmi < 18.5) {
+                category = 'Underweight';
+                categoryClass = 'category-warning';
+                description = 'You may need to gain weight. Consider consulting with a healthcare provider.';
+                recommendations = 'Focus on nutrient-dense foods, strength training, and regular meals.';
+            } else if (bmi < 25) {
+                category = 'Normal Weight';
+                categoryClass = 'category-normal';
+                description = 'You have a healthy body weight. Keep up the good work!';
+                recommendations = 'Maintain your current lifestyle with balanced nutrition and regular exercise.';
+            } else if (bmi < 30) {
+                category = 'Overweight';
+                categoryClass = 'category-warning';
+                description = 'You may benefit from weight loss. Consider a balanced diet and exercise.';
+                recommendations = 'Focus on portion control, increase physical activity, and reduce processed foods.';
+            } else {
+                category = 'Obese';
+                categoryClass = 'category-high';
+                description = 'Consider consulting with a healthcare provider for a weight management plan.';
+                recommendations = 'Seek professional guidance for a comprehensive weight management program.';
+            }
+            
+            document.getElementById('bmi-value').textContent = bmi;
+            document.getElementById('bmi-category').textContent = category;
+            document.getElementById('bmi-category').className = `result-category ${categoryClass}`;
+            document.getElementById('bmi-description').textContent = description;
+            document.getElementById('bmi-result').classList.add('show');
+            
+            // Show success message
+            showTooltip('BMI calculated successfully!', 'success');
+            
+            // Save to localStorage for logged-in users
+            if (typeof(Storage) !== "undefined") {
+                const bmiData = {
+                    bmi: bmi,
+                    category: category,
+                    date: new Date().toISOString(),
+                    height: height * 100,
+                    weight: weight
+                };
+                localStorage.setItem('lastBMI', JSON.stringify(bmiData));
+            }
+        });
+
+        // Calorie Calculator
+        document.getElementById('calorie-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const age = parseInt(document.getElementById('age').value);
+            const gender = document.getElementById('gender').value;
+            const height = parseFloat(document.getElementById('height').value);
+            const weight = parseFloat(document.getElementById('weight').value);
+            const activity = document.getElementById('activity').value;
+            
+            if (age && gender && height && weight && activity) {
+                let bmr;
+                if (gender === 'male') {
+                    bmr = 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age);
+                } else {
+                    bmr = 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age);
+                }
+                
+                const activityMultipliers = {
+                    'sedentary': 1.2,
+                    'light': 1.375,
+                    'moderate': 1.55,
+                    'active': 1.725,
+                    'very-active': 1.9
+                };
+                
+                const calories = Math.round(bmr * activityMultipliers[activity]);
+                
+                document.getElementById('calorie-value').textContent = `${calories} calories/day`;
+                document.getElementById('calorie-description').textContent = `Based on your profile, you need approximately ${calories} calories per day to maintain your current weight.`;
+                document.getElementById('calorie-result').classList.add('show');
+            }
+        });
+
+        // Blood Pressure Tracker
+        document.getElementById('bp-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const systolic = parseInt(document.getElementById('systolic').value);
+            const diastolic = parseInt(document.getElementById('diastolic').value);
+            
+            if (systolic && diastolic) {
+                let category, categoryClass, description;
+                
+                if (systolic < 120 && diastolic < 80) {
+                    category = 'Normal';
+                    categoryClass = 'category-normal';
+                    description = 'Your blood pressure is in the normal range. Keep up the healthy lifestyle!';
+                } else if (systolic < 130 && diastolic < 80) {
+                    category = 'Elevated';
+                    categoryClass = 'category-warning';
+                    description = 'Your blood pressure is elevated. Consider lifestyle changes to prevent hypertension.';
+                } else if (systolic < 140 || diastolic < 90) {
+                    category = 'Stage 1 Hypertension';
+                    categoryClass = 'category-warning';
+                    description = 'You have stage 1 hypertension. Consider consulting with your healthcare provider.';
+                } else {
+                    category = 'Stage 2 Hypertension';
+                    categoryClass = 'category-high';
+                    description = 'You have stage 2 hypertension. Please consult with your healthcare provider immediately.';
+                }
+                
+                document.getElementById('bp-value').textContent = `${systolic}/${diastolic} mmHg`;
+                document.getElementById('bp-category').textContent = category;
+                document.getElementById('bp-category').className = `result-category ${categoryClass}`;
+                document.getElementById('bp-description').textContent = description;
+                document.getElementById('bp-result').classList.add('show');
+            }
+        });
+
+        // Heart Rate Monitor
+        document.getElementById('hr-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const restingHR = parseInt(document.getElementById('resting-hr').value);
+            const activeHR = parseInt(document.getElementById('active-hr').value) || 0;
+            
+            if (restingHR) {
+                let category, categoryClass, description;
+                
+                if (restingHR < 60) {
+                    category = 'Low (Athletic)';
+                    categoryClass = 'category-normal';
+                    description = 'Your resting heart rate is low, which is common in well-trained athletes.';
+                } else if (restingHR <= 100) {
+                    category = 'Normal';
+                    categoryClass = 'category-normal';
+                    description = 'Your resting heart rate is within the normal range.';
+                } else {
+                    category = 'High';
+                    categoryClass = 'category-warning';
+                    description = 'Your resting heart rate is elevated. Consider consulting with a healthcare provider.';
+                }
+                
+                document.getElementById('hr-value').textContent = `${restingHR} bpm`;
+                document.getElementById('hr-category').textContent = category;
+                document.getElementById('hr-category').className = `result-category ${categoryClass}`;
+                document.getElementById('hr-description').textContent = description;
+                document.getElementById('hr-result').classList.add('show');
+            }
+        });
+
+        // Water Intake Tracker
+        document.getElementById('water-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const bodyWeight = parseFloat(document.getElementById('body-weight').value);
+            const exerciseDuration = parseInt(document.getElementById('exercise-duration').value) || 0;
+            
+            if (bodyWeight) {
+                const baseWater = bodyWeight * 35; // 35ml per kg
+                const exerciseWater = exerciseDuration * 12; // 12ml per minute of exercise
+                const totalWater = Math.round(baseWater + exerciseWater);
+                const glasses = Math.round(totalWater / 250); // 250ml per glass
+                
+                document.getElementById('water-value').textContent = `${totalWater}ml (${glasses} glasses)`;
+                document.getElementById('water-description').textContent = `Based on your weight and activity level, you should drink approximately ${totalWater}ml of water daily.`;
+                document.getElementById('water-result').classList.add('show');
+            }
+        });
+
+        // Sleep Duration Calculator
+        document.getElementById('sleep-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const bedtime = document.getElementById('bedtime').value;
+            const waketime = document.getElementById('waketime').value;
+            const quality = parseInt(document.getElementById('sleep-quality').value);
+            
+            if (bedtime && waketime) {
+                const bed = new Date(`2000-01-01 ${bedtime}`);
+                let wake = new Date(`2000-01-01 ${waketime}`);
+                
+                if (wake < bed) {
+                    wake.setDate(wake.getDate() + 1);
+                }
+                
+                const duration = (wake - bed) / (1000 * 60 * 60);
+                let category, categoryClass, description;
+                
+                if (duration < 6) {
+                    category = 'Insufficient';
+                    categoryClass = 'category-high';
+                    description = 'You\'re not getting enough sleep. Adults need 7-9 hours for optimal health.';
+                } else if (duration <= 9) {
+                    category = 'Optimal';
+                    categoryClass = 'category-normal';
+                    description = 'Great! You\'re getting the recommended amount of sleep.';
+                } else {
+                    category = 'Excessive';
+                    categoryClass = 'category-warning';
+                    description = 'You might be sleeping too much. Consider adjusting your sleep schedule.';
+                }
+                
+                document.getElementById('sleep-value').textContent = `${duration.toFixed(1)} hours`;
+                document.getElementById('sleep-category').textContent = category;
+                document.getElementById('sleep-category').className = `result-category ${categoryClass}`;
+                document.getElementById('sleep-description').textContent = description;
+                document.getElementById('sleep-result').classList.add('show');
+            }
+        });
+
+        // Body Fat Calculator
+        document.getElementById('bf-gender').addEventListener('change', function() {
+            const hipGroup = document.getElementById('hip-group');
+            if (this.value === 'female') {
+                hipGroup.style.display = 'block';
+            } else {
+                hipGroup.style.display = 'none';
+            }
+        });
+
+        document.getElementById('bodyfat-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const gender = document.getElementById('bf-gender').value;
+            const waist = parseFloat(document.getElementById('waist').value);
+            const neck = parseFloat(document.getElementById('neck').value);
+            const hip = parseFloat(document.getElementById('hip').value) || 0;
+            const height = parseFloat(document.getElementById('height').value);
+            
+            if (gender && waist && neck && height) {
+                let bodyFat;
+                
+                if (gender === 'male') {
+                    bodyFat = 495 / (1.0324 - 0.19077 * Math.log10(waist - neck) + 0.15456 * Math.log10(height)) - 450;
+                } else {
+                    if (hip) {
+                        bodyFat = 495 / (1.29579 - 0.35004 * Math.log10(waist + hip - neck) + 0.22100 * Math.log10(height)) - 450;
+                    } else {
+                        alert('Hip measurement is required for women');
+                        return;
+                    }
+                }
+                
+                bodyFat = Math.max(0, bodyFat).toFixed(1);
+                
+                let category, categoryClass, description;
+                const bf = parseFloat(bodyFat);
+                
+                if (gender === 'male') {
+                    if (bf < 6) {
+                        category = 'Essential Fat';
+                        categoryClass = 'category-warning';
+                        description = 'This is below the essential fat level. Consider consulting a healthcare provider.';
+                    } else if (bf < 14) {
+                        category = 'Athletic';
+                        categoryClass = 'category-normal';
+                        description = 'You have an athletic body fat percentage.';
+                    } else if (bf < 18) {
+                        category = 'Fitness';
+                        categoryClass = 'category-normal';
+                        description = 'You have a fitness-level body fat percentage.';
+                    } else if (bf < 25) {
+                        category = 'Average';
+                        categoryClass = 'category-normal';
+                        description = 'You have an average body fat percentage.';
+                    } else {
+                        category = 'Above Average';
+                        categoryClass = 'category-warning';
+                        description = 'Consider incorporating more exercise and a balanced diet.';
+                    }
+                } else {
+                    if (bf < 10) {
+                        category = 'Essential Fat';
+                        categoryClass = 'category-warning';
+                        description = 'This is below the essential fat level. Consider consulting a healthcare provider.';
+                    } else if (bf < 17) {
+                        category = 'Athletic';
+                        categoryClass = 'category-normal';
+                        description = 'You have an athletic body fat percentage.';
+                    } else if (bf < 21) {
+                        category = 'Fitness';
+                        categoryClass = 'category-normal';
+                        description = 'You have a fitness-level body fat percentage.';
+                    } else if (bf < 32) {
+                        category = 'Average';
+                        categoryClass = 'category-normal';
+                        description = 'You have an average body fat percentage.';
+                    } else {
+                        category = 'Above Average';
+                        categoryClass = 'category-warning';
+                        description = 'Consider incorporating more exercise and a balanced diet.';
+                    }
+                }
+                
+                document.getElementById('bodyfat-value').textContent = `${bodyFat}%`;
+                document.getElementById('bodyfat-category').textContent = category;
+                document.getElementById('bodyfat-category').className = `result-category ${categoryClass}`;
+                document.getElementById('bodyfat-description').textContent = description;
+                document.getElementById('bodyfat-result').classList.add('show');
+            }
+        });
+
+        // Ovulation Calculator
+        document.getElementById('ovulation-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const lastPeriod = new Date(document.getElementById('last-period').value);
+            const cycleLength = parseInt(document.getElementById('cycle-length').value);
+            
+            if (lastPeriod && cycleLength) {
+                const ovulationDate = new Date(lastPeriod);
+                ovulationDate.setDate(ovulationDate.getDate() + cycleLength - 14);
+                
+                const fertileStart = new Date(ovulationDate);
+                fertileStart.setDate(fertileStart.getDate() - 5);
+                
+                const fertileEnd = new Date(ovulationDate);
+                fertileEnd.setDate(fertileEnd.getDate() + 1);
+                
+                document.getElementById('ovulation-value').textContent = ovulationDate.toLocaleDateString();
+                document.getElementById('ovulation-description').textContent = 
+                    `Your fertile window is from ${fertileStart.toLocaleDateString()} to ${fertileEnd.toLocaleDateString()}. ` +
+                    `Ovulation is most likely on ${ovulationDate.toLocaleDateString()}.`;
+                document.getElementById('ovulation-result').classList.add('show');
+            }
+        });
+
+        // Pregnancy Calendar
+        document.getElementById('pregnancy-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const lmp = new Date(document.getElementById('lmp-date').value);
+            
+            if (lmp) {
+                const dueDate = new Date(lmp);
+                dueDate.setDate(dueDate.getDate() + 280); // 40 weeks
+                
+                const today = new Date();
+                const weeksPregnant = Math.floor((today - lmp) / (7 * 24 * 60 * 60 * 1000));
+                
+                document.getElementById('pregnancy-value').textContent = dueDate.toLocaleDateString();
+                document.getElementById('pregnancy-description').textContent = 
+                    `Based on your last menstrual period, your estimated due date is ${dueDate.toLocaleDateString()}. ` +
+                    `You are approximately ${Math.max(0, weeksPregnant)} weeks pregnant.`;
+                document.getElementById('pregnancy-result').classList.add('show');
+            }
+        });
+
+        // Sleep quality slider
+        document.getElementById('sleep-quality').addEventListener('input', function() {
+            document.getElementById('quality-display').textContent = this.value;
+        });
+
+        // Save result buttons
+        document.querySelectorAll('.save-result-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                alert('Result saved to your health profile!');
+            });
+        });
+
+        // Page-only JS below. Navbar interactions handled by base.html
+
+    </script>
+
+    {# Removed duplicate login modal; base.html includes shared auth modals for guests #}
+
+    <!-- Signup Modal -->
+    <div id="signupModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50">
+        <div class="bg-gradient-to-br from-red-50 via-white to-blue-50 rounded-2xl p-8 max-w-4xl w-full mx-4 relative shadow-2xl modal-enter max-h-[90vh] overflow-hidden flex flex-col">
+            <button id="closeSignup" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl transition-colors duration-200 hover:bg-gray-100 rounded-full w-10 h-10 flex items-center justify-center">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="text-center mb-6 flex-shrink-0">
+                <div class="bg-gradient-to-r from-healthcare-red to-red-600 text-white w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <i class="fas fa-user-plus text-3xl"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-healthcare-blue">Join MediSafe+</h2>
+                <p class="text-gray-600 mt-2">Create your healthcare account today</p>
+            </div>
+            
+            <!-- Scrollable Form Container -->
+            <div class="flex-1 overflow-y-auto pr-2">
+                <form id="signupForm" class="space-y-5" enctype="multipart/form-data">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-healthcare-blue mb-2">First Name</label>
+                        <input type="text" name="first_name" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" placeholder="First name" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-healthcare-blue mb-2">Last Name</label>
+                        <input type="text" name="last_name" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" placeholder="Last name" required>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-healthcare-blue mb-2">Middle Name</label>
+                    <input type="text" name="middle_name" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" placeholder="Middle name (optional)">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-healthcare-blue mb-2">Birthday</label>
+                    <input type="date" name="birthday" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" required>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-healthcare-blue mb-2">Email Address</label>
+                    <input type="email" name="email" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" placeholder="your.email@example.com" required>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-healthcare-blue mb-2">Sex</label>
+                    <div class="flex space-x-4">
+                        <label class="flex items-center">
+                            <input type="radio" name="sex" value="male" class="mr-2">
+                            <span>Male</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="sex" value="female" class="mr-2">
+                            <span>Female</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="sex" value="other" class="mr-2">
+                            <span>Other</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-healthcare-blue mb-2">Civil Status</label>
+                    <select name="civil_status" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" required>
+                        <option value="">Select Civil Status</option>
+                        <option value="single">Single</option>
+                        <option value="married">Married</option>
+                        <option value="divorced">Divorced</option>
+                        <option value="widowed">Widowed</option>
+                        <option value="separated">Separated</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-healthcare-blue mb-2">Address</label>
+                    <textarea name="address" rows="3" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" placeholder="Enter your complete address" required></textarea>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-healthcare-blue mb-2">Contact Person</label>
+                    <input type="text" name="contact_person" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" placeholder="Emergency contact person" required>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-healthcare-blue mb-2">Relationship to Patient</label>
+                    <input type="text" name="relationship_to_patient" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" placeholder="e.g., Spouse, Parent, Sibling" required>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-healthcare-blue mb-2">Contact Number</label>
+                    <input type="text" name="contact_number" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" placeholder="Emergency contact number" required>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-healthcare-blue mb-2">Patient Photo</label>
+                    <div class="space-y-3">
+                        <input type="file" name="photo_url" id="photo_url" accept="image/*" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white">
+                        <button type="button" id="cameraBtn" class="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-2 rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-semibold">
+                            <i class="fas fa-camera mr-2"></i>Take Photo with Camera
+                        </button>
+                        <div id="cameraPreview" class="hidden">
+                            <video id="cameraVideo" class="w-full h-48 bg-gray-100 rounded-xl"></video>
+                            <div class="flex space-x-2 mt-2">
+                                <button type="button" id="captureBtn" class="flex-1 bg-green-500 text-white py-2 rounded-xl hover:bg-green-600 transition-all duration-200">
+                                    <i class="fas fa-camera mr-2"></i>Capture
+                                </button>
+                                <button type="button" id="cancelCameraBtn" class="flex-1 bg-red-500 text-white py-2 rounded-xl hover:bg-red-600 transition-all duration-200">
+                                    <i class="fas fa-times mr-2"></i>Cancel
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="photoCanvas" class="hidden"></canvas>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-healthcare-blue mb-2">Phone Number</label>
+                        <input type="tel" name="phone_number" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" placeholder="+63 912 345 6789" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-healthcare-blue mb-2">Phone Type</label>
+                        <select name="phone_type" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" required>
+                            <option value="">Select Type</option>
+                            <option value="mobile">Mobile</option>
+                            <option value="home">Home</option>
+                            <option value="work">Work</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-healthcare-blue mb-2">Username</label>
+                    <input type="text" name="username" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" placeholder="Choose a username" required>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-healthcare-blue mb-2">Password</label>
+                    <input type="password" name="password" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" placeholder="Create a secure password" required>
+                </div>
+                
+                <div class="flex items-start space-x-3">
+                    <input type="checkbox" name="data_privacy_consent" id="data_privacy_consent" class="mt-1" required>
+                    <label for="data_privacy_consent" class="text-sm text-gray-700">
+                        I agree to the <button type="button" id="privacyPolicyBtn" class="text-healthcare-blue hover:underline font-semibold">Data Privacy Policy</button> and consent to the processing of my personal data.
+                    </label>
+                </div>
+                
+                </form>
+            </div>
+            
+            <!-- Fixed Submit Button -->
+            <div class="flex-shrink-0 mt-6 pt-4 border-t border-gray-200">
+                <button type="submit" form="signupForm" class="w-full bg-gradient-to-r from-healthcare-red to-red-600 text-white py-3 rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105">
+                    <i class="fas fa-user-plus mr-2"></i>Create Account
+                </button>
+                
+                <div class="text-center mt-4">
+                    <div class="text-gray-600 text-sm">
+                        Already have an account? 
+                        <button type="button" id="switchToLogin" class="text-healthcare-light-blue hover:underline font-semibold">Sign In Here</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Privacy Policy Modal -->
+    <div id="privacyPolicyModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl max-w-4xl w-full mx-4 relative shadow-2xl max-h-[90vh] overflow-y-auto modal-enter">
+            <button id="closePrivacyPolicy" class="absolute top-6 right-6 text-gray-500 hover:text-gray-700 text-2xl z-10 bg-gray-100 rounded-full w-12 h-12 flex items-center justify-center transition-all duration-200 hover:bg-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="p-8">
+                <h2 class="text-3xl font-bold text-healthcare-blue mb-6">Data Privacy Policy</h2>
+                
+                <div class="prose max-w-none">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">1. Information We Collect</h3>
+                    <p class="text-gray-700 mb-4">
+                        We collect personal information that you provide directly to us, including but not limited to:
+                    </p>
+                    <ul class="list-disc list-inside text-gray-700 mb-6 space-y-2">
+                        <li>Personal identification information (name, date of birth, gender, civil status)</li>
+                        <li>Contact information (address, phone numbers, email)</li>
+                        <li>Medical information and health records</li>
+                        <li>Emergency contact information</li>
+                        <li>Profile photographs</li>
+                    </ul>
+
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">2. How We Use Your Information</h3>
+                    <p class="text-gray-700 mb-4">
+                        We use your personal information for the following purposes:
+                    </p>
+                    <ul class="list-disc list-inside text-gray-700 mb-6 space-y-2">
+                        <li>To provide healthcare services and medical consultations</li>
+                        <li>To maintain accurate medical records</li>
+                        <li>To communicate with you about appointments and medical care</li>
+                        <li>To contact emergency contacts when necessary</li>
+                        <li>To improve our healthcare services</li>
+                    </ul>
+
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">3. Information Sharing</h3>
+                    <p class="text-gray-700 mb-4">
+                        We do not sell, trade, or otherwise transfer your personal information to third parties without your consent, except:
+                    </p>
+                    <ul class="list-disc list-inside text-gray-700 mb-6 space-y-2">
+                        <li>When required by law or legal process</li>
+                        <li>To protect our rights and the safety of our users</li>
+                        <li>With your explicit consent</li>
+                        <li>In case of medical emergencies</li>
+                    </ul>
+
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">4. Data Security</h3>
+                    <p class="text-gray-700 mb-4">
+                        We implement appropriate security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction.
+                    </p>
+
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">5. Your Rights</h3>
+                    <p class="text-gray-700 mb-4">
+                        You have the right to:
+                    </p>
+                    <ul class="list-disc list-inside text-gray-700 mb-6 space-y-2">
+                        <li>Access your personal information</li>
+                        <li>Correct inaccurate information</li>
+                        <li>Request deletion of your information</li>
+                        <li>Withdraw consent at any time</li>
+                        <li>File a complaint with relevant authorities</li>
+                    </ul>
+
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">6. Contact Information</h3>
+                    <p class="text-gray-700 mb-4">
+                        If you have any questions about this Privacy Policy, please contact us at:
+                    </p>
+                    <p class="text-gray-700">
+                        Email: privacy@medisafe.com<br>
+                        Phone: +1 (555) 123-4567<br>
+                        Address: 123 Healthcare Ave, Medical District, NY 10001
+                    </p>
+                </div>
+                
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <button id="acceptPrivacyPolicy" class="w-full bg-gradient-to-r from-healthcare-blue to-healthcare-light-blue text-white py-3 rounded-xl hover:from-healthcare-light-blue hover:to-blue-700 transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl">
+                        <i class="fas fa-check mr-2"></i>I Understand and Accept
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Modal elements
+        const loginBtn = document.getElementById('loginBtn');
+        const loginModal = document.getElementById('loginModal');
+        const signupModal = document.getElementById('signupModal');
+        const privacyPolicyModal = document.getElementById('privacyPolicyModal');
+        const closeLogin = document.getElementById('closeLogin');
+        const closeSignup = document.getElementById('closeSignup');
+        const closePrivacyPolicy = document.getElementById('closePrivacyPolicy');
+        const switchToSignup = document.getElementById('switchToSignup');
+          const switchToLogin = document.getElementById('switchToLogin');
+          const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
+        const privacyPolicyBtn = document.getElementById('privacyPolicyBtn');
+        const acceptPrivacyPolicy = document.getElementById('acceptPrivacyPolicy');
+        
+        // Camera elements
+        const cameraBtn = document.getElementById('cameraBtn');
+        const cameraPreview = document.getElementById('cameraPreview');
+        const cameraVideo = document.getElementById('cameraVideo');
+        const captureBtn = document.getElementById('captureBtn');
+        const cancelCameraBtn = document.getElementById('cancelCameraBtn');
+        const photoCanvas = document.getElementById('photoCanvas');
+        const patientPhotoInput = document.getElementById('photo_url');
+        
+        let stream = null;
+
+        // Show modal with animation
+        function showModal(modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            modal.style.opacity = '0';
+            modal.style.transition = 'opacity 0.3s ease-in';
+            setTimeout(() => {
+                modal.style.opacity = '1';
+            }, 50);
+        }
+
+        // Hide modal with animation
+        function hideModal(modal) {
+            modal.style.opacity = '0';
+            modal.style.transition = 'opacity 0.3s ease-out';
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                modal.style.opacity = '1';
+            }, 300);
+        }
+
+        // Show login modal
+        if (loginBtn) {
+            loginBtn.addEventListener('click', () => showModal(loginModal));
+        }
+
+        // Close modals
+        if (closeLogin) {
+            closeLogin.addEventListener('click', () => hideModal(loginModal));
+        }
+        if (closeSignup) {
+            closeSignup.addEventListener('click', () => hideModal(signupModal));
+        }
+        if (closePrivacyPolicy) {
+            closePrivacyPolicy.addEventListener('click', () => hideModal(privacyPolicyModal));
+        }
+        
+        // Privacy Policy Modal
+        if (privacyPolicyBtn) {
+            privacyPolicyBtn.addEventListener('click', () => showModal(privacyPolicyModal));
+        }
+        if (acceptPrivacyPolicy) {
+            acceptPrivacyPolicy.addEventListener('click', () => {
+                hideModal(privacyPolicyModal);
+                document.getElementById('data_privacy_consent').checked = true;
+            });
+        }
+
+        // Switch between login and signup
+        if (switchToSignup) {
+            switchToSignup.addEventListener('click', () => {
+                hideModal(loginModal);
+                setTimeout(() => showModal(signupModal), 100);
+            });
+        }
+
+          if (switchToLogin) {
+            switchToLogin.addEventListener('click', () => {
+                hideModal(signupModal);
+                setTimeout(() => showModal(loginModal), 100);
+            });
+        }
+
+        // Close modals when clicking outside
+        [loginModal, signupModal, privacyPolicyModal].forEach(modal => {
+            if (modal) {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        hideModal(modal);
+                    }
+                });
+            }
+        });
+        
+        // Camera functionality
+        if (cameraBtn) {
+            cameraBtn.addEventListener('click', async () => {
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { 
+                            facingMode: 'user',
+                            width: { ideal: 640 },
+                            height: { ideal: 480 }
+                        } 
+                    });
+                    cameraVideo.srcObject = stream;
+                    cameraPreview.classList.remove('hidden');
+                    cameraBtn.classList.add('hidden');
+                } catch (error) {
+                    alert('Camera access denied. Please allow camera access to take a photo.');
+                    console.error('Camera error:', error);
+                }
+            });
+        }
+        
+        if (captureBtn) {
+            captureBtn.addEventListener('click', () => {
+                const canvas = photoCanvas;
+                const video = cameraVideo;
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // Convert canvas to blob and set as file input
+                canvas.toBlob((blob) => {
+                    const file = new File([blob], 'photo_url.jpg', { type: 'image/jpeg' });
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(file);
+                    patientPhotoInput.files = dataTransfer.files;
+                }, 'image/jpeg', 0.8);
+                
+                // Stop camera
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                
+                cameraPreview.classList.add('hidden');
+                cameraBtn.classList.remove('hidden');
+                
+                alert('Photo captured successfully!');
+            });
+        }
+        
+        if (cancelCameraBtn) {
+            cancelCameraBtn.addEventListener('click', () => {
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                cameraPreview.classList.add('hidden');
+                cameraBtn.classList.remove('hidden');
+            });
+        }
+
+        // Login form submission
+          if (loginForm) {
+            loginForm.addEventListener('submit', async (e) => {
+              e.preventDefault();
+                console.log('Login form submitted');
+                const username = loginForm.querySelector('input[name="username"]').value;
+                const password = loginForm.querySelector('input[name="password"]').value;
+                const csrfToken = loginForm.querySelector('input[name="csrfmiddlewaretoken"]').value;
+                console.log('Login data:', { username });
+
+              try {
+                const response = await fetch('/login/', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                  },
+                  body: JSON.stringify({ username, password }),
+                  credentials: 'same-origin'
+                });
+
+                const data = await response.json();
+                    console.log('Login response:', data);
+                
+                    const errorDiv = document.getElementById('loginError');
+                if (response.ok) {
+                        errorDiv.classList.add('hidden');
+                        
+                        // Show welcome message if available
+                        if (data.welcome_message) {
+                            const welcomeDiv = document.createElement('div');
+                            welcomeDiv.style.position = 'fixed';
+                            welcomeDiv.style.top = '20px';
+                            welcomeDiv.style.right = '20px';
+                            welcomeDiv.style.backgroundColor = '#d1fae5';
+                            welcomeDiv.style.borderLeft = '4px solid #10b981';
+                            welcomeDiv.style.color = '#065f46';
+                            welcomeDiv.style.padding = '14px 16px';
+                            welcomeDiv.style.borderRadius = '8px';
+                            welcomeDiv.style.fontWeight = '600';
+                            welcomeDiv.style.fontSize = '14px';
+                            welcomeDiv.style.zIndex = '9999';
+                            welcomeDiv.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                            welcomeDiv.textContent = data.welcome_message;
+                            document.body.appendChild(welcomeDiv);
+                            
+                            // Auto remove after 4 seconds
+                            setTimeout(() => {
+                                welcomeDiv.style.opacity = '0';
+                                welcomeDiv.style.transition = 'opacity 0.3s ease-out';
+                                setTimeout(() => welcomeDiv.remove(), 300);
+                            }, 4000);
+                        }
+                        
+                        // Redirect after brief delay to allow welcome message to show
+                        setTimeout(() => {
+                            window.location.href = data.redirect;
+                        }, 500);
+                } else {
+                  errorDiv.textContent = data.message || 'Login failed. Please check your credentials.';
+                        errorDiv.classList.remove('hidden');
+                }
+              } catch (error) {
+                console.error('Login error:', error);
+                const errorDiv = document.getElementById('loginError');
+                errorDiv.textContent = 'A network error occurred. Please check your connection and try again.';
+                    errorDiv.classList.remove('hidden');
+                    errorDiv.classList.add('bg-red-50', 'border', 'border-red-100');
+              }
+            });
+          }
+
+        // Handle signup form submission
+        if (signupForm) {
+            signupForm.addEventListener('submit', async (e) => {
+              e.preventDefault();
+                const form = e.target;
+
+                // Remove any existing error states
+                form.querySelectorAll('input').forEach(input => {
+                    input.classList.remove('border-red-500', 'bg-red-50');
+                });
+
+              const userData = {
+                    first_name: form.querySelector('input[name="first_name"]').value.trim(),
+                    middle_name: form.querySelector('input[name="middle_name"]').value.trim(),
+                    last_name: form.querySelector('input[name="last_name"]').value.trim(),
+                    birthday: form.querySelector('input[name="birthday"]').value,
+                    email: form.querySelector('input[name="email"]').value.trim(),
+                    sex: form.querySelector('input[name="sex"]:checked')?.value,
+                    civil_status: form.querySelector('select[name="civil_status"]').value,
+                    address: form.querySelector('textarea[name="address"]').value.trim(),
+                    contact_person: form.querySelector('input[name="contact_person"]').value.trim(),
+                    relationship_to_patient: form.querySelector('input[name="relationship_to_patient"]').value.trim(),
+                    contact_number: form.querySelector('input[name="contact_number"]').value.trim(),
+                    phone_number: form.querySelector('input[name="phone_number"]').value.trim(),
+                    phone_type: form.querySelector('select[name="phone_type"]').value,
+                    username: form.querySelector('input[name="username"]').value.trim(),
+                    password: form.querySelector('input[name="password"]').value,
+                    data_privacy_consent: form.querySelector('input[name="data_privacy_consent"]').checked,
+                role: 'patient'
+              };
+
+              try {
+                    const result = await HealthcareAPI.register(userData);
+                    // The HealthcareAPI.register function will handle all success cases
+                } catch (error) {
+                    // Show error message
+                    const errorMessage = document.createElement('div');
+                    errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center';
+                    
+                    // Handle specific error cases
+                    let errorText = 'Registration failed. Please try again.';
+                    if (error.message.includes('Email already exists')) {
+                        errorText = 'This email address is already registered. Please use a different email or login to your existing account.';
+                        // Highlight the email field
+                        const emailInput = form.querySelector('input[name="email"]');
+                        emailInput.classList.add('border-red-500', 'bg-red-50');
+                        emailInput.focus();
+                    } else if (error.message.includes('Username already exists')) {
+                        errorText = 'This username is already taken. Please choose a different username.';
+                        // Highlight the username field
+                        const usernameInput = form.querySelector('input[name="username"]');
+                        usernameInput.classList.add('border-red-500', 'bg-red-50');
+                        usernameInput.focus();
+                    }
+                    
+                    errorMessage.innerHTML = `
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        <span>${errorText}</span>
+                    `;
+                    document.body.appendChild(errorMessage);
+                    
+                    // Remove error highlighting when user starts typing
+                    const inputs = form.querySelectorAll('input');
+                    inputs.forEach(input => {
+                        input.addEventListener('input', function() {
+                            this.classList.remove('border-red-500', 'bg-red-50');
+                        });
+                    });
+
+                    // Remove error message after 5 seconds
+                    setTimeout(() => {
+                        errorMessage.style.opacity = '0';
+                        errorMessage.style.transition = 'opacity 0.5s ease-out';
+                        setTimeout(() => {
+                            document.body.removeChild(errorMessage);
+                        }, 500);
+                    }, 5000);
+                }
+            });
+        }
+
+        // Close modals with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                hideModal(loginModal);
+                hideModal(signupModal);
+                hideModal(privacyPolicyModal);
+            }
+        });
+    </script>
+    
+    <!-- Load HealthcareAPI from app.js -->
+    <script src="{% static 'app.js' %}"></script>
+{% endblock %}

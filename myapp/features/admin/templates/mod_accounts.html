@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Account Management | Medisafe+</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link href="{% static 'css/mod_accounts.css' %}" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'healthcare-red': '#FF0000',
+            'healthcare-blue': '#003366',
+            'healthcare-light-blue': '#0066CC'
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
+  <!-- Main Layout -->
+  <div class="flex h-screen bg-gray-50">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-healthcare-blue text-white shadow-lg">
+      <!-- Logo -->
+      <div class="p-4 border-b border-healthcare-light-blue/30">
+        <div class="flex items-center space-x-3">
+          <div style="display:flex;align-items:center;gap:10px">
+            <img src="/media/logo/Medisafe%20Logo.jpg" alt="MediSafe" style="height:44px;width:auto;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.06)" />
+            <span class="font-bold text-lg">MediSafe+</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="p-4">
+        <div class="mb-4">
+          <div class="relative">
+            <input type="text" 
+                   placeholder="Search..." 
+                   class="w-full bg-white/10 text-white placeholder-white/60 px-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-white/30">
+            <i class="fas fa-search absolute right-3 top-2.5 text-white/60"></i>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <a href="{% url 'moddashboard' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-chart-pie"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="{% url 'mod_doctors' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-users-cog"></i>
+            <span>Medisafe Team</span>
+          </a>
+          <a href="{% url 'mod_records' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-hospital-user"></i>
+            <span>Patient Records</span>
+          </a>
+          <a href="{% url 'mod_users' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg bg-white/20 text-white">
+            <i class="fas fa-users"></i>
+            <span>User Management</span>
+          </a>
+          <a href="{% url 'mod_consultations' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-calendar-check"></i>
+            <span>Appointments</span>
+          </a>
+          <a href="{% url 'mod_analytics' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-chart-line"></i>
+            <span>Analytics</span>
+          </a>
+        </div>
+      </nav>
+
+      <!-- User Profile -->
+      <div class="mt-auto p-4 border-t border-healthcare-light-blue/30">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="bg-white/10 p-2 rounded-full">
+              <i class="fas fa-user-md"></i>
+            </div>
+            <div class="text-sm">
+              <p class="font-semibold">Admin</p>
+              <p class="text-white/60 text-xs">Online</p>
+            </div>
+          </div>
+          <a href="{% url 'logout' %}" class="text-white/60 hover:text-white">
+            <i class="fas fa-sign-out-alt"></i>
+          </a>
+        </div>
+        
+        <!-- Super Admin Component Include -->
+        {% include 'super_admin_component.html' %}
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-8">
+      <!-- Header -->
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-healthcare-blue mb-2">Account Management</h1>
+        <p class="text-gray-600">Manage and monitor all user accounts in the system</p>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="dashboard-card p-6 rounded-xl">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 mb-1">Total Accounts</p>
+              <h3 class="text-2xl font-bold text-healthcare-blue">{{ total_accounts }}</h3>
+            </div>
+            <div class="bg-healthcare-blue/10 p-3 rounded-lg">
+              <i class="fas fa-users text-2xl text-healthcare-blue"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-card p-6 rounded-xl">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 mb-1">Active Accounts</p>
+              <h3 class="text-2xl font-bold text-green-600">{{ active_accounts }}</h3>
+            </div>
+            <div class="bg-green-100 p-3 rounded-lg">
+              <i class="fas fa-user-check text-2xl text-green-600"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-card p-6 rounded-xl">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 mb-1">Inactive Accounts</p>
+              <h3 class="text-2xl font-bold text-red-600">{{ inactive_accounts }}</h3>
+            </div>
+            <div class="bg-red-100 p-3 rounded-lg">
+              <i class="fas fa-user-times text-2xl text-red-600"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search and Filters -->
+      <div class="dashboard-card rounded-xl overflow-hidden mb-6 p-6">
+        <div class="flex flex-col md:flex-row md:items-center gap-3">
+          <input id="accountSearch" type="text" placeholder="Search by username, email, role..." class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+          <select id="accountStatus" class="px-4 py-2 border rounded-lg">
+            <option value="all">All</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="dashboard-card rounded-xl overflow-hidden">
+        <div class="p-6 border-b border-gray-200">
+          <h2 class="text-xl font-bold text-healthcare-blue">Recent Account Activity</h2>
+        </div>
+        <div class="p-6">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left">
+              <thead>
+                <tr class="border-b border-gray-200">
+                  <th class="pb-3 font-semibold text-gray-600">User ID</th>
+                  <th class="pb-3 font-semibold text-gray-600">Username</th>
+                  <th class="pb-3 font-semibold text-gray-600">Email</th>
+                  <th class="pb-3 font-semibold text-gray-600">Role</th>
+                  <th class="pb-3 font-semibold text-gray-600">Last Login</th>
+                  <th class="pb-3 font-semibold text-gray-600">Date Joined</th>
+                  <th class="pb-3 font-semibold text-gray-600">Status</th>
+                  <th class="pb-3 font-semibold text-gray-600">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for account in accounts %}
+                <tr class="border-b border-gray-100">
+                  <td class="py-3 text-gray-600">{{ account.user_id }}</td>
+                  <td class="py-3">
+                    <div class="flex items-center">
+                      <div class="bg-healthcare-blue/10 w-8 h-8 rounded-full flex items-center justify-center mr-3">
+                        <i class="fas fa-user text-healthcare-blue"></i>
+                      </div>
+                      {{ account.username }}
+                    </div>
+                  </td>
+                  <td class="py-3 text-gray-600">{{ account.email }}</td>
+                  <td class="py-3">
+                    <span class="px-2 py-1 rounded-full text-xs font-medium 
+                      {% if account.role == 'admin' %}bg-purple-100 text-purple-700
+                      {% elif account.role == 'doctor' %}bg-blue-100 text-blue-700
+                      {% elif account.role == 'nurse' %}bg-green-100 text-green-700
+                      {% else %}bg-gray-100 text-gray-700{% endif %}">
+                      {{ account.role|title }}
+                    </span>
+                  </td>
+                  <td class="py-3 text-gray-600">
+                    {% if account.last_login %}
+                      {{ account.last_login|date:"M d, Y H:i" }}
+                    {% else %}
+                      Never
+                    {% endif %}
+                  </td>
+                  <td class="py-3 text-gray-600">{{ account.date_joined|date:"M d, Y H:i" }}</td>
+                  <td class="py-3">
+                    <span class="px-2 py-1 rounded-full text-xs font-medium 
+                      {% if account.status %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                      {% if account.status %}Active{% else %}Inactive{% endif %}
+                    </span>
+                  </td>
+                  <td class="py-3">
+                    <div class="flex gap-2">
+                      {% if account.status %}
+                      <form action="{% url 'deactivate_account' account.user_id %}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to deactivate this account?');">
+                        {% csrf_token %}
+                        <button type="submit" class="px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white rounded text-xs">
+                          Deactivate
+                        </button>
+                      </form>
+                      {% else %}
+                      <form action="{% url 'activate_account' account.user_id %}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to activate this account?');">
+                        {% csrf_token %}
+                        <button type="submit" class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-xs">
+                          Activate
+                        </button>
+                      </form>
+                      {% endif %}
+                      <form action="{% url 'delete_account' account.user_id %}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to permanently delete this account? This cannot be undone.');">
+                        {% csrf_token %}
+                        <button type="submit" class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-xs">
+                          Delete
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Mobile sidebar toggle
+    const sidebarToggle = document.querySelector('[data-drawer-toggle="admin-sidebar"]');
+    const sidebar = document.getElementById('admin-sidebar');
+    
+    if (sidebarToggle && sidebar) {
+      sidebarToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('-translate-x-full');
+      });
+    }
+
+    // ============= SUPER ADMIN PERMISSION CHECKS =============
+    let isSuperAdmin = false;
+    async function checkSuperAdminStatus() {
+      try {
+        const response = await fetch('/check-super-admin-status/');
+        const data = await response.json();
+        isSuperAdmin = data.is_super_admin;
+        updateAccountsPermissionUI();
+      } catch (error) {
+        console.log('Could not check super admin status');
+      }
+    }
+
+    function updateAccountsPermissionUI() {
+      if (!isSuperAdmin) {
+        // Hide/disable deactivate and delete buttons
+        document.querySelectorAll('form[action*="deactivate_account"], form[action*="delete_account"]').forEach(form => {
+          form.style.display = 'none';
+        });
+      }
+    }
+
+    function showPermissionWarning(message) {
+      const alertDiv = document.createElement('div');
+      alertDiv.className = 'fixed top-4 right-4 bg-yellow-500 text-white px-6 py-3 rounded shadow-lg z-50 max-w-md';
+      alertDiv.innerHTML = `<i class="fas fa-lock mr-2"></i>${message}`;
+      document.body.appendChild(alertDiv);
+      setTimeout(() => alertDiv.remove(), 3000);
+    }
+
+    // Client-side search/filter for accounts table
+    document.addEventListener('DOMContentLoaded', () => {
+      checkSuperAdminStatus(); // Check permissions on page load
+      const search = document.getElementById('accountSearch');
+      const status = document.getElementById('accountStatus');
+      function applyFilters() {
+        const term = (search.value || '').toLowerCase();
+        const statusVal = status.value;
+        document.querySelectorAll('tbody tr').forEach(row => {
+          const cells = Array.from(row.querySelectorAll('td')).map(td => td.textContent.toLowerCase()).join(' ');
+          const isInactive = row.querySelector('td:nth-child(7)')?.textContent.toLowerCase().includes('inactive');
+          const matchesStatus = statusVal === 'all' || (statusVal === 'inactive' ? isInactive : !isInactive);
+          const matchesText = term === '' || cells.includes(term);
+          row.style.display = matchesStatus && matchesText ? '' : 'none';
+        });
+      }
+      if (search) search.addEventListener('input', applyFilters);
+      if (status) status.addEventListener('change', applyFilters);
+    });
+  </script>
+</body>
+</html>

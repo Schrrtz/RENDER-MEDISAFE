@@ -1,0 +1,21 @@
+.chart-card {
+  background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.9) 100%);
+  backdrop-filter: blur(10px);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chart-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(0, 51, 102, 0.15);
+}
+
+.stat-card {
+  background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.95) 100%);
+  border: 1px solid rgba(0, 51, 102, 0.1);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  border-color: #0066CC;
+  transform: translateY(-2px);
+}

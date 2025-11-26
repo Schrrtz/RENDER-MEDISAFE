@@ -1,0 +1,2542 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Management | MediSafe+</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link href="{% static 'css/mod_users.css' %}" rel="stylesheet">
+  <link href="{% static 'css/mod_accounts.css' %}" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'healthcare-red': '#FF0000',
+            'healthcare-blue': '#003366',
+            'healthcare-light-blue': '#0066CC'
+          },
+          zIndex: {
+            '60': '60',
+            '70': '70',
+            '80': '80',
+            '90': '90',
+            '100': '100'
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
+  <!-- Main Layout -->
+  <div class="flex h-screen bg-gray-50">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-healthcare-blue text-white shadow-lg">
+      <!-- Logo -->
+      <div class="p-4 border-b border-healthcare-light-blue/30">
+        <div class="flex items-center space-x-3">
+          <div style="display:flex;align-items:center;gap:10px">
+            <img src="/media/logo/Medisafe%20Logo.jpg" alt="MediSafe" style="height:44px;width:auto;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.06)" />
+            <span class="font-bold text-lg">MediSafe+</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="p-4">
+        <div class="mb-4">
+          <div class="relative">
+            <input type="text" 
+                   placeholder="Search..." 
+                   class="w-full bg-white/10 text-white placeholder-white/60 px-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-white/30">
+            <i class="fas fa-search absolute right-3 top-2.5 text-white/60"></i>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <a href="{% url 'moddashboard' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-chart-pie"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="{% url 'mod_doctors' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-users-cog"></i>
+            <span>Medisafe Team</span>
+          </a>
+          <a href="{% url 'mod_records' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-hospital-user"></i>
+            <span>Patient Records</span>
+          </a>
+          <a href="{% url 'mod_users' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg bg-white/20 text-white">
+            <i class="fas fa-users"></i>
+            <span>User Management</span>
+          </a>
+          <a href="{% url 'mod_consultations' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-calendar-check"></i>
+            <span>Appointments</span>
+          </a>
+          <a href="{% url 'mod_analytics' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-chart-line"></i>
+            <span>Analytics</span>
+          </a>
+        </div>
+      </nav>
+
+      <!-- User Profile -->
+      <div class="mt-auto p-4 border-t border-healthcare-light-blue/30">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="bg-white/10 p-2 rounded-full">
+              <i class="fas fa-user-md"></i>
+            </div>
+            <div class="text-sm">
+              <p class="font-semibold">Admin</p>
+              <p class="text-white/60 text-xs">Online</p>
+            </div>
+          </div>
+          <a href="{% url 'logout' %}" class="text-white/60 hover:text-white">
+            <i class="fas fa-sign-out-alt"></i>
+          </a>
+        </div>
+        
+        <!-- Super Admin Component Include -->
+        {% include 'super_admin_component.html' %}
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-8">
+      <!-- Header -->
+      <div class="mb-8 flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-healthcare-blue mb-2">User Management</h1>
+          <p class="text-gray-600">Manage and monitor system users and accounts</p>
+        </div>
+        
+      </div>
+
+      <!-- Tab Navigation -->
+      <div class="mb-6">
+        <div class="border-b border-gray-200">
+          <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+            <button id="users-tab" onclick="switchUserManagementTab('users')" 
+                    class="border-b-2 border-healthcare-blue text-healthcare-blue py-4 px-1 text-sm font-medium hover:border-healthcare-light-blue focus:outline-none">
+              <i class="fas fa-users mr-2"></i>Users
+            </button>
+            <button id="accounts-tab" onclick="switchUserManagementTab('accounts')" 
+                    class="border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1 text-sm font-medium focus:outline-none">
+              <i class="fas fa-user-shield mr-2"></i>Accounts
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      <!-- ==================== USERS TAB ==================== -->
+      <div id="users-content" class="tab-content-visible">
+        <!-- Users Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <!-- Total Users Card -->
+          <div class="dashboard-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-500 mb-1">Total Users</p>
+                <h3 class="text-2xl font-bold text-healthcare-blue">{{ total_users_count }}</h3>
+              </div>
+              <div class="bg-healthcare-blue/10 p-3 rounded-lg">
+                <i class="fas fa-users text-2xl text-healthcare-blue"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Users Card -->
+          <div class="dashboard-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-500 mb-1">Active Users</p>
+                <h3 class="text-2xl font-bold text-green-600">{{ active_users_count }}</h3>
+              </div>
+              <div class="bg-green-100 p-3 rounded-lg">
+                <i class="fas fa-user-check text-2xl text-green-600"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Inactive Users Card -->
+          <div class="dashboard-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-500 mb-1">Inactive Users</p>
+                <h3 class="text-2xl font-bold text-red-600">{{ inactive_users_count }}</h3>
+              </div>
+              <div class="bg-red-100 p-3 rounded-lg">
+                <i class="fas fa-user-slash text-2xl text-red-600"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Actions Card -->
+          <div class="dashboard-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-500 mb-1">Quick Actions</p>
+                <div class="mt-2">
+                  <button data-modal="addUserModal" class="bg-healthcare-blue text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                    <i class="fas fa-plus mr-2"></i>Add User
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Users List -->
+        <div class="dashboard-card rounded-xl overflow-hidden">
+          <div class="p-6 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+              <h2 class="text-xl font-bold text-healthcare-blue">System Users</h2>
+              <div class="flex space-x-4 items-center">
+                <div class="search-container flex">
+                  <input type="text" id="searchInput" placeholder="Search by email or username..." 
+                         class="px-4 py-2 border border-gray-200 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-healthcare-light-blue focus:border-transparent">
+                  <button id="searchButton" 
+                          class="px-4 py-2 bg-healthcare-blue text-white rounded-r-lg hover:bg-healthcare-light-blue transition-colors">
+                    <i class="fas fa-search"></i>
+                  </button>
+                </div>
+                <select id="roleFilter" class="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-light-blue focus:border-transparent">
+                  <option value="">All Roles</option>
+                  <option value="admin">Admin</option>
+                  <option value="doctor">Doctor</option>
+                  <option value="staff">Staff</option>
+                  <option value="nurse">Nurse</option>
+                  <option value="patient">Patient</option>
+                </select>
+                <!-- Password Reset Notifications Bell -->
+                <div class="relative">
+                  <button id="passwordResetNotificationBell" onclick="togglePasswordResetNotifications()" class="relative inline-flex items-center justify-center w-10 h-10 border border-healthcare-blue text-healthcare-blue rounded-lg hover:bg-healthcare-blue hover:text-white transition-colors" title="Password Reset Requests">
+                    <i class="fas fa-key"></i>
+                    <span id="passwordResetNotificationBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
+                  </button>
+                  
+                  <!-- Password Reset Notifications Panel -->
+                  <div id="passwordResetNotificationPanel" class="hidden absolute right-0 top-12 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-y-auto">
+                    <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+                      <h3 class="font-semibold text-gray-800">Password Reset Requests</h3>
+                      <button onclick="closePasswordResetNotifications()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                    <div id="passwordResetNotificationList" class="divide-y divide-gray-200">
+                      <div id="passwordResetNotificationEmpty" class="p-8 text-center text-gray-500">
+                        <i class="fas fa-key text-3xl mb-2 opacity-50"></i>
+                        <p>No password reset requests</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="p-6">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left">
+                <thead>
+                  <tr class="border-b border-gray-200">
+                    <th class="pb-3 font-semibold text-gray-600">User ID</th>
+                    <th class="pb-3 font-semibold text-gray-600">Username</th>
+                    <th class="pb-3 font-semibold text-gray-600">Role</th>
+                    <th class="pb-3 font-semibold text-gray-600">First Name</th>
+                    <th class="pb-3 font-semibold text-gray-600">Last Name</th>
+                    <th class="pb-3 font-semibold text-gray-600">Email</th>
+                    <th class="pb-3 font-semibold text-gray-600">Contact</th>
+                    <th class="pb-3 font-semibold text-gray-600">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="users-table-body">
+                  {% for user in users %}
+                  <tr class="border-b border-gray-100" data-user-id="{{ user.user_id }}">
+                    <td class="py-3 text-gray-600">{{ user.user_id }}</td>
+                    <td class="py-3">
+                      <div class="flex items-center">
+                        <div class="bg-healthcare-blue/10 w-8 h-8 rounded-full flex items-center justify-center mr-3">
+                          <i class="fas fa-user text-healthcare-blue"></i>
+                        </div>
+                        {{ user.username }}
+                      </div>
+                    </td>
+                    <td class="py-3">
+                      <span class="px-2 py-1 rounded-full text-xs font-medium 
+                        {% if user.role == 'admin' %}bg-purple-100 text-purple-700
+                        {% elif user.role == 'doctor' %}bg-blue-100 text-blue-700
+                        {% elif user.role == 'nurse' %}bg-green-100 text-green-700
+                        {% else %}bg-gray-100 text-gray-700{% endif %}">
+                        {{ user.role|title }}
+                      </span>
+                    </td>
+                    <td class="py-3 text-gray-600">{{ user.userprofile.first_name }}</td>
+                    <td class="py-3 text-gray-600">{{ user.userprofile.last_name }}</td>
+                    <td class="py-3 text-gray-600">{{ user.email }}</td>
+                    <td class="py-3 text-gray-600">{{ user.userprofile.contact_number|default:'-' }}</td>
+                    <td class="py-3">
+                      <div class="flex space-x-2">
+                        <button type="button" 
+                                class="p-1 text-green-600 hover:text-green-800 tooltip edit-user-btn"
+                                title="Edit User"
+                                data-id="{{ user.user_id }}"
+                                data-username="{{ user.username }}"
+                                data-email="{{ user.email }}"
+                                data-role="{{ user.role }}"
+                                data-first-name="{{ user.userprofile.first_name|default:''|escapejs }}"
+                                data-middle-name="{{ user.userprofile.middle_name|default:''|escapejs }}"
+                                data-last-name="{{ user.userprofile.last_name|default:''|escapejs }}"
+                                data-sex="{{ user.userprofile.sex|default:'' }}"
+                                data-birthday="{{ user.userprofile.birthday|date:'Y-m-d'|default:'' }}"
+                                data-contact-number="{{ user.userprofile.contact_number|default:''|escapejs }}"
+                                data-contact-person="{{ user.userprofile.contact_person|default:''|escapejs }}"
+                                data-address="{{ user.userprofile.address|default:''|escapejs }}"
+                                data-civil-status="{{ user.userprofile.civil_status|default:''|escapejs }}"
+                                data-age="{% if user.userprofile.birthday %}{{ user.userprofile.birthday|date:'Y' }}{% else %}{% endif %}"
+                                data-status="{{ user.is_active|yesno:'active,inactive' }}">
+                          <i class="fas fa-edit"></i>
+                        </button>
+                        {% if user.user_id != current_admin_id %}
+                        <button type="button" 
+                                class="p-1 text-blue-600 hover:text-blue-800 tooltip go-to-accounts-btn"
+                                title="View Account Details"
+                                data-user-id="{{ user.user_id }}"
+                                data-username="{{ user.username }}">
+                          <i class="fas fa-user-cog"></i>
+                        </button>
+                        <button type="button"
+                                class="p-1 text-red-600 hover:text-red-800 tooltip view-password-reset-btn"
+                                title="View Password Reset Requests"
+                                data-user-id="{{ user.user_id }}"
+                                data-username="{{ user.username }}"
+                                data-email="{{ user.email }}">
+                          <i class="fas fa-key"></i>
+                        </button>
+                        {% endif %}
+                      </div>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== ACCOUNTS TAB ==================== -->
+      <div id="accounts-content" class="tab-content-hidden">
+        <!-- Accounts Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div class="dashboard-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-500 mb-1">Total Accounts</p>
+                <h3 class="text-2xl font-bold text-healthcare-blue">{{ total_accounts }}</h3>
+              </div>
+              <div class="bg-healthcare-blue/10 p-3 rounded-lg">
+                <i class="fas fa-users text-2xl text-healthcare-blue"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="dashboard-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-500 mb-1">Active Accounts</p>
+                <h3 class="text-2xl font-bold text-green-600">{{ active_accounts }}</h3>
+              </div>
+              <div class="bg-green-100 p-3 rounded-lg">
+                <i class="fas fa-user-check text-2xl text-green-600"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="dashboard-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-500 mb-1">Inactive Accounts</p>
+                <h3 class="text-2xl font-bold text-red-600">{{ inactive_accounts }}</h3>
+              </div>
+              <div class="bg-red-100 p-3 rounded-lg">
+                <i class="fas fa-user-times text-2xl text-red-600"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Search and Filters -->
+        <div class="dashboard-card rounded-xl overflow-hidden mb-6 p-6">
+          <div class="flex flex-col gap-4">
+            <!-- Search and Filter Row -->
+            <div class="flex flex-col md:flex-row md:items-center gap-3">
+              <input id="accountSearch" type="text" placeholder="🔍 Search by username, email, role..." 
+                     class="flex-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue focus:border-transparent transition-all">
+              <select id="accountStatus" class="px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue focus:border-transparent transition-all bg-white">
+                <option value="all">All Status</option>
+                <option value="active">✓ Active Only</option>
+                <option value="inactive">✗ Inactive Only</option>
+              </select>
+            </div>
+
+            <!-- Action Buttons Row -->
+            <div class="flex flex-wrap gap-2">
+              <button onclick="refreshAccountsTable()" class="px-4 py-2 bg-blue-50 text-healthcare-blue rounded-lg hover:bg-blue-100 transition-colors font-semibold text-sm">
+                <i class="fas fa-sync-alt mr-1"></i>Refresh
+              </button>
+              <button onclick="exportAccountsToCSV()" class="px-4 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors font-semibold text-sm">
+                <i class="fas fa-download mr-1"></i>Export
+              </button>
+              <button onclick="toggleAdvancedFilters()" class="px-4 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors font-semibold text-sm">
+                <i class="fas fa-filter mr-1"></i>Advanced
+              </button>
+              <button onclick="resetAllFilters()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold text-sm">
+                <i class="fas fa-undo mr-1"></i>Reset
+              </button>
+            </div>
+
+            <!-- Advanced Filters (Hidden by default) -->
+            <div id="advancedFiltersSection" class="hidden bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg border border-purple-200">
+              <h4 class="font-semibold text-gray-700 mb-3"><i class="fas fa-sliders-h mr-2"></i>Advanced Filters</h4>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label class="text-xs text-gray-600 mb-1 block">Filter by Role</label>
+                  <select id="roleFilter" class="w-full px-3 py-2 border border-purple-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white">
+                    <option value="">All Roles</option>
+                    <option value="admin">Admin</option>
+                    <option value="doctor">Doctor</option>
+                    <option value="nurse">Nurse</option>
+                    <option value="staff">Staff</option>
+                    <option value="patient">Patient</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-xs text-gray-600 mb-1 block">Search in Column</label>
+                  <select id="searchColumn" class="w-full px-3 py-2 border border-purple-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white">
+                    <option value="all">All Columns</option>
+                    <option value="username">Username Only</option>
+                    <option value="email">Email Only</option>
+                    <option value="role">Role Only</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-xs text-gray-600 mb-1 block">Date Range</label>
+                  <input type="date" id="dateFilter" class="w-full px-3 py-2 border border-purple-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- All Accounts Activity -->
+        <div class="dashboard-card rounded-xl overflow-hidden">
+          <div class="p-6 border-b border-gray-200">
+            <h2 class="text-xl font-bold text-healthcare-blue"><i class="fas fa-list mr-2"></i>All User Accounts</h2>
+          </div>
+          <div class="p-6">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-sm">
+                <thead>
+                  <tr class="border-b border-gray-200 bg-gray-50">
+                    <th class="pb-3 px-3 font-semibold text-gray-600">User ID</th>
+                    <th class="pb-3 px-3 font-semibold text-gray-600">Username</th>
+                    <th class="pb-3 px-3 font-semibold text-gray-600">Email</th>
+                    <th class="pb-3 px-3 font-semibold text-gray-600">Role</th>
+                    <th class="pb-3 px-3 font-semibold text-gray-600">Last Login</th>
+                    <th class="pb-3 px-3 font-semibold text-gray-600">Date Joined</th>
+                    <th class="pb-3 px-3 font-semibold text-gray-600">Status</th>
+                    <th class="pb-3 px-3 font-semibold text-gray-600">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="accounts-table-body">
+                  {% for account in all_accounts %}
+                  <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+                    <td class="py-3 px-3 text-gray-600">{{ account.user_id }}</td>
+                    <td class="py-3 px-3">
+                      <div class="flex items-center">
+                        <div class="bg-healthcare-blue/10 w-8 h-8 rounded-full flex items-center justify-center mr-3">
+                          <i class="fas fa-user text-healthcare-blue"></i>
+                        </div>
+                        <span class="font-semibold">{{ account.username }}</span>
+                      </div>
+                    </td>
+                    <td class="py-3 px-3 text-gray-600">{{ account.email }}</td>
+                    <td class="py-3 px-3">
+                      <span class="px-2 py-1 rounded-full text-xs font-medium 
+                        {% if account.role == 'admin' %}bg-purple-100 text-purple-700
+                        {% elif account.role == 'doctor' %}bg-blue-100 text-blue-700
+                        {% elif account.role == 'nurse' %}bg-green-100 text-green-700
+                        {% else %}bg-gray-100 text-gray-700{% endif %}">
+                        {{ account.role|title }}
+                      </span>
+                    </td>
+                    <td class="py-3 px-3 text-gray-600">
+                      {% if account.last_login %}
+                        {{ account.last_login|date:"M d, Y H:i" }}
+                      {% else %}
+                        <span class="text-gray-400 italic">Never</span>
+                      {% endif %}
+                    </td>
+                    <td class="py-3 px-3 text-gray-600">{{ account.date_joined|date:"M d, Y" }}</td>
+                    <td class="py-3 px-3">
+                      <span class="px-2 py-1 rounded-full text-xs font-medium 
+                        {% if account.status %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                        <i class="fas fa-circle mr-1" style="font-size: 6px;"></i>
+                        {% if account.status %}Active{% else %}Inactive{% endif %}
+                      </span>
+                    </td>
+                    <td class="py-3 px-3">
+                      <div class="flex gap-1 flex-wrap">
+                        <button class="view-account-details-btn px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs font-medium transition-colors" 
+                          title="View Account Details"
+                          data-id="{{ account.user_id }}"
+                          data-username="{{ account.username }}"
+                          data-email="{{ account.email }}"
+                          data-role="{{ account.role|title }}"
+                          data-status="{% if account.status %}Active{% else %}Inactive{% endif %}"
+                          data-last-login="{% if account.last_login %}{{ account.last_login|date:'M d, Y H:i' }}{% else %}Never{% endif %}"
+                          data-date-joined="{{ account.date_joined|date:'M d, Y' }}">
+                          <i class="fas fa-eye mr-1"></i>View
+                        </button>
+                        {% if account.status %}
+                        <button onclick="showPasswordVerificationModal('deactivate', {{ account.user_id }})" class="px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white rounded text-xs font-medium transition-colors" title="Deactivate Account">
+                          <i class="fas fa-lock mr-1"></i>Deactivate
+                        </button>
+                        {% else %}
+                        <button onclick="showPasswordVerificationModal('activate', {{ account.user_id }})" class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-xs font-medium transition-colors" title="Activate Account">
+                          <i class="fas fa-unlock mr-1"></i>Activate
+                        </button>
+                        {% endif %}
+                        <button onclick="showPasswordVerificationModal('delete', {{ account.user_id }})" class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-medium transition-colors" title="Delete Account">
+                          <i class="fas fa-trash mr-1"></i>Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+              {% if not all_accounts %}
+              <div class="text-center py-8">
+                <i class="fas fa-inbox text-gray-300 text-4xl mb-3"></i>
+                <p class="text-gray-500 text-lg">No accounts found</p>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Modals -->
+  <div class="z-50 relative">
+    <!-- Add User Modal -->
+    <div id="addUserModal" class="fixed inset-0 hidden z-50 flex items-center justify-center p-4">
+      <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
+      <div class="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <!-- Sticky Header -->
+        <div class="sticky top-0 bg-gradient-to-r from-healthcare-blue to-healthcare-light-blue text-white p-6 border-b border-gray-200 flex justify-between items-center rounded-t-2xl">
+          <div>
+            <h3 class="text-2xl font-bold">Add New User</h3>
+            <p class="text-blue-100 text-sm mt-1">Create a new user account with complete information</p>
+          </div>
+          <button data-close class="text-white hover:text-blue-100 transition-colors">
+            <i class="fas fa-times text-2xl"></i>
+          </button>
+        </div>
+
+        <!-- Form Content -->
+        <div class="p-8">
+          <form method="POST" class="space-y-6">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add">
+            
+            <!-- Account Information Section -->
+            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-100">
+              <h4 class="text-lg font-bold text-healthcare-blue mb-4 flex items-center">
+                <i class="fas fa-user-shield mr-2 text-healthcare-light-blue"></i>
+                Account Information
+              </h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Username <span class="text-red-500">*</span></label>
+                  <input type="text" name="username" required
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue focus:border-transparent transition-all"
+                         placeholder="Enter username">
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Email <span class="text-red-500">*</span></label>
+                  <input type="email" name="email" required
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue focus:border-transparent transition-all"
+                         placeholder="Enter email">
+                </div>
+
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Password <span class="text-red-500">*</span></label>
+                  <input type="password" name="password" required
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue focus:border-transparent transition-all"
+                         placeholder="Enter password">
+                </div>
+
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Role <span class="text-red-500">*</span></label>
+                  <select name="role" required
+                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue focus:border-transparent transition-all bg-white">
+                    <option value="">Select Role</option>
+                    <option value="admin">Admin</option>
+                    <option value="doctor">Doctor</option>
+                    <option value="nurse">Nurse</option>
+                    <option value="staff">Staff</option>
+                    <option value="patient">Patient</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Personal Information Section -->
+            <div class="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-100">
+              <h4 class="text-lg font-bold text-healthcare-blue mb-4 flex items-center">
+                <i class="fas fa-address-card mr-2 text-green-600"></i>
+                Personal Information
+              </h4>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">First Name <span class="text-red-500">*</span></label>
+                  <input type="text" name="first_name" required
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue focus:border-transparent transition-all"
+                         placeholder="First name">
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Middle Name</label>
+                  <input type="text" name="middle_name"
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue focus:border-transparent transition-all"
+                         placeholder="Middle name (optional)">
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Last Name <span class="text-red-500">*</span></label>
+                  <input type="text" name="last_name" required
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue focus:border-transparent transition-all"
+                         placeholder="Last name">
+                </div>
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Birthday <span class="text-red-500">*</span></label>
+                  <input type="date" name="birthday" required
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue focus:border-transparent transition-all">
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Sex <span class="text-red-500">*</span></label>
+                  <div class="flex gap-4 mt-2">
+                    <label class="flex items-center cursor-pointer">
+                      <input type="radio" name="sex" value="male" required class="w-4 h-4 text-healthcare-blue cursor-pointer">
+                      <span class="ml-2 text-gray-700">Male</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer">
+                      <input type="radio" name="sex" value="female" class="w-4 h-4 text-healthcare-blue cursor-pointer">
+                      <span class="ml-2 text-gray-700">Female</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer">
+                      <input type="radio" name="sex" value="other" class="w-4 h-4 text-healthcare-blue cursor-pointer">
+                      <span class="ml-2 text-gray-700">Other</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Contact Information Section -->
+            <div class="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-xl border border-purple-100">
+              <h4 class="text-lg font-bold text-healthcare-blue mb-4 flex items-center">
+                <i class="fas fa-phone mr-2 text-purple-600"></i>
+                Contact Information
+              </h4>
+              <div class="grid grid-cols-1 gap-4">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Address <span class="text-red-500">*</span></label>
+                  <textarea name="address" required rows="3"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue focus:border-transparent transition-all resize-none"
+                            placeholder="Enter full address"></textarea>
+                </div>
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Contact Number <span class="text-red-500">*</span></label>
+                  <input type="tel" name="contact_number" required
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue focus:border-transparent transition-all"
+                         placeholder="Enter phone number">
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Civil Status</label>
+                  <select name="civil_status"
+                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue focus:border-transparent transition-all bg-white">
+                    <option value="">Select Civil Status</option>
+                    <option value="single">Single</option>
+                    <option value="married">Married</option>
+                    <option value="widowed">Widowed</option>
+                    <option value="divorced">Divorced</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="sticky bottom-0 bg-white border-t border-gray-200 -m-8 mt-0 p-6 flex justify-end space-x-3">
+              <button type="button" data-close
+                      class="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold transition-colors">
+                Cancel
+              </button>
+              <button type="submit"
+                      class="px-6 py-3 bg-gradient-to-r from-healthcare-blue to-healthcare-light-blue text-white rounded-lg hover:shadow-lg font-semibold transition-all transform hover:scale-105">
+                <i class="fas fa-plus mr-2"></i>Add User
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div id="editUserModal" class="fixed inset-0 hidden z-50">
+      <div class="fixed inset-0 bg-black bg-opacity-50"></div>
+      <div class="relative flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg p-8 max-w-4xl w-full relative max-h-[90vh] overflow-y-auto">
+          <div class="flex justify-between items-center mb-6 sticky top-0 bg-white py-4 border-b border-gray-200">
+            <h3 class="text-2xl font-bold text-healthcare-blue">Edit User Profile</h3>
+            <button data-close class="text-gray-500 hover:text-gray-700">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <form method="POST" class="space-y-6">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="user_id" id="edit_user_id">
+            
+            <!-- Account Information Section -->
+            <div class="bg-gray-50 p-6 rounded-lg mb-6">
+              <h4 class="text-lg font-semibold text-healthcare-blue mb-4">Account Information</h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                  <input type="text" name="username" id="edit_username" required
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue bg-white">
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <input type="email" name="email" id="edit_email" required
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue bg-white">
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                  <input type="password" name="password" id="edit_password"
+                         placeholder="Leave blank to keep current password"
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue bg-white">
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                  <select name="role" id="edit_role" required
+                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue bg-white">
+                    <option value="admin">Admin</option>
+                    <option value="doctor">Doctor</option>
+                    <option value="nurse">Nurse</option>
+                    <option value="patient">Patient</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Personal Information Section -->
+            <div class="bg-gray-50 p-6 rounded-lg mb-6">
+              <h4 class="text-lg font-semibold text-healthcare-blue mb-4">Personal Information</h4>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                  <input type="text" name="first_name" id="edit_first_name"
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue bg-white">
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Middle Name</label>
+                  <input type="text" name="middle_name" id="edit_middle_name"
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue bg-white">
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                  <input type="text" name="last_name" id="edit_last_name"
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue bg-white">
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Sex</label>
+                  <select name="sex" id="edit_sex"
+                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue bg-white">
+                    <option value="">Select Sex</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Birthday</label>
+                  <input type="date" name="birthday" id="edit_birthday"
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue bg-white">
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Age</label>
+              <input type="number" name="age" id="edit_age" min="0" max="150"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+            </div>
+
+            <!-- Contact Information Section -->
+            <div class="bg-gray-50 p-6 rounded-lg mb-6">
+              <h4 class="text-lg font-semibold text-healthcare-blue mb-4">Contact Information</h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Contact Number</label>
+                  <input type="text" name="contact_number" id="edit_contact_number"
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue bg-white">
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Emergency Contact</label>
+                  <input type="text" name="contact_person" id="edit_contact_person"
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue bg-white">
+                </div>
+
+                <div class="md:col-span-2">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                  <textarea name="address" id="edit_address" rows="3"
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue bg-white resize-none"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Account Status Section -->
+            <div class="bg-gray-50 p-6 rounded-lg">
+              <h4 class="text-lg font-semibold text-healthcare-blue mb-4">Account Status</h4>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select name="status" id="edit_status" required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue bg-white">
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="sticky bottom-0 bg-white py-4 border-t border-gray-200 mt-6">
+              <div class="flex justify-end space-x-4">
+                <button type="button" data-close
+                        class="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors">
+                  Cancel
+                </button>
+                <button type="submit"
+                        class="px-6 py-3 bg-healthcare-blue text-white rounded-lg hover:bg-blue-700 font-medium transition-colors">
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Password Verification Modal -->
+    <div id="passwordVerificationModal" class="fixed inset-0 hidden z-50 flex items-center justify-center p-4">
+      <div class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm"></div>
+      <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all">
+        <!-- Red Header for Warning -->
+        <div class="bg-gradient-to-r from-red-600 to-red-700 text-white p-6 rounded-t-2xl">
+          <div class="flex items-center justify-center mb-2">
+            <i class="fas fa-lock text-4xl opacity-80"></i>
+          </div>
+          <h3 class="text-2xl font-bold text-center">Security Verification Required</h3>
+        </div>
+        
+        <!-- Content -->
+        <div class="p-6">
+          <div class="mb-6">
+            <!-- Warning Alert -->
+            <div class="bg-red-50 border-2 border-red-200 rounded-lg p-4 mb-6">
+              <div class="flex items-start">
+                <i class="fas fa-exclamation-circle text-red-600 text-xl mt-0.5 mr-3 flex-shrink-0"></i>
+                <div>
+                  <p class="font-semibold text-red-900">⚠️ Important Action</p>
+                  <p class="text-sm text-red-800 mt-1">This action cannot be undone. Please verify your identity with the security password.</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Password Input -->
+            <div>
+              <label class="block text-sm font-bold text-gray-700 mb-2">
+                <i class="fas fa-key mr-2 text-red-600"></i>
+                Security Password <span class="text-red-500">*</span>
+              </label>
+              <div class="relative">
+                <input type="password" id="verificationPassword" 
+                       class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all text-lg tracking-widest"
+                       placeholder="•••••••••"
+                       autocomplete="off">
+                <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3 top-3.5 text-gray-500 hover:text-gray-700">
+                  <i id="toggleIcon" class="fas fa-eye"></i>
+                </button>
+              </div>
+            </div>
+            
+            <!-- Error Message -->
+            <div id="verificationError" class="hidden mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p class="text-sm text-red-700 font-medium"><i class="fas fa-times-circle mr-2"></i><span id="errorText"></span></p>
+            </div>
+
+            <!-- Hint (can be removed for security) -->
+            <div class="mt-4 text-center">
+              <p class="text-xs text-gray-500">Password hint: <span class="font-mono bg-gray-100 px-2 py-1 rounded">M</span></p>
+            </div>
+          </div>
+          
+          <!-- Buttons -->
+          <div class="flex gap-3">
+            <button type="button" data-close
+                    class="flex-1 px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold transition-colors">
+              <i class="fas fa-times mr-2"></i>Cancel
+            </button>
+            <button type="button" onclick="verifyAndProceed()"
+                    class="flex-1 px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg font-semibold transition-all transform hover:scale-105">
+              <i class="fas fa-check mr-2"></i>Verify & Proceed
+            </button>
+          </div>
+
+          <!-- Loading State (hidden by default) -->
+          <div id="verificationLoading" class="hidden mt-4 text-center">
+            <div class="inline-block">
+              <i class="fas fa-spinner fa-spin text-red-600 text-2xl"></i>
+              <p class="text-sm text-gray-600 mt-2">Processing...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // CSS for tab visibility
+    const style = document.createElement('style');
+    style.textContent = `
+      .tab-content-visible { display: block; }
+      .tab-content-hidden { display: none; }
+      .tooltip { cursor: help; }
+    `;
+    document.head.appendChild(style);
+
+    // ==================== TAB SWITCHING ====================
+    function switchUserManagementTab(tabName) {
+      const usersContent = document.getElementById('users-content');
+      const accountsContent = document.getElementById('accounts-content');
+      const usersTab = document.getElementById('users-tab');
+      const accountsTab = document.getElementById('accounts-tab');
+
+      if (tabName === 'users') {
+        usersContent.classList.remove('tab-content-hidden');
+        usersContent.classList.add('tab-content-visible');
+        accountsContent.classList.remove('tab-content-visible');
+        accountsContent.classList.add('tab-content-hidden');
+
+        usersTab.classList.add('border-healthcare-blue', 'text-healthcare-blue');
+        usersTab.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+        accountsTab.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+        accountsTab.classList.remove('border-healthcare-blue', 'text-healthcare-blue');
+
+        localStorage.setItem('userManagementTab', 'users');
+      } else {
+        accountsContent.classList.remove('tab-content-hidden');
+        accountsContent.classList.add('tab-content-visible');
+        usersContent.classList.remove('tab-content-visible');
+        usersContent.classList.add('tab-content-hidden');
+
+        accountsTab.classList.add('border-healthcare-blue', 'text-healthcare-blue');
+        accountsTab.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+        usersTab.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+        usersTab.classList.remove('border-healthcare-blue', 'text-healthcare-blue');
+
+        localStorage.setItem('userManagementTab', 'accounts');
+      }
+    }
+
+    // ==================== MODAL HANDLING ====================
+    function toggleModal(modalId, show) {
+      const modal = document.getElementById(modalId);
+      if (!modal) return;
+      
+      if (show) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      } else {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+      }
+    }
+
+    function setupModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (!modal) return;
+
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          toggleModal(modalId, false);
+        }
+      });
+
+      const closeBtn = modal.querySelector('[data-close]');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => toggleModal(modalId, false));
+      }
+    }
+
+    // ==================== EDIT USER ====================
+    function editUser(buttonEl) {
+      if (!buttonEl) return;
+      const data = buttonEl.dataset || {};
+      const getData = (key, fallback = '') => (data[key] !== undefined && data[key] !== null) ? data[key] : fallback;
+      const setValue = (elementId, value) => {
+        const el = document.getElementById(elementId);
+        if (el) {
+          el.value = value || '';
+        }
+      };
+
+      setValue('edit_user_id', getData('id'));
+      setValue('edit_username', getData('username'));
+      setValue('edit_email', getData('email'));
+      setValue('edit_role', getData('role'));
+      setValue('edit_password', '');
+
+      // Personal Information
+      setValue('edit_first_name', getData('firstName'));
+      setValue('edit_middle_name', getData('middleName'));
+      setValue('edit_last_name', getData('lastName'));
+      setValue('edit_sex', getData('sex'));
+      setValue('edit_birthday', getData('birthday'));
+      setValue('edit_age', getData('age'));
+
+      // Contact Information
+      setValue('edit_contact_number', getData('contactNumber'));
+      setValue('edit_contact_person', getData('contactPerson'));
+      setValue('edit_address', getData('address'));
+
+      // Account Status
+      const statusElement = document.getElementById('edit_status');
+      if (statusElement) {
+        statusElement.value = getData('status', 'active');
+      }
+
+      toggleModal('editUserModal', true);
+    }
+
+    // ==================== SEARCH & FILTER FOR USERS TAB ====================
+    function filterAndSearchUsers() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      const selectedRole = document.getElementById('roleFilter').value.toLowerCase();
+      const rows = document.querySelectorAll('#users-table-body tr');
+
+      rows.forEach(row => {
+        const username = row.querySelector('td:nth-child(2)')?.textContent.toLowerCase() || '';
+        const email = row.querySelector('td:nth-child(6)')?.textContent.toLowerCase() || '';
+        const role = row.querySelector('td:nth-child(3)')?.textContent.toLowerCase() || '';
+        
+        const matchesSearch = searchTerm === '' || 
+                            username.includes(searchTerm) || 
+                            email.includes(searchTerm);
+        const matchesRole = selectedRole === '' || role.includes(selectedRole);
+
+        row.style.display = matchesSearch && matchesRole ? '' : 'none';
+      });
+    }
+
+    // ==================== SEARCH & FILTER FOR ACCOUNTS TAB ====================
+    function applyAccountFilters() {
+      const search = document.getElementById('accountSearch');
+      const status = document.getElementById('accountStatus');
+      const roleFilter = document.getElementById('roleFilter');
+      const searchColumn = document.getElementById('searchColumn');
+      const dateFilter = document.getElementById('dateFilter');
+      const rows = document.querySelectorAll('#accounts-table-body tr');
+      
+      if (!search || !status) return;
+
+      const term = (search.value || '').toLowerCase();
+      const statusVal = status.value;
+      const roleVal = (roleFilter?.value || '').toLowerCase();
+      const searchCol = searchColumn?.value || 'all';
+      const dateVal = dateFilter?.value || '';
+
+      let visibleCount = 0;
+
+      rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        
+        // Get all cell data
+        const userId = cells[0]?.textContent.toLowerCase() || '';
+        const username = cells[1]?.textContent.toLowerCase() || '';
+        const email = cells[2]?.textContent.toLowerCase() || '';
+        const role = cells[3]?.textContent.toLowerCase() || '';
+        const lastLogin = cells[4]?.textContent.toLowerCase() || '';
+        const dateJoined = cells[5]?.textContent.toLowerCase() || '';
+        const statusCell = cells[6]?.textContent.toLowerCase() || '';
+
+        // Determine if row matches all filters
+        let matches = true;
+
+        // Status filter
+        const isInactive = statusCell.includes('inactive');
+        const matchesStatus = statusVal === 'all' || (statusVal === 'inactive' ? isInactive : !isInactive);
+        if (!matchesStatus) matches = false;
+
+        // Role filter (advanced)
+        if (roleVal && !role.includes(roleVal)) {
+          matches = false;
+        }
+
+        // Search term filter
+        let matchesText = true;
+        if (term !== '') {
+          if (searchCol === 'username') {
+            matchesText = username.includes(term);
+          } else if (searchCol === 'email') {
+            matchesText = email.includes(term);
+          } else if (searchCol === 'role') {
+            matchesText = role.includes(term);
+          } else {
+            // Search all columns
+            const allCells = Array.from(cells).map(td => td.textContent.toLowerCase()).join(' ');
+            matchesText = allCells.includes(term);
+          }
+        }
+        if (!matchesText) matches = false;
+
+        // Date filter (advanced)
+        if (dateVal && dateJoined) {
+          const filterDate = new Date(dateVal).toISOString().slice(0, 10);
+          const rowDate = dateJoined.slice(0, 10);
+          if (rowDate !== filterDate) matches = false;
+        }
+
+        row.style.display = matches ? '' : 'none';
+        if (matches) visibleCount++;
+      });
+
+      updateAccountStats();
+    }
+
+    // ============= SUPER ADMIN PERMISSION CHECKS =============
+    let isSuperAdmin = false;
+    async function checkSuperAdminStatus() {
+      try {
+        const response = await fetch('/check-super-admin-status/');
+        const data = await response.json();
+        isSuperAdmin = data.is_super_admin;
+        updateUserManagementPermissionUI();
+      } catch (error) {
+        console.log('Could not check super admin status');
+      }
+    }
+
+    function updateUserManagementPermissionUI() {
+      if (!isSuperAdmin) {
+        // Disable deactivate and delete buttons for accounts
+        document.querySelectorAll('button[onclick*="showPasswordVerificationModal(\'deactivate\'"], button[onclick*="showPasswordVerificationModal(\'delete\'"]').forEach(btn => {
+          btn.style.opacity = '0.5';
+          btn.style.cursor = 'not-allowed';
+          btn.title = 'Account deactivation and deletion are for Super Admin only';
+          btn.onclick = function(e) { e.preventDefault(); showPermissionWarning('Account management actions are for Super Admin only'); return false; };
+        });
+
+        // Disable export button
+        document.querySelectorAll('button[onclick*="exportAccountsToCSV"]').forEach(btn => {
+          btn.style.opacity = '0.6';
+          btn.style.cursor = 'not-allowed';
+          btn.disabled = true;
+          btn.title = 'Export is for Super Admin only';
+          btn.innerHTML = '<i class="fas fa-download mr-1"></i>Export (Super Admin Only)';
+        });
+
+        // Disable edit functionality for users (allow opening modal but disable save)
+        document.querySelectorAll('.edit-user-btn').forEach(btn => {
+          btn.title = 'View only - editing is for Super Admin only';
+        });
+
+        // Disable save button in edit user form
+        const editUserForm = document.querySelector('#editUserModal form');
+        if (editUserForm) {
+          const saveBtn = editUserForm.querySelector('button[type="submit"]');
+          if (saveBtn) {
+            saveBtn.style.opacity = '0.5';
+            saveBtn.style.cursor = 'not-allowed';
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Save Changes (Super Admin Only)';
+            saveBtn.title = 'Only Super Admin can save user changes';
+            editUserForm.onsubmit = function(e) {
+              e.preventDefault();
+              showPermissionWarning('Editing user information is for Super Admin only');
+              return false;
+            };
+          }
+        }
+      }
+    }
+
+    function showPermissionWarning(message) {
+      const alertDiv = document.createElement('div');
+      alertDiv.className = 'fixed top-4 right-4 bg-yellow-500 text-white px-6 py-3 rounded shadow-lg z-50 max-w-md';
+      alertDiv.innerHTML = `<i class="fas fa-lock mr-2"></i>${message}`;
+      document.body.appendChild(alertDiv);
+      setTimeout(() => alertDiv.remove(), 3000);
+    }
+
+    // ==================== INITIALIZATION ====================
+    document.addEventListener('DOMContentLoaded', () => {
+      checkSuperAdminStatus(); // Check permissions on page load
+      // Setup modals
+      setupModal('addUserModal');
+      setupModal('editUserModal');
+
+      // Setup edit buttons for Users tab
+      document.querySelectorAll('.edit-user-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          editUser(btn);
+        });
+      });
+
+      // Setup search and filter for Users tab
+      const searchInput = document.getElementById('searchInput');
+      const searchButton = document.getElementById('searchButton');
+      const roleFilter = document.getElementById('roleFilter');
+
+      if (searchInput) searchInput.addEventListener('input', filterAndSearchUsers);
+      if (searchButton) searchButton.addEventListener('click', filterAndSearchUsers);
+      if (roleFilter) roleFilter.addEventListener('change', filterAndSearchUsers);
+
+      if (searchInput) {
+        searchInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            filterAndSearchUsers();
+          }
+        });
+      }
+
+      // Setup search and filter for Accounts tab
+      const accountSearch = document.getElementById('accountSearch');
+      const accountStatus = document.getElementById('accountStatus');
+
+      if (accountSearch) accountSearch.addEventListener('input', applyAccountFilters);
+      if (accountStatus) accountStatus.addEventListener('change', applyAccountFilters);
+
+      // ESC key to close modals
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          toggleModal('addUserModal', false);
+          toggleModal('editUserModal', false);
+        }
+      });
+
+      // Restore active tab from localStorage
+      const activeTab = localStorage.getItem('userManagementTab') || 'users';
+      switchUserManagementTab(activeTab);
+
+      // Modal button handlers
+      document.querySelectorAll('[data-modal="addUserModal"]').forEach(btn => {
+        btn.addEventListener('click', () => toggleModal('addUserModal', true));
+      });
+
+      // Setup password verification modal
+      setupModal('passwordVerificationModal');
+
+      // Enter key on password field
+      document.getElementById('verificationPassword')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          verifyAndProceed();
+        }
+      });
+
+      // Add View Account Details button handlers for Accounts tab
+      document.querySelectorAll('.view-account-details-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const accountId = this.dataset.id;
+          const username = this.dataset.username;
+          const email = this.dataset.email;
+          const role = this.dataset.role;
+          const status = this.dataset.status;
+          const lastLogin = this.dataset.lastLogin;
+          const dateJoined = this.dataset.dateJoined;
+          
+          showAccountDetailsModal(accountId, username, email, role, status, lastLogin, dateJoined);
+        });
+      });
+
+      // Add "Go to Accounts" behavior on Users tab action button
+      document.querySelectorAll('.go-to-accounts-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const userId = this.dataset.userId;
+          const username = this.dataset.username;
+          // Switch to Accounts tab
+          switchUserManagementTab('accounts');
+
+          // After switching, try to locate and highlight the matching account row
+          setTimeout(() => {
+            const rows = document.querySelectorAll('#accounts-table-body tr');
+            // Remove any previous temporary highlight
+            rows.forEach(r => r.classList.remove('temp-highlight'));
+
+            let target = null;
+            rows.forEach(r => {
+              const idCell = r.querySelector('td:first-child');
+              const nameCell = r.querySelector('td:nth-child(2) .font-semibold');
+              const rowId = idCell ? idCell.textContent.trim() : '';
+              const rowName = nameCell ? nameCell.textContent.trim() : '';
+              if ((userId && rowId === String(userId)) || (username && rowName === String(username))) {
+                target = r;
+              }
+            });
+
+            if (target) {
+              target.classList.add('temp-highlight');
+              target.style.transition = 'background-color 0.3s ease';
+              target.style.backgroundColor = '#fffbeb';
+              target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              setTimeout(() => {
+                target.style.backgroundColor = '';
+                target.classList.remove('temp-highlight');
+              }, 3000);
+            }
+          }, 200);
+        });
+      });
+
+      // Setup event listeners for password reset request buttons
+      document.querySelectorAll('.view-password-reset-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const userId = this.dataset.userId;
+          const username = this.dataset.username;
+          const email = this.dataset.email;
+          viewPasswordResetRequests(userId, username, email);
+        });
+      });
+    });
+
+    // ==================== PASSWORD VERIFICATION ====================
+    let pendingAccountAction = null;
+
+    function togglePasswordVisibility() {
+      const passwordInput = document.getElementById('verificationPassword');
+      const toggleIcon = document.getElementById('toggleIcon');
+      
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.classList.remove('fa-eye');
+        toggleIcon.classList.add('fa-eye-slash');
+      } else {
+        passwordInput.type = 'password';
+        toggleIcon.classList.remove('fa-eye-slash');
+        toggleIcon.classList.add('fa-eye');
+      }
+    }
+
+    function showPasswordVerificationModal(action, userId) {
+      pendingAccountAction = { action, userId };
+      document.getElementById('verificationPassword').value = '';
+      document.getElementById('verificationPassword').type = 'password';
+      document.getElementById('toggleIcon').classList.remove('fa-eye-slash');
+      document.getElementById('toggleIcon').classList.add('fa-eye');
+      document.getElementById('verificationError').classList.add('hidden');
+      document.getElementById('verificationLoading').classList.add('hidden');
+      
+      // Focus on password input
+      setTimeout(() => document.getElementById('verificationPassword').focus(), 100);
+      
+      toggleModal('passwordVerificationModal', true);
+    }
+
+    function verifyAndProceed() {
+      const password = document.getElementById('verificationPassword').value;
+      const errorDiv = document.getElementById('verificationError');
+      const errorText = document.getElementById('errorText');
+      const verifyBtn = document.querySelector('#passwordVerificationModal button[onclick="verifyAndProceed()"]');
+      const loadingDiv = document.getElementById('verificationLoading');
+
+      if (!password) {
+        errorText.textContent = 'Please enter the security password';
+        errorDiv.classList.remove('hidden');
+        return;
+      }
+
+      if (password !== 'MEDISAFE') {
+        errorText.textContent = 'Incorrect password. Please try again.';
+        errorDiv.classList.remove('hidden');
+        document.getElementById('verificationPassword').value = '';
+        document.getElementById('verificationPassword').focus();
+        return;
+      }
+
+      if (!pendingAccountAction) return;
+
+      const { action, userId } = pendingAccountAction;
+
+      // If action is delete, show a double confirmation modal first
+      if (action === 'delete') {
+        toggleModal('passwordVerificationModal', false);
+        showDeleteConfirmationModal(userId);
+        return;
+      }
+
+      // Show loading state
+      verifyBtn.disabled = true;
+      loadingDiv.classList.remove('hidden');
+      
+      // Determine the correct API endpoint
+      let apiUrl = '';
+      if (action === 'activate') {
+        apiUrl = `/manage/accounts/activate/${userId}/`;
+      } else if (action === 'deactivate') {
+        apiUrl = `/manage/accounts/deactivate/${userId}/`;
+      }
+
+      // Get CSRF token
+      const csrfToken = document.querySelector('[name="csrfmiddlewaretoken"]')?.value || 
+                        document.querySelector('input[name="csrfmiddlewaretoken"]')?.value;
+
+      // Send AJAX request instead of form submission
+      fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({})
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Close the password modal
+        toggleModal('passwordVerificationModal', false);
+        
+        // Show success notification
+        showNotification(`${action.charAt(0).toUpperCase() + action.slice(1)} successful!`, 'success');
+        
+        // Reload the table after a short delay
+        setTimeout(() => {
+          location.reload();
+        }, 1500);
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        errorText.textContent = 'An error occurred. Please try again.';
+        errorDiv.classList.remove('hidden');
+        verifyBtn.disabled = false;
+        loadingDiv.classList.add('hidden');
+      });
+    }
+
+    function showDeleteConfirmationModal(userId) {
+      // Create a double confirmation modal for delete action
+      const modal = document.createElement('div');
+      modal.id = 'deleteConfirmationModal';
+      modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 hidden';
+      modal.innerHTML = `
+        <div class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all">
+          <!-- Red Header -->
+          <div class="bg-gradient-to-r from-red-600 to-red-700 text-white p-6 rounded-t-2xl">
+            <div class="flex items-center justify-center mb-2">
+              <i class="fas fa-trash-alt text-4xl opacity-80"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-center">⚠️ Delete Account</h3>
+          </div>
+          
+          <!-- Content -->
+          <div class="p-6">
+            <div class="mb-6">
+              <div class="bg-red-50 border-2 border-red-200 rounded-lg p-4 mb-6">
+                <div class="flex items-start">
+                  <i class="fas fa-exclamation-triangle text-red-600 text-xl mt-0.5 mr-3 flex-shrink-0"></i>
+                  <div>
+                    <p class="font-semibold text-red-900 mb-2">This action is permanent!</p>
+                    <ul class="text-sm text-red-800 space-y-1">
+                      <li>✕ All user data will be permanently deleted</li>
+                      <li>✕ This cannot be undone</li>
+                      <li>✕ All associated records will be removed</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              
+              <p class="text-gray-700 mb-4 text-center font-semibold">Are you absolutely sure you want to delete this account and all its data?</p>
+              
+              <div class="bg-gray-100 p-4 rounded-lg mb-4">
+                <p class="text-sm text-gray-600"><strong>User ID:</strong> <span class="font-mono">${userId}</span></p>
+              </div>
+            </div>
+            
+            <!-- Buttons -->
+            <div class="flex gap-3">
+              <button type="button" class="flex-1 px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold transition-colors" onclick="closeDeleteConfirmationModal()">
+                <i class="fas fa-times mr-2"></i>Cancel
+              </button>
+              <button type="button" class="flex-1 px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg font-semibold transition-all transform hover:scale-105" onclick="proceedWithDelete(${userId})">
+                <i class="fas fa-trash-alt mr-2"></i>Delete Account
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      modal.classList.remove('hidden');
+    }
+
+    function closeDeleteConfirmationModal() {
+      const modal = document.getElementById('deleteConfirmationModal');
+      if (modal) {
+        modal.classList.add('hidden');
+        setTimeout(() => modal.remove(), 300);
+      }
+    }
+
+    function proceedWithDelete(userId) {
+      const csrfToken = document.querySelector('[name="csrfmiddlewaretoken"]')?.value || 
+                        document.querySelector('input[name="csrfmiddlewaretoken"]')?.value;
+      
+      // Close the confirmation modal
+      closeDeleteConfirmationModal();
+      
+      // Proceed with actual deletion
+      fetch(`/manage/accounts/delete/${userId}/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({})
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Show success notification
+        showNotification('Account and all associated data deleted successfully!', 'success');
+        
+        // Reload the table after a short delay
+        setTimeout(() => {
+          location.reload();
+        }, 1500);
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showNotification('An error occurred while deleting the account. Please try again.', 'error');
+      });
+    }
+
+    // ==================== VIEW ACCOUNT DETAILS ====================
+    function showAccountDetailsModal(accountId, username, email, role, status, lastLogin, dateJoined) {
+      // Create a simple alert-style modal with account details
+      const statusColor = status === 'Active' ? 'text-green-600' : 'text-red-600';
+      const statusBg = status === 'Active' ? 'bg-green-50' : 'bg-red-50';
+      
+      const modal = document.createElement('div');
+      modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4';
+      modal.innerHTML = `
+        <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full">
+          <!-- Header -->
+          <div class="bg-gradient-to-r from-healthcare-blue to-healthcare-light-blue text-white p-6 rounded-t-2xl">
+            <h3 class="text-2xl font-bold">Account Details</h3>
+            <p class="text-blue-100 text-sm mt-1">User Information</p>
+          </div>
+          
+          <!-- Content -->
+          <div class="p-6 space-y-4">
+            <!-- Username -->
+            <div class="border-b border-gray-200 pb-4">
+              <p class="text-sm text-gray-500 mb-1">Username</p>
+              <p class="text-lg font-semibold text-gray-800">
+                <i class="fas fa-user mr-2 text-healthcare-blue"></i>${username}
+              </p>
+            </div>
+
+            <!-- Email -->
+            <div class="border-b border-gray-200 pb-4">
+              <p class="text-sm text-gray-500 mb-1">Email Address</p>
+              <p class="text-gray-800 break-all">
+                <i class="fas fa-envelope mr-2 text-healthcare-blue"></i>${email}
+              </p>
+            </div>
+
+            <!-- Role -->
+            <div class="border-b border-gray-200 pb-4">
+              <p class="text-sm text-gray-500 mb-1">User Role</p>
+              <p class="inline-block px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-700">
+                <i class="fas fa-shield mr-1"></i>${role}
+              </p>
+            </div>
+
+            <!-- Status -->
+            <div class="border-b border-gray-200 pb-4">
+              <p class="text-sm text-gray-500 mb-1">Account Status</p>
+              <p class="inline-block px-3 py-1 rounded-full text-sm font-semibold ${statusBg} ${statusColor}">
+                <i class="fas fa-circle text-xs mr-1"></i>${status}
+              </p>
+            </div>
+
+            <!-- Date Joined -->
+            <div class="border-b border-gray-200 pb-4">
+              <p class="text-sm text-gray-500 mb-1">Date Joined</p>
+              <p class="text-gray-800">
+                <i class="fas fa-calendar mr-2 text-healthcare-blue"></i>${dateJoined}
+              </p>
+            </div>
+
+            <!-- Last Login -->
+            <div>
+              <p class="text-sm text-gray-500 mb-1">Last Login</p>
+              <p class="text-gray-800">
+                <i class="fas fa-sign-in-alt mr-2 text-healthcare-blue"></i>${lastLogin || 'Never'}
+              </p>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="bg-gray-50 px-6 py-4 border-t border-gray-200 rounded-b-2xl flex gap-3">
+            <button onclick="this.closest('.fixed').remove()" class="flex-1 px-4 py-2 bg-healthcare-blue text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold">
+              <i class="fas fa-check mr-2"></i>Close
+            </button>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      
+      // Close on overlay click
+      modal.querySelector('.fixed.inset-0').addEventListener('click', () => modal.remove());
+      
+      // Close on ESC
+      const closeHandler = (e) => {
+        if (e.key === 'Escape') {
+          modal.remove();
+          document.removeEventListener('keydown', closeHandler);
+        }
+      };
+      document.addEventListener('keydown', closeHandler);
+    }
+
+    // ==================== USEFUL FEATURES & ENHANCEMENTS ====================
+
+    // Toggle Advanced Filters Section
+    function toggleAdvancedFilters() {
+      const advancedSection = document.getElementById('advancedFiltersSection');
+      advancedSection.classList.toggle('hidden');
+      if (!advancedSection.classList.contains('hidden')) {
+        // Setup filters when opened
+        document.getElementById('roleFilter')?.addEventListener('change', applyAccountFilters);
+        document.getElementById('searchColumn')?.addEventListener('change', applyAccountFilters);
+        document.getElementById('dateFilter')?.addEventListener('change', applyAccountFilters);
+      }
+    }
+
+    // Reset All Filters
+    function resetAllFilters() {
+      document.getElementById('accountSearch').value = '';
+      document.getElementById('accountStatus').value = 'all';
+      document.getElementById('roleFilter').value = '';
+      document.getElementById('searchColumn').value = 'all';
+      document.getElementById('dateFilter').value = '';
+      applyAccountFilters();
+      
+      // Show notification
+      showNotification('Filters reset successfully', 'success');
+    }
+
+    // Refresh Accounts Table
+    function refreshAccountsTable() {
+      // Reload the page to refresh data from server
+      location.reload();
+    }
+
+    // Export Accounts to CSV
+    function exportAccountsToCSV() {
+      // Permission check
+      if (!isSuperAdmin) {
+        showPermissionWarning('Export is for Super Admin only');
+        return;
+      }
+
+      const table = document.getElementById('accounts-table-body');
+      if (!table) {
+        showNotification('No data to export', 'error');
+        return;
+      }
+
+      const rows = Array.from(table.querySelectorAll('tr'));
+      if (rows.length === 0) {
+        showNotification('No accounts to export', 'error');
+        return;
+      }
+
+      // Prepare CSV data
+      let csv = 'User ID,Username,Email,Role,Last Login,Date Joined,Status\n';
+      
+      rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const rowData = Array.from(cells).slice(0, 7).map(cell => {
+          let text = cell.textContent.trim();
+          // Escape quotes and wrap in quotes if contains comma
+          text = '"' + text.replace(/"/g, '""') + '"';
+          return text;
+        }).join(',');
+        csv += rowData + '\n';
+      });
+
+      // Create blob and download
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `accounts_export_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      showNotification('Accounts exported successfully', 'success');
+    }
+
+    // Show Notification Toast
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      notification.className = `fixed bottom-6 right-6 px-6 py-4 rounded-lg text-white font-semibold shadow-lg z-40 transform transition-all duration-300 ${
+        type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+      }`;
+      notification.innerHTML = `
+        <div class="flex items-center">
+          <i class="fas ${
+            type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'
+          } mr-2"></i>
+          ${message}
+        </div>
+      `;
+
+      document.body.appendChild(notification);
+
+      // Auto-remove after 3 seconds
+      setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(400px)';
+        setTimeout(() => notification.remove(), 300);
+      }, 3000);
+    }
+
+    // Keyboard Shortcuts
+    document.addEventListener('keydown', (e) => {
+      // Ctrl+F or Cmd+F to focus search
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        const activeTab = localStorage.getItem('userManagementTab') || 'users';
+        if (activeTab === 'accounts') {
+          document.getElementById('accountSearch')?.focus();
+        } else {
+          document.getElementById('searchInput')?.focus();
+        }
+      }
+    });
+
+    // Notification Bell Functions
+    function toggleNotificationPanel() {
+      const panel = document.getElementById('notificationPanel');
+      if (panel) {
+        if (panel.classList.contains('hidden')) {
+          panel.classList.remove('hidden');
+          loadNotifications();
+        } else {
+          panel.classList.add('hidden');
+        }
+      }
+    }
+    
+    function closeNotificationPanel() {
+      const panel = document.getElementById('notificationPanel');
+      if (panel) {
+        panel.classList.add('hidden');
+      }
+    }
+    
+    function loadNotifications() {
+      fetch('/api/notifications/unread/', {
+        method: 'GET',
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        credentials: 'same-origin'
+      })
+      .then(response => response.json())
+      .then(data => {
+        updateNotificationUI(data);
+      })
+      .catch(error => {
+        console.error('Error loading notifications:', error);
+      });
+    }
+    
+    function updateNotificationUI(data) {
+      const badge = document.getElementById('notificationBadge');
+      const notificationList = document.getElementById('notificationList');
+      const emptyState = document.getElementById('notificationEmpty');
+      
+      const unreadCount = data.unread_count || 0;
+      let notifications = data.notifications || [];
+      
+      // Filter to show only password_reset notifications
+      notifications = notifications.filter(notif => notif.notification_type === 'password_reset');
+      
+      // Update badge count with filtered notifications
+      if (badge) {
+        const filteredCount = notifications.length;
+        if (filteredCount > 0) {
+          badge.textContent = filteredCount > 99 ? '99+' : filteredCount;
+          badge.classList.remove('hidden');
+        } else {
+          badge.classList.add('hidden');
+        }
+      }
+      
+      // Update notification list
+      if (notificationList) {
+        if (notifications.length === 0) {
+          notificationList.innerHTML = '<div id="notificationEmpty" class="p-8 text-center text-gray-500"><i class="fas fa-bell-slash text-3xl mb-2 opacity-50"></i><p>No password reset requests</p></div>';
+        } else {
+          let html = '';
+          notifications.forEach(notif => {
+            const priorityClass = notif.priority === 'urgent' ? 'border-l-4 border-red-500' : 
+                                 notif.priority === 'high' ? 'border-l-4 border-orange-500' : 
+                                 'border-l-4 border-blue-500';
+            const icon = 'fa-key';
+            const clickHandler = notif.related_id ? 
+              `onclick="handlePasswordResetNotification(${notif.notification_id}, ${notif.related_id})"` : '';
+            const cursorStyle = 'cursor-pointer';
+            html += `
+              <div class="p-4 hover:bg-gray-50 ${priorityClass} ${cursorStyle}" ${clickHandler}>
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <div class="flex items-center mb-1">
+                      <i class="fas ${icon} text-healthcare-blue mr-2"></i>
+                      <h4 class="font-semibold text-sm text-gray-800">${notif.title}</h4>
+                    </div>
+                    <p class="text-xs text-gray-600 mb-2">${notif.message}</p>
+                    <p class="text-xs text-gray-400">${new Date(notif.created_at).toLocaleString()}</p>
+                    ${notif.file_url ? `<div class="mt-2">
+                      <a href="${notif.file_url}" target="_blank" rel="noopener" onclick="event.stopPropagation();" class="inline-flex items-center px-2 py-1 text-xs font-semibold text-healthcare-blue border border-healthcare-blue rounded hover:bg-healthcare-blue hover:text-white transition-colors">
+                        <i class="fas fa-download mr-1"></i>Download ID
+                      </a>
+                    </div>` : ''}
+                  </div>
+                  <button onclick="event.stopPropagation(); markNotificationRead(${notif.notification_id})" class="ml-2 text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-check text-xs"></i>
+                  </button>
+                </div>
+              </div>
+            `;
+          });
+          notificationList.innerHTML = html;
+        }
+      }
+    }
+    
+    function markNotificationRead(notificationId) {
+      fetch(`/api/notifications/mark-read/${notificationId}/`, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        credentials: 'same-origin'
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          loadNotifications();
+        }
+      })
+      .catch(error => {
+        console.error('Error marking notification as read:', error);
+      });
+    }
+    
+    function handlePasswordResetNotification(notificationId, userId) {
+      // Mark as read
+      markNotificationRead(notificationId);
+      // Navigate to accounts tab and highlight the user
+      switchUserManagementTab('accounts');
+      // After switching, try to locate and highlight the matching account row
+      setTimeout(() => {
+        const rows = document.querySelectorAll('#accounts-table-body tr');
+        rows.forEach(r => r.classList.remove('temp-highlight'));
+        
+        let target = null;
+        rows.forEach(r => {
+          const idCell = r.querySelector('td:first-child');
+          const rowId = idCell ? idCell.textContent.trim() : '';
+          if (rowId === String(userId)) {
+            target = r;
+          }
+        });
+        
+        if (target) {
+          target.classList.add('temp-highlight');
+          target.style.transition = 'background-color 0.3s ease';
+          target.style.backgroundColor = '#fffbeb';
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(() => {
+            target.style.backgroundColor = '';
+            target.classList.remove('temp-highlight');
+          }, 3000);
+        }
+      }, 200);
+    }
+    
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+    
+    // ==================== PASSWORD RESET NOTIFICATIONS ====================
+    function togglePasswordResetNotifications() {
+      const panel = document.getElementById('passwordResetNotificationPanel');
+      if (panel) {
+        if (panel.classList.contains('hidden')) {
+          panel.classList.remove('hidden');
+          loadPasswordResetNotifications();
+        } else {
+          panel.classList.add('hidden');
+        }
+      }
+    }
+    
+    function closePasswordResetNotifications() {
+      const panel = document.getElementById('passwordResetNotificationPanel');
+      if (panel) {
+        panel.classList.add('hidden');
+      }
+    }
+    
+    function loadPasswordResetNotifications() {
+      fetch('/api/notifications/password-reset/', {
+        method: 'GET',
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        credentials: 'same-origin'
+      })
+      .then(response => response.json())
+      .then(data => {
+        updatePasswordResetNotificationUI(data);
+      })
+      .catch(error => {
+        console.error('Error loading password reset notifications:', error);
+      });
+    }
+    
+    function updatePasswordResetNotificationUI(data) {
+      const badge = document.getElementById('passwordResetNotificationBadge');
+      const notificationList = document.getElementById('passwordResetNotificationList');
+      const emptyState = document.getElementById('passwordResetNotificationEmpty');
+      
+      const count = data.count || 0;
+      const notifications = data.notifications || [];
+      
+      // Update badge count
+      if (badge) {
+        if (count > 0) {
+          badge.textContent = count > 99 ? '99+' : count;
+          badge.classList.remove('hidden');
+        } else {
+          badge.classList.add('hidden');
+        }
+      }
+      
+      // Update notification list
+      if (notificationList) {
+        if (notifications.length === 0) {
+          notificationList.innerHTML = '<div id="passwordResetNotificationEmpty" class="p-8 text-center text-gray-500"><i class="fas fa-key text-3xl mb-2 opacity-50"></i><p>No password reset requests</p></div>';
+        } else {
+          let html = '';
+          notifications.forEach(notif => {
+            const fileUrl = notif.file_url || '';
+            const fileName = notif.file_name || 'ID Photo';
+            html += `
+              <div class="p-4 hover:bg-gray-50 border-l-4 border-orange-500">
+                <div class="flex items-start justify-between mb-2">
+                  <div class="flex-1">
+                    <div class="flex items-center mb-1">
+                      <i class="fas fa-key text-healthcare-blue mr-2"></i>
+                      <h4 class="font-semibold text-sm text-gray-800">${notif.title || 'Password Reset Request'}</h4>
+                    </div>
+                    <p class="text-xs text-gray-600 mb-2">${notif.message || ''}</p>
+                    <p class="text-xs text-gray-400 mb-2">User ID: ${notif.related_id || 'N/A'}</p>
+                    <p class="text-xs text-gray-400">${new Date(notif.created_at).toLocaleString()}</p>
+                  </div>
+                  <button onclick="event.stopPropagation(); markPasswordResetNotificationRead(${notif.notification_id})" class="ml-2 text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-check text-xs"></i>
+                  </button>
+                </div>
+                ${fileUrl ? `
+                  <div class="mt-3 pt-3 border-t border-gray-200">
+                    <a href="${fileUrl}" target="_blank" download="${fileName}" class="inline-flex items-center px-3 py-1 bg-healthcare-blue text-white rounded-lg hover:bg-healthcare-light-blue transition-colors text-sm">
+                      <i class="fas fa-download mr-2"></i>Download ID Photo
+                    </a>
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          });
+          notificationList.innerHTML = html;
+        }
+      }
+    }
+    
+    function markPasswordResetNotificationRead(notificationId) {
+      fetch(`/api/notifications/mark-read/${notificationId}/`, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        credentials: 'same-origin'
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          loadPasswordResetNotifications();
+          loadNotifications(); // Refresh main notifications too
+        }
+      })
+      .catch(error => {
+        console.error('Error marking notification as read:', error);
+      });
+    }
+    
+    // View Password Reset Requests for Specific User
+    function viewPasswordResetRequests(userId, username, email) {
+      const modal = document.getElementById('viewPasswordResetRequestsModal');
+      const loadingDiv = document.getElementById('passwordResetRequestsLoading');
+      const errorDiv = document.getElementById('passwordResetRequestsError');
+      const errorText = document.getElementById('passwordResetRequestsErrorText');
+      const listDiv = document.getElementById('passwordResetRequestsList');
+      const emptyDiv = document.getElementById('passwordResetRequestsEmpty');
+      const metaInfo = document.getElementById('passwordResetRequestMeta');
+      
+      if (!modal) return;
+      
+      // Show modal
+      modal.classList.remove('hidden');
+      
+      // Show loading state
+      loadingDiv.classList.remove('hidden');
+      errorDiv.classList.add('hidden');
+      listDiv.classList.add('hidden');
+      emptyDiv.classList.add('hidden');
+      if (metaInfo) {
+        const metaParts = [];
+        if (username) metaParts.push(`Username: ${username}`);
+        if (email) metaParts.push(`Email: ${email}`);
+        metaInfo.textContent = metaParts.join(' • ');
+      }
+      
+      // Fetch password reset requests
+      fetch(`/api/password-reset-requests/${userId}/`, {
+        method: 'GET',
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        credentials: 'same-origin'
+      })
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      })
+      .then(data => {
+        loadingDiv.classList.add('hidden');
+        
+        if (!data.success) {
+          errorText.textContent = data.error || 'Failed to load password reset requests';
+          errorDiv.classList.remove('hidden');
+          return;
+        }
+        
+        const requests = data.requests || [];
+        if (metaInfo) {
+          const metaParts = [];
+          if (username) metaParts.push(`Username: ${username}`);
+          if (email) metaParts.push(`Email: ${email}`);
+          metaParts.push(`Requests: ${requests.length}`);
+          metaInfo.textContent = metaParts.join(' • ');
+        }
+        
+        if (requests.length === 0) {
+          emptyDiv.classList.remove('hidden');
+          return;
+        }
+        
+        // Build requests HTML
+        let html = '';
+        requests.forEach(request => {
+          const date = new Date(request.created_at).toLocaleString();
+          const fileButton = request.has_file && request.file_url
+            ? `<a href="/api/download-password-reset-file/?notification_id=${request.notification_id}" download class="ml-2 inline-flex items-center px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600">
+                <i class="fas fa-download mr-1"></i>Download
+              </a>`
+            : '';
+          
+          html += `
+            <div class="p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <h4 class="font-semibold text-sm text-gray-800 mb-1">
+                    <i class="fas fa-key text-red-500 mr-2"></i>${request.title}
+                  </h4>
+                  <p class="text-xs text-gray-600 mb-2">${request.message}</p>
+                  <div class="flex items-center gap-3 text-xs text-gray-500">
+                    <span><i class="fas fa-calendar mr-1"></i>${date}</span>
+                    <span class="px-2 py-1 rounded ${request.priority === 'high' ? 'bg-red-100 text-red-700' : request.priority === 'urgent' ? 'bg-red-200 text-red-800' : 'bg-yellow-100 text-yellow-700'}">
+                      ${request.priority}
+                    </span>
+                    ${request.has_file ? `<span class="px-2 py-1 bg-green-100 text-green-700 rounded">
+                      <i class="fas fa-file mr-1"></i>ID Photo Attached
+                    </span>` : ''}
+                  </div>
+                </div>
+                <div class="flex gap-2 ml-4 flex-shrink-0">
+                  ${fileButton}
+                  <button onclick="markPasswordResetAsRead(${request.notification_id})" class="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                    <i class="fas fa-check mr-1"></i>Read
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        
+        listDiv.innerHTML = html;
+        listDiv.classList.remove('hidden');
+      })
+      .catch(error => {
+        console.error('Error fetching password reset requests:', error);
+        loadingDiv.classList.add('hidden');
+        errorText.textContent = error.message || 'Error loading password reset requests';
+        errorDiv.classList.remove('hidden');
+      });
+    }
+    
+    function closePasswordResetRequestsModal() {
+      const modal = document.getElementById('viewPasswordResetRequestsModal');
+      if (modal) {
+        modal.classList.add('hidden');
+      }
+    }
+    
+    function markPasswordResetAsRead(notificationId) {
+      fetch(`/api/password-reset-mark-read/${notificationId}/`, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken'),
+          'Content-Type': 'application/json'
+        },
+        credentials: 'same-origin'
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          showNotification('Marked as read', 'success');
+        }
+      })
+      .catch(error => {
+        console.error('Error marking as read:', error);
+        showNotification('Error updating notification', 'error');
+      });
+    }
+    
+    // Load notifications on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      loadNotifications();
+      loadPasswordResetNotifications(); // Also load password reset notifications
+      // Refresh notifications every 30 seconds
+      setInterval(loadNotifications, 30000);
+      setInterval(loadPasswordResetNotifications, 30000);
+    });
+    
+    // Real-time Account Count Update
+    function updateAccountStats() {
+      const activeRows = Array.from(document.querySelectorAll('#accounts-table-body tr')).filter(row => {
+        return row.style.display !== 'none';
+      });
+      const totalCount = document.querySelectorAll('#accounts-table-body tr').length;
+      const visibleCount = activeRows.length;
+
+      // You can update UI if needed
+      console.log(`Visible: ${visibleCount} of ${totalCount} accounts`);
+    }
+
+    // Add keyboard shortcuts indicator on page load
+    console.log('%c🔑 Keyboard Shortcuts Available:', 'color: #003366; font-size: 14px; font-weight: bold;');
+    console.log('%cCtrl+F (Cmd+F on Mac): Focus search box', 'color: #0066CC; font-size: 12px;');
+    console.log('%cEsc: Close modals', 'color: #0066CC; font-size: 12px;');
+  </script>
+
+  {% if messages %}
+  <script>
+    // Render Django messages as toasts
+    (function() {
+      const levelToType = {
+        'success': 'success',
+        'error': 'error',
+        'warning': 'error',
+        'info': 'info',
+        'debug': 'info'
+      };
+      {% for message in messages %}
+        showNotification(`{{ message|escapejs }}`, levelToType['{{ message.tags|default:"info" }}'] || 'info');
+      {% endfor %}
+    })();
+  </script>
+  {% endif %}
+
+  <!-- Password Reset Modal -->
+  <div id="passwordResetModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+      <!-- Modal Header -->
+      <div class="p-6 border-b border-gray-200 flex items-center justify-between">
+        <h2 class="text-xl font-bold text-healthcare-blue">Reset User Password</h2>
+        <button onclick="closePasswordResetModal()" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <!-- Modal Content -->
+      <div class="p-6">
+        <div id="passwordResetError" class="mb-4 hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-start">
+          <i class="fas fa-exclamation-circle mt-0.5 mr-3 flex-shrink-0"></i>
+          <span id="passwordResetErrorText"></span>
+        </div>
+        
+        <div id="passwordResetSuccess" class="mb-4 hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-start">
+          <i class="fas fa-check-circle mt-0.5 mr-3 flex-shrink-0"></i>
+          <span id="passwordResetSuccessText"></span>
+        </div>
+
+        <form id="passwordResetForm" onsubmit="handlePasswordResetSubmit(event)" class="space-y-4">
+          <!-- User Info Display -->
+          <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <p class="text-sm text-gray-600 mb-2">
+              <strong>Username:</strong> <span id="resetModalUsername"></span>
+            </p>
+            <p class="text-sm text-gray-600">
+              <strong>Email:</strong> <span id="resetModalEmail"></span>
+            </p>
+          </div>
+
+          <!-- Hidden Fields -->
+          <input type="hidden" id="resetNotificationId" name="notification_id" value="">
+          <input type="hidden" id="resetUserId" name="user_id" value="">
+
+          <!-- New Password Field -->
+          <div>
+            <label for="newPassword" class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+            <input type="password" id="newPassword" name="new_password" required 
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-healthcare-blue focus:border-transparent outline-none"
+                   placeholder="Enter new password (min. 6 characters)" minlength="6">
+          </div>
+
+          <!-- Confirm Password Field -->
+          <div>
+            <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+            <input type="password" id="confirmPassword" name="confirm_password" required 
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-healthcare-blue focus:border-transparent outline-none"
+                   placeholder="Re-enter password to confirm" minlength="6">
+          </div>
+
+          <!-- Password Requirements -->
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
+            <p class="font-medium mb-2">Password Requirements:</p>
+            <ul class="list-disc list-inside space-y-1 text-xs">
+              <li>Minimum 6 characters</li>
+              <li>Both passwords must match</li>
+              <li>Cannot be same as current password</li>
+            </ul>
+          </div>
+        </form>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-6 border-t border-gray-200 flex items-center justify-end space-x-3">
+        <button onclick="closePasswordResetModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+          Cancel
+        </button>
+        <button form="passwordResetForm" type="submit" class="px-4 py-2 bg-healthcare-blue text-white rounded-lg hover:bg-healthcare-blue/90 transition-colors flex items-center">
+          <i class="fas fa-key mr-2"></i>Reset Password
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Password Reset Requests Modal -->
+  <div id="viewPasswordResetRequestsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-96 overflow-hidden flex flex-col">
+      <!-- Modal Header -->
+      <div class="p-6 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+        <div>
+          <h2 class="text-xl font-bold text-healthcare-blue">
+            <i class="fas fa-key mr-2"></i>Password Reset Requests
+          </h2>
+          <p id="passwordResetRequestMeta" class="text-sm text-gray-500 mt-1"></p>
+        </div>
+        <button onclick="closePasswordResetRequestsModal()" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <!-- Modal Content -->
+      <div class="overflow-y-auto flex-1 p-6">
+        <div id="passwordResetRequestsLoading" class="text-center text-gray-500">
+          <i class="fas fa-spinner fa-spin text-2xl mb-3"></i>
+          <p>Loading password reset requests...</p>
+        </div>
+
+        <div id="passwordResetRequestsError" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-start">
+          <i class="fas fa-exclamation-circle mt-0.5 mr-3 flex-shrink-0"></i>
+          <span id="passwordResetRequestsErrorText"></span>
+        </div>
+
+        <div id="passwordResetRequestsList" class="space-y-4 hidden">
+          <!-- Requests will be populated here -->
+        </div>
+
+        <div id="passwordResetRequestsEmpty" class="hidden text-center text-gray-500 py-8">
+          <i class="fas fa-key text-4xl mb-3 opacity-30"></i>
+          <p class="text-lg">No password reset requests for this user</p>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-6 border-t border-gray-200 flex items-center justify-end space-x-3 flex-shrink-0">
+        <button onclick="closePasswordResetRequestsModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Initialize password reset notifications when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      loadPasswordResetNotifications();
+      setInterval(loadPasswordResetNotifications, 30000);
+      
+      // Check for highlight parameter in URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const highlightUserId = urlParams.get('highlight');
+      if (highlightUserId) {
+        highlightUserRow(highlightUserId);
+      }
+    });
+    
+    // Password Reset Notifications Functions
+    function togglePasswordResetNotifications() {
+      const panel = document.getElementById('passwordResetNotificationPanel');
+      if (panel) {
+        panel.classList.toggle('hidden');
+      }
+    }
+    
+    function closePasswordResetNotifications() {
+      const panel = document.getElementById('passwordResetNotificationPanel');
+      if (panel) {
+        panel.classList.add('hidden');
+      }
+    }
+    
+    function loadPasswordResetNotifications() {
+      fetch('/api/admin/password-reset-notifications/', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('Network response was not ok');
+        return response.json();
+      })
+      .then(data => {
+        updatePasswordResetNotificationUI(data);
+      })
+      .catch(error => {
+        console.error('Error loading password reset notifications:', error);
+      });
+    }
+    
+    function updatePasswordResetNotificationUI(data) {
+      const badge = document.getElementById('passwordResetNotificationBadge');
+      const notificationList = document.getElementById('passwordResetNotificationList');
+      
+      let notifications = data.notifications || [];
+      const unreadCount = notifications.filter(notif => !notif.is_read).length;
+      
+      // Update badge
+      if (badge) {
+        if (unreadCount > 0) {
+          badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+          badge.classList.remove('hidden');
+        } else {
+          badge.classList.add('hidden');
+        }
+      }
+      
+      // Update notification list
+      if (notificationList) {
+        if (notifications.length === 0) {
+          notificationList.innerHTML = '<div class="p-8 text-center text-gray-500"><i class="fas fa-key text-3xl mb-2 opacity-50"></i><p>No password reset requests</p></div>';
+        } else {
+          let html = '';
+          notifications.forEach(notif => {
+            const isUnread = !notif.is_read;
+            const timestamp = formatAdminNotificationTime(notif.created_at);
+            
+            html += `
+              <div class="notification-item" data-id="${notif.notification_id}" data-user-id="${notif.user_id || ''}" style="padding:12px 16px;border-bottom:1px solid #f1f5f9;cursor:pointer;transition:all 0.2s;${isUnread ? 'background:#f0f7ff;' : ''}" onclick="handlePasswordResetNotification(event, this, ${notif.notification_id})" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='${isUnread ? '#f0f7ff' : 'transparent'}'">
+                <div style="display:flex;gap:10px;">
+                  <div style="font-size:16px;color:#2c71b7;flex-shrink:0;margin-top:2px;"><i class="fas fa-key"></i></div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-weight:600;font-size:13px;color:#2c2c2f;margin-bottom:2px;">Password Reset Request</div>
+                    <div style="font-size:12px;color:#64748b;line-height:1.4;margin-bottom:6px;">${notif.message}</div>
+                    <div style="display:flex;gap:6px;align-items:center;justify-content:space-between;">
+                      <span style="font-size:11px;color:#64748b;">${timestamp}</span>
+                      ${isUnread ? '<button onclick="markPasswordResetNotificationRead(event, ${notif.notification_id})" style="background:none;border:none;color:#2c71b7;font-size:11px;cursor:pointer;font-weight:600;padding:0;margin:0;">Mark read</button>' : '<span style="font-size:11px;color:#64748b;">✓</span>'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+          notificationList.innerHTML = html;
+        }
+      }
+    }
+    
+    function handlePasswordResetNotification(event, element, notificationId) {
+      event.stopPropagation();
+      const userId = element.getAttribute('data-user-id');
+      
+      // Mark as read
+      markPasswordResetNotificationRead(null, notificationId);
+      
+      // Close the notification panel
+      closePasswordResetNotifications();
+      
+      // Highlight the user in the table
+      if (userId) {
+        highlightUserRow(userId);
+      }
+    }
+    
+    function highlightUserRow(userId) {
+      // Switch to users tab
+      switchUserManagementTab('users');
+      
+      // Find and highlight the row
+      setTimeout(() => {
+        const userRow = document.querySelector(`tr[data-user-id="${userId}"]`);
+        if (userRow) {
+          userRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          userRow.style.backgroundColor = '#fef08a';
+          userRow.style.transition = 'background-color 0.3s ease';
+          
+          // Remove highlight after 3 seconds
+          setTimeout(() => {
+            userRow.style.backgroundColor = '';
+          }, 3000);
+        }
+      }, 100);
+    }
+    
+    function markPasswordResetNotificationRead(event, notificationId) {
+      if (event) event.stopPropagation();
+      
+      fetch(`/api/admin/mark-password-reset-read/${notificationId}/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+        },
+        body: JSON.stringify({notification_id: notificationId})
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          loadPasswordResetNotifications();
+        }
+      })
+      .catch(error => console.error('Error marking notification as read:', error));
+    }
+    
+    function formatAdminNotificationTime(dateString) {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diff = now - date;
+      
+      const minutes = Math.floor(diff / 60000);
+      const hours = Math.floor(diff / 3600000);
+      const days = Math.floor(diff / 86400000);
+      
+      if (minutes < 1) return 'Just now';
+      if (minutes < 60) return `${minutes}m ago`;
+      if (hours < 24) return `${hours}h ago`;
+      if (days < 7) return `${days}d ago`;
+      
+      return date.toLocaleDateString();
+    }
+  </script>
+</body>
+</html>
+

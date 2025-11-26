@@ -1,0 +1,87 @@
+# MediSafe+ Project Dependencies
+# Python 3.9+
+# Install with: pip install -r requirements.txt
+
+# Core Django Framework
+Django==5.2.6
+
+# Database
+psycopg2-binary==2.9.10
+psycopg2==2.9.10
+
+# Image Processing
+pillow==11.3.0
+
+# Environment Configuration
+python-dotenv==1.1.1
+
+# HTTP Requests
+requests==2.32.3
+httpx==0.28.1
+
+# Supabase (Cloud Database)
+supabase==2.21.1
+supabase-auth==2.21.1
+supabase-functions==2.21.1
+storage3==2.21.1
+postgrest==2.21.1
+realtime==2.21.1
+
+# Cryptography
+cryptography==46.0.2
+
+# MySQL Support (if needed)
+mysql-connector-python==9.3.0
+
+# Utilities
+sqlparse==0.5.3
+asgiref==3.9.1
+typing-extensions==4.15.0
+typing-inspection==0.4.2
+
+# Data Validation
+pydantic==2.11.10
+pydantic-core==2.33.2
+annotated-types==0.7.0
+
+# JWT Authentication
+PyJWT==2.10.1
+
+# RSA Encryption
+rsa==4.9.1
+
+# Additional Utilities
+certifi==2025.4.26
+charset-normalizer==3.4.2
+idna==3.10
+urllib3==2.4.0
+anyio==4.11.0
+sniffio==1.3.1
+packaging==25.0
+click==8.1.8
+colorama==0.4.6
+MarkupSafe==3.0.2
+Jinja2==3.1.6
+itsdangerous==2.2.0
+Werkzeug==3.1.3
+deprecation==2.1.0
+blinker==1.9.0
+
+# HTTP/2 Support
+h11==0.16.0
+h2==4.3.0
+hpack==4.1.0
+hyperframe==6.1.0
+
+# Timezone
+tzdata==2025.2
+
+# Optional UI Framework
+Flask==3.1.0
+PySimpleGUI==5.0.10
+
+# Enum Support
+StrEnum==0.4.15
+
+# Web Sockets
+websockets==15.0.1

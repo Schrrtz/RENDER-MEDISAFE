@@ -1,0 +1,1715 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Analytics Dashboard | MediSafe+</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link href="{% static 'css/mod_analytics.css' %}" rel="stylesheet">
+  <style>
+    .tab-button {
+      padding: 12px 24px;
+      border: none;
+      background: #e5e7eb;
+      color: #6b7280;
+      cursor: pointer;
+      border-radius: 8px 8px 0 0;
+      font-weight: 600;
+      transition: all 0.3s;
+      margin-right: 4px;
+    }
+    .tab-button.active {
+      background: white;
+      color: #003366;
+      border-bottom: 3px solid #003366;
+    }
+    .tab-button:hover {
+      background: #f3f4f6;
+    }
+    .tab-content {
+      display: none;
+      padding: 24px;
+      background: white;
+      border-radius: 0 8px 8px 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .stat-box {
+      background: #f8fafc;
+      border-left: 4px solid #003366;
+      padding: 16px;
+      margin: 16px 0;
+      border-radius: 4px;
+    }
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .stat-row:last-child {
+      border-bottom: none;
+    }
+    .stat-label {
+      font-weight: 600;
+      color: #4b5563;
+    }
+    .stat-value {
+      font-weight: 700;
+      color: #003366;
+    }
+    .caption-box {
+      background: #eff6ff;
+      border-left: 4px solid #0066CC;
+      padding: 16px;
+      margin: 16px 0;
+      border-radius: 4px;
+      font-style: italic;
+      color: #1e40af;
+    }
+    .stats-toggle-btn {
+      background: #003366;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      margin: 16px 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.3s;
+    }
+    .stats-toggle-btn:hover {
+      background: #0066CC;
+    }
+    .stats-content {
+      display: none;
+      animation: slideDown 0.3s ease-out;
+    }
+    .stats-content.show {
+      display: block;
+    }
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .tab-timeframe-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 16px;
+      padding: 12px;
+      background: #f8fafc;
+      border-radius: 8px;
+    }
+  </style>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'healthcare-red': '#FF0000',
+            'healthcare-blue': '#003366',
+            'healthcare-light-blue': '#0066CC'
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
+  <!-- Admin Navbar -->
+  <div class="flex h-screen bg-gray-100">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-healthcare-blue text-white shadow-lg">
+      <!-- Logo -->
+      <div class="p-4 border-b border-healthcare-light-blue/30">
+        <div class="flex items-center space-x-3">
+          <div style="display:flex;align-items:center;gap:10px">
+            <img src="/media/logo/Medisafe%20Logo.jpg" alt="MediSafe" style="height:44px;width:auto;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.06)" />
+            <span class="font-bold text-lg">MediSafe+</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="p-4">
+        <div class="mb-4">
+          <div class="relative">
+            <input type="text" 
+                   placeholder="Search..." 
+                   class="w-full bg-white/10 text-white placeholder-white/60 px-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-white/30">
+            <i class="fas fa-search absolute right-3 top-2.5 text-white/60"></i>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <a href="{% url 'moddashboard' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-chart-pie"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="{% url 'mod_doctors' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-users-cog"></i>
+            <span>Medisafe Team</span>
+          </a>
+          <a href="{% url 'mod_records' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-hospital-user"></i>
+            <span>Patient Records</span>
+          </a>
+          <a href="{% url 'mod_users' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-users"></i>
+            <span>User Management</span>
+          </a>
+          <a href="{% url 'mod_consultations' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-calendar-check"></i>
+            <span>Appointments</span>
+          </a>
+          <a href="{% url 'mod_analytics' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg bg-white/20 text-white">
+            <i class="fas fa-chart-line"></i>
+            <span>Analytics</span>
+          </a>
+        </div>
+      </nav>
+
+      <!-- User Profile -->
+      <div class="mt-auto p-4 border-t border-healthcare-light-blue/30">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="bg-white/10 p-2 rounded-full">
+              <i class="fas fa-user-md"></i>
+            </div>
+            <div class="text-sm">
+              <p class="font-semibold">Admin</p>
+              <p class="text-white/60 text-xs">Online</p>
+            </div>
+          </div>
+          <a href="{% url 'logout' %}" class="text-white/60 hover:text-white">
+            <i class="fas fa-sign-out-alt"></i>
+          </a>
+        </div>
+        
+        <!-- Super Admin Component Include -->
+        {% include 'super_admin_component.html' %}
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 overflow-auto">
+      <div class="max-w-7xl mx-auto px-8 py-8">
+        <!-- Page Header -->
+        <div class="mb-8 flex justify-between items-center">
+          <div>
+            <h1 class="text-3xl font-bold text-healthcare-blue">Analytics Overview</h1>
+            <p class="text-gray-600 mt-2">Real-time insights and performance metrics with descriptive statistics</p>
+          </div>
+          <div class="flex gap-3 items-center flex-wrap">
+            <button onclick="generateReport()" class="bg-healthcare-blue hover:bg-healthcare-light-blue text-white px-4 py-2 rounded-lg flex items-center gap-2">
+              <i class="fas fa-file-pdf"></i>
+              Generate Report
+            </button>
+            <button onclick="refreshData()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+              <i class="fas fa-sync-alt"></i>
+              Refresh Data
+            </button>
+            <a id="csvExportLink" href="?export=csv" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+              <i class="fas fa-file-csv"></i>
+              Export CSV
+            </a>
+            <a id="doctorCsvExportLink" href="?export=doctor_csv" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+              <i class="fas fa-user-md"></i>
+              Doctors CSV
+            </a>
+            <button onclick="window.print()" class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+              <i class="fas fa-print"></i>
+              Print
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-7 gap-4 mb-8">
+          <div class="stat-card rounded-xl p-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-semibold text-gray-600">Total Users</p>
+                <h3 class="text-2xl font-bold text-healthcare-blue mt-1">{{ total_users }}</h3>
+              </div>
+              <div class="bg-blue-100 p-3 rounded-full">
+                <i class="fas fa-users text-healthcare-blue text-xl"></i>
+              </div>
+            </div>
+            <p class="text-green-600 text-sm mt-2">
+              <i class="fas fa-arrow-up mr-1"></i>
+              +{{ recent_users }} new this month
+            </p>
+          </div>
+
+          <div class="stat-card rounded-xl p-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-semibold text-gray-600">Total Patients</p>
+                <h3 class="text-2xl font-bold text-healthcare-blue mt-1">{{ total_patients }}</h3>
+              </div>
+              <div class="bg-red-100 p-3 rounded-full">
+                <i class="fas fa-hospital-user text-healthcare-red text-xl"></i>
+              </div>
+            </div>
+            <p class="text-green-600 text-sm mt-2">
+              <i class="fas fa-arrow-up mr-1"></i>
+              Active patients
+            </p>
+          </div>
+
+          <div class="stat-card rounded-xl p-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-semibold text-gray-600">Total Appointments</p>
+                <h3 class="text-2xl font-bold text-healthcare-blue mt-1">{{ total_consultations }}</h3>
+              </div>
+              <div class="bg-yellow-100 p-3 rounded-full">
+                <i class="fas fa-calendar-check text-yellow-600 text-xl"></i>
+              </div>
+            </div>
+            <p class="text-green-600 text-sm mt-2">
+              <i class="fas fa-arrow-up mr-1"></i>
+              +{{ recent_consultations }} this month
+            </p>
+          </div>
+
+          <div class="stat-card rounded-xl p-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-semibold text-gray-600">Approval Rate</p>
+                <h3 class="text-2xl font-bold text-healthcare-blue mt-1">{{ approval_rate }}%</h3>
+              </div>
+              <div class="bg-green-100 p-3 rounded-full">
+                <i class="fas fa-check-circle text-green-600 text-xl"></i>
+              </div>
+            </div>
+            <p class="text-green-600 text-sm mt-2">
+              <i class="fas fa-arrow-up mr-1"></i>
+              {{ total_approved }} approved
+            </p>
+          </div>
+
+          <div class="stat-card rounded-xl p-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-semibold text-gray-600">Completed</p>
+                <h3 class="text-2xl font-bold text-healthcare-blue mt-1">{{ total_completed_consultations }}</h3>
+              </div>
+              <div class="bg-green-100 p-3 rounded-full">
+                <i class="fas fa-check text-green-600 text-xl"></i>
+              </div>
+            </div>
+            <p class="text-green-600 text-sm mt-2">
+              <i class="fas fa-arrow-up mr-1"></i>
+              {{ completed_consultations_timeframe }} in timeframe
+            </p>
+          </div>
+
+          <div class="stat-card rounded-xl p-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-semibold text-gray-600">Total Booked Services</p>
+                <h3 class="text-2xl font-bold text-healthcare-blue mt-1">{{ booked_services_total }}</h3>
+              </div>
+              <div class="bg-indigo-100 p-3 rounded-full">
+                <i class="fas fa-shopping-cart text-indigo-600 text-xl"></i>
+              </div>
+            </div>
+            <p class="text-green-600 text-sm mt-2">
+              <i class="fas fa-arrow-up mr-1"></i>
+              {{ booked_services_timeframe }} in timeframe
+            </p>
+          </div>
+
+          <div class="stat-card rounded-xl p-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-semibold text-gray-600">Total Lab Results</p>
+                <h3 class="text-2xl font-bold text-healthcare-blue mt-1">{{ total_lab_results }}</h3>
+              </div>
+              <div class="bg-purple-100 p-3 rounded-full">
+                <i class="fas fa-flask text-purple-600 text-xl"></i>
+              </div>
+            </div>
+            <p class="text-green-600 text-sm mt-2">
+              <i class="fas fa-arrow-up mr-1"></i>
+              {{ lab_results_timeframe }} in timeframe
+            </p>
+          </div>
+        </div>
+
+        <!-- System Statistics Dropdown -->
+        <div class="mb-6 p-6 bg-white rounded-xl shadow-sm border border-gray-200">
+          <h3 class="text-lg font-bold text-healthcare-blue mb-4">System Statistics</h3>
+          <details class="cursor-pointer">
+            <summary class="font-semibold text-healthcare-blue hover:text-healthcare-light-blue transition-colors py-2">Click to view system statistics</summary>
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                <span class="text-gray-700 font-semibold">Active Users</span>
+                <span class="font-bold text-green-600 text-xl">{{ active_users }}</span>
+              </div>
+              <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                <span class="text-gray-700 font-semibold">Inactive Users</span>
+                <span class="font-bold text-red-600 text-xl">{{ inactive_users }}</span>
+              </div>
+              <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                <span class="text-gray-700 font-semibold">Pending Consultations</span>
+                <span class="font-bold text-yellow-600 text-xl">{{ total_pending }}</span>
+              </div>
+              <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                <span class="text-gray-700 font-semibold">Approved Consultations</span>
+                <span class="font-bold text-green-600 text-xl">{{ total_approved }}</span>
+              </div>
+              <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                <span class="text-gray-700 font-semibold">Rejected Consultations</span>
+                <span class="font-bold text-red-600 text-xl">{{ total_rejected }}</span>
+              </div>
+              <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                <span class="text-gray-700 font-semibold">Completed (Timeframe)</span>
+                <span class="font-bold text-blue-600 text-xl">{{ completed_consultations_timeframe }}</span>
+              </div>
+              <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                <span class="text-gray-700 font-semibold">Recent Registrations</span>
+                <span class="font-bold text-blue-600 text-xl">{{ recent_registrations }}</span>
+              </div>
+              <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                <span class="text-gray-700 font-semibold">Total Registrations</span>
+                <span class="font-bold text-indigo-600 text-xl">{{ total_registrations }}</span>
+              </div>
+              <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                <span class="text-gray-700 font-semibold">Total Booked Services</span>
+                <span class="font-bold text-indigo-600 text-xl">{{ booked_services_total }}</span>
+              </div>
+              <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                <span class="text-gray-700 font-semibold">Total Lab Results</span>
+                <span class="font-bold text-purple-600 text-xl">{{ total_lab_results }}</span>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <!-- Time Period Selection for Statistics -->
+        <div class="mb-6 p-6 bg-white rounded-xl shadow-sm border border-gray-200">
+          <h3 class="text-lg font-bold text-healthcare-blue mb-4">Statistical Analysis Period</h3>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- Period Type Selection -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Period Type</label>
+              <select id="period-type" class="w-full px-3 py-2 border-2 border-healthcare-blue text-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue" onchange="updatePeriodType(this.value)">
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly" selected>Monthly</option>
+              </select>
+            </div>
+
+            <!-- Year Selection (all periods) -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Year</label>
+              <select id="period-year" class="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue" onchange="loadStatistics()">
+                <!-- Will be populated by JavaScript -->
+              </select>
+            </div>
+
+            <!-- Month Selection (weekly and monthly) -->
+            <div id="month-selector" class="hidden">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Month</label>
+              <select id="period-month" class="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue" onchange="loadStatistics()">
+                <option value="1">January</option>
+                <option value="2">February</option>
+                <option value="3">March</option>
+                <option value="4">April</option>
+                <option value="5">May</option>
+                <option value="6">June</option>
+                <option value="7">July</option>
+                <option value="8">August</option>
+                <option value="9">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+              </select>
+            </div>
+
+            <!-- Day Selection (daily only) -->
+            <div id="day-selector" class="hidden">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Day</label>
+              <input type="number" id="period-day" min="1" max="31" class="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue" onchange="loadStatistics()" />
+            </div>
+
+            <!-- Week Selection (weekly only) -->
+            <div id="week-selector" class="hidden">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Week Number</label>
+              <select id="period-week" class="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue" onchange="loadStatistics()">
+                <option value="1">Week 1</option>
+                <option value="2">Week 2</option>
+                <option value="3">Week 3</option>
+                <option value="4">Week 4</option>
+                <option value="5">Week 5</option>
+              </select>
+            </div>
+
+            <!-- Load Button -->
+            <div class="flex items-end">
+              <button onclick="loadStatistics()" class="w-full bg-healthcare-blue hover:bg-healthcare-light-blue text-white px-4 py-2 rounded-lg font-semibold flex items-center justify-center gap-2">
+                <i class="fas fa-sync-alt"></i>
+                Load Statistics
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabbed Analytics Section -->
+        <div class="mb-8">
+          <div class="flex flex-wrap border-b border-gray-200">
+            <button class="tab-button active" data-tab="status" onclick="switchTab('status', this)">
+              <i class="fas fa-calendar-check mr-2"></i>Appointment Status
+            </button>
+            <button class="tab-button" data-tab="monthly" onclick="switchTab('monthly', this)">
+              <i class="fas fa-flask mr-2"></i>Lab Results
+            </button>
+            <button class="tab-button" data-tab="doctor" onclick="switchTab('doctor', this)">
+              <i class="fas fa-user-md mr-2"></i>Doctor Performance
+            </button>
+            <button class="tab-button" data-tab="bookedservices" onclick="switchTab('bookedservices', this)">
+              <i class="fas fa-calendar-check mr-2"></i>Booked Services
+            </button>
+            <button class="tab-button" data-tab="fields" onclick="switchTab('fields', this)">
+              <i class="fas fa-stethoscope mr-2"></i>Top Performing Fields
+            </button>
+            <button class="tab-button" data-tab="users-role" onclick="switchTab('users-role', this)">
+              <i class="fas fa-users-cog mr-2"></i>Users and Role
+            </button>
+          </div>
+
+          <!-- Users and Role Tab -->
+          <div id="tab-users-role" class="tab-content">
+            <h2 class="text-2xl font-bold text-healthcare-blue mb-4">Users and Role Distribution</h2>
+            <div class="mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+              <p class="text-sm text-gray-700"><strong>Description:</strong> This pie chart displays the distribution of users across different roles in the system. It shows the total number of users and how they are distributed among Admin, Doctor, Nurse, Lab Technician, and Patient roles, providing insights into your system's user composition.</p>
+            </div>
+            <div class="chart-card rounded-xl p-6 mb-4">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-healthcare-blue">Total Users: <span id="total-users-role-count">{{ total_users }}</span></h3>
+              </div>
+              <div class="relative" style="height: 400px;">
+                <canvas id="usersRoleChart"></canvas>
+              </div>
+            </div>
+            <div class="mt-6 p-6 bg-blue-50 border-l-4 border-blue-500 rounded-lg">
+              <h3 class="text-lg font-bold text-blue-700 mb-3">Analysis</h3>
+              <p class="text-sm text-gray-700 leading-relaxed" id="users-role-meaning">
+                {% if total_users > 0 %}
+                  Your system has <strong>{{ total_users }}</strong> total users distributed across different roles. The role distribution shows the composition of your user base, with <strong>{{ role_distribution.admin|default:0 }}</strong> administrators, <strong>{{ role_distribution.doctor|default:0 }}</strong> doctors, <strong>{{ role_distribution.nurse|default:0 }}</strong> nurses, <strong>{{ role_distribution.lab_tech|default:0 }}</strong> lab technicians, and <strong>{{ role_distribution.patient|default:0 }}</strong> patients. This distribution helps you understand your system's user structure and staffing levels.
+                {% else %}
+                  No users are currently registered in the system. Once users are added, their role distribution will be displayed here.
+                {% endif %}
+              </p>
+            </div>
+          </div>
+
+          <!-- Appointment Status Tab -->
+          <div id="tab-status" class="tab-content active">
+            <h2 class="text-2xl font-bold text-healthcare-blue mb-4">Appointment Status Distribution</h2>
+            <div class="mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+              <p class="text-sm text-gray-700"><strong>Description:</strong> This visualization shows the breakdown of appointments by their current status (Pending, Approved, Rejected, Scheduled, Completed, Cancelled). It helps track appointment workflow and identify bottlenecks in the approval process.</p>
+            </div>
+            <div class="chart-card rounded-xl p-6 mb-4">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-healthcare-blue">Total Statuses: <span id="total-statuses-display">{{ status_stats.total_statuses|default:0 }}</span></h3>
+              </div>
+              <div class="relative" style="height: 400px;">
+                <canvas id="consultationStatusChart"></canvas>
+              </div>
+            </div>
+            <div class="mt-6 p-6 bg-blue-50 border-l-4 border-blue-500 rounded-lg">
+              <h3 class="text-lg font-bold text-blue-700 mb-3">Analysis</h3>
+              <p class="text-sm text-gray-700 leading-relaxed" id="status-meaning">
+                {% if total_consultations > 0 %}
+                  Your system has <strong>{{ total_consultations }}</strong> total appointments across <strong>{{ status_stats.total_statuses }}</strong> different statuses. Approximately <strong>{{ approval_rate|floatformat:1 }}%</strong> of appointments have been approved, with <strong>{{ total_pending }}</strong> currently pending review. The <strong>{{ total_completed_consultations }}</strong> completed appointments demonstrate active system usage. Understanding this distribution helps you identify workflow bottlenecks and optimize your appointment management process.
+                {% else %}
+                  No appointment data available yet. Once appointments are created, their status distribution will be displayed here.
+                {% endif %}
+              </p>
+            </div>
+          </div>
+
+          <!-- Lab Results Tab -->
+          <div id="tab-monthly" class="tab-content">
+            <h2 class="text-2xl font-bold text-healthcare-blue mb-4">Lab Results Analysis</h2>
+            <div class="mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+              <p class="text-sm text-gray-700"><strong>Description:</strong> These charts track lab results upload trends and distribution by type. The trend chart shows the volume of lab results uploaded over recent months, while the type distribution chart shows which types of lab tests are most frequently conducted in your facility.</p>
+            </div>
+
+            <!-- Lab Results Trend Chart -->
+            <div class="chart-card rounded-xl p-6 mb-6">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-healthcare-blue">Lab Results Upload Trend</h3>
+                <span class="text-sm text-gray-600">Total: <span id="total-lab-results-display">{{ total_lab_results }}</span></span>
+              </div>
+              <div class="relative" style="height: 350px;">
+                <canvas id="monthlyChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Lab Results by Type Chart -->
+            <div class="chart-card rounded-xl p-6 mb-6">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-healthcare-blue">Lab Results by Type</h3>
+              </div>
+              <div class="relative" style="height: 350px;">
+                <canvas id="labResultsTypeChart"></canvas>
+              </div>
+            </div>
+
+            {% if lab_results_stats %}
+            <button class="stats-toggle-btn" onclick="toggleStats('monthly-stats')">
+              <i class="fas fa-chart-bar"></i>
+              <span>Show Descriptive Statistics</span>
+            </button>
+            <div id="monthly-stats" class="stats-content">
+              <div class="stat-box">
+                <h3 class="text-lg font-bold text-healthcare-blue mb-4">Descriptive Statistics</h3>
+                <div class="stat-row">
+                  <span class="stat-label">Mean (Average)</span>
+                  <span class="stat-value">{{ lab_results_stats.mean }}</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">Median</span>
+                  <span class="stat-value">{{ lab_results_stats.median }}</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">Standard Deviation</span>
+                  <span class="stat-value">{{ lab_results_stats.std_dev }}</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">Minimum</span>
+                  <span class="stat-value">{{ lab_results_stats.min }}</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">Maximum</span>
+                  <span class="stat-value">{{ lab_results_stats.max }}</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">Total Types</span>
+                  <span class="stat-value">{{ lab_results_stats.total_types }}</span>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+            {% if lab_results_caption %}
+            <div class="caption-box">
+              <i class="fas fa-info-circle mr-2"></i>{{ lab_results_caption }}
+            </div>
+            {% endif %}
+            <div class="mt-6 p-6 bg-blue-50 border-l-4 border-blue-500 rounded-lg">
+              <h3 class="text-lg font-bold text-blue-700 mb-3">Analysis</h3>
+              <p class="text-sm text-gray-700 leading-relaxed" id="lab-results-meaning">
+                {% if total_lab_results > 0 %}
+                  Your facility has recorded <strong>{{ total_lab_results }}</strong> total lab results. The lab testing activity shows patterns in diagnostic usage, with <strong>{{ lab_results_stats.total_types }}</strong> different types of tests being conducted. The average monthly upload is <strong>{{ lab_results_stats.mean|floatformat:1 }}</strong> results. The standard deviation of <strong>{{ lab_results_stats.std_dev|floatformat:2 }}</strong> indicates the variation in test volumes across periods. This helps identify which test types are most important to your facility's operations.
+                {% else %}
+                  No lab result data is currently available. Lab results help track diagnostic testing activity and identify testing patterns in your facility.
+                {% endif %}
+              </p>
+            </div>
+          </div>
+
+          <!-- Doctor Performance Tab -->
+          <div id="tab-doctor" class="tab-content">
+            <div class="tab-timeframe-controls">
+              <label class="font-semibold text-gray-700">Sort By:</label>
+              <select id="doctor-sort" class="bg-white border border-gray-300 text-gray-700 text-sm rounded-lg px-3 py-2" onchange="updateDoctorSort(this.value)">
+                <option value="consultations" {% if doctor_sort == 'consultations' %}selected{% endif %}>Consultations</option>
+                <option value="specialization" {% if doctor_sort == 'specialization' %}selected{% endif %}>Specialization</option>
+              </select>
+            </div>
+            <h2 class="text-2xl font-bold text-healthcare-blue mb-4">{% if doctor_sort == 'specialization' %}Top Specializations by Consultations{% else %}Top Performing Doctors{% endif %}</h2>
+            <div class="mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+              <p class="text-sm text-gray-700"><strong>Description:</strong> {% if doctor_sort == 'specialization' %}This chart displays consultation counts grouped by medical specialization, helping identify which specialties are most in demand.{% else %}This bar chart shows the top performing doctors based on the number of consultations they've handled, helping identify the most active healthcare providers.{% endif %}</p>
+            </div>
+            <div class="chart-card rounded-xl p-6 mb-4">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-healthcare-blue">Total Doctors: <span id="total-doctors-display">{{ doctor_stats.total_doctors|default:0 }}</span></h3>
+              </div>
+              <div class="relative" style="height: 400px;">
+                <canvas id="doctorChart"></canvas>
+              </div>
+            </div>
+            <div class="mt-6 p-6 bg-blue-50 border-l-4 border-blue-500 rounded-lg">
+              <h3 class="text-lg font-bold text-blue-700 mb-3">Analysis</h3>
+              <p class="text-sm text-gray-700 leading-relaxed" id="doctor-meaning">
+                {% if total_doctors > 0 %}
+                  Your facility has <strong>{{ total_doctors }}</strong> doctors on staff. The top performing doctors average <strong>{{ doctor_stats.mean|floatformat:1 }}</strong> consultations, with the most active doctor handling <strong>{{ doctor_stats.max }}</strong> consultations. This data reveals workload distribution and helps identify your facility's most active healthcare providers and their capacity for additional patient care.
+                {% else %}
+                  No doctor data available. Once doctors are registered and consultations are scheduled, performance metrics will be displayed here.
+                {% endif %}
+              </p>
+            </div>
+          </div>
+
+
+
+          <!-- Booked Services Tab -->
+          <div id="tab-bookedservices" class="tab-content">
+            <h2 class="text-2xl font-bold text-healthcare-blue mb-4">Booked Services Statistics</h2>
+            <div class="mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+              <p class="text-sm text-gray-700"><strong>Description:</strong> This section displays statistics about booked services including total bookings, status distribution, and service type breakdown. It helps track service utilization and booking patterns.</p>
+            </div>
+            
+            <!-- Booked Services Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div class="stat-card rounded-xl p-6">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm font-semibold text-gray-600">Total Bookings</p>
+                    <h3 class="text-2xl font-bold text-healthcare-blue mt-1">{{ booked_services_total }}</h3>
+                  </div>
+                  <div class="bg-blue-100 p-3 rounded-full">
+                    <i class="fas fa-calendar-check text-healthcare-blue text-xl"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="stat-card rounded-xl p-6">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm font-semibold text-gray-600">Timeframe Bookings</p>
+                    <h3 class="text-2xl font-bold text-green-600 mt-1">{{ booked_services_timeframe }}</h3>
+                  </div>
+                  <div class="bg-green-100 p-3 rounded-full">
+                    <i class="fas fa-clock text-green-600 text-xl"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Status Distribution Chart -->
+            <div class="chart-card rounded-xl p-6 mb-4">
+              <h3 class="text-xl font-bold text-healthcare-blue mb-4">Booking Status Distribution</h3>
+              <div class="relative" style="height: 400px;">
+                <canvas id="bookedServicesStatusChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Service Type Distribution Chart -->
+            <div class="chart-card rounded-xl p-6 mb-4">
+              <h3 class="text-xl font-bold text-healthcare-blue mb-4">Service Type Distribution</h3>
+              <div class="relative" style="height: 400px;">
+                <canvas id="bookedServicesTypeChart"></canvas>
+              </div>
+            </div>
+
+            <div class="mt-6 p-6 bg-blue-50 border-l-4 border-blue-500 rounded-lg">
+              <h3 class="text-lg font-bold text-blue-700 mb-3">Analysis</h3>
+              <p class="text-sm text-gray-700 leading-relaxed" id="services-meaning">
+                {% if booked_services_total > 0 %}
+                  Your facility has <strong>{{ booked_services_total }}</strong> total service bookings. In the selected timeframe, there are <strong>{{ booked_services_timeframe }}</strong> bookings. The service booking workflow shows various statuses and service types being utilized, indicating a diverse service portfolio. Analyzing the distribution across statuses and service types helps you optimize resource allocation and identify the most popular services.
+                {% else %}
+                  No service booking data available yet. Once services are booked, their distribution patterns will be displayed here.
+                {% endif %}
+              </p>
+            </div>
+          </div>
+
+          <!-- Top Performing Fields Tab -->
+          <div id="tab-fields" class="tab-content">
+            <h2 class="text-2xl font-bold text-healthcare-blue mb-4">Patient Bookings by Specialization</h2>
+            <div class="mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+              <p class="text-sm text-gray-700"><strong>Description:</strong> This pie chart shows the distribution of patient bookings across different medical specializations. Each slice represents a specialization and its proportion of total patient bookings, helping identify which specializations are most sought after by patients.</p>
+            </div>
+            <div class="chart-card rounded-xl p-6 mb-4">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-healthcare-blue">Total Specializations: <span id="total-fields-display">{{ fields_stats.total_specializations|default:0 }}</span></h3>
+              </div>
+              <div class="relative" style="height: 400px;">
+                <canvas id="fieldsChart"></canvas>
+              </div>
+            </div>
+            {% if fields_stats %}
+            <button class="stats-toggle-btn" onclick="toggleStats('fields-stats')">
+              <i class="fas fa-chart-bar"></i>
+              <span>Show Descriptive Statistics</span>
+            </button>
+            <div id="fields-stats" class="stats-content">
+              <div class="stat-box">
+                <h3 class="text-lg font-bold text-healthcare-blue mb-4">Descriptive Statistics</h3>
+                <div class="stat-row">
+                  <span class="stat-label">Mean (Average)</span>
+                  <span class="stat-value">{{ fields_stats.mean }}</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">Median</span>
+                  <span class="stat-value">{{ fields_stats.median }}</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">Standard Deviation</span>
+                  <span class="stat-value">{{ fields_stats.std_dev }}</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">Minimum</span>
+                  <span class="stat-value">{{ fields_stats.min }}</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">Maximum</span>
+                  <span class="stat-value">{{ fields_stats.max }}</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">Range</span>
+                  <span class="stat-value">{{ fields_stats.range }}</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">Top Specialization</span>
+                  <span class="stat-value">{{ fields_stats.top_specialization }}</span>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+            {% if fields_caption %}
+            <div class="caption-box">
+              <i class="fas fa-info-circle mr-2"></i>{{ fields_caption }}
+            </div>
+            {% endif %}
+            <div class="mt-6 p-6 bg-blue-50 border-l-4 border-blue-500 rounded-lg">
+              <h3 class="text-lg font-bold text-blue-700 mb-3">Analysis</h3>
+              <p class="text-sm text-gray-700 leading-relaxed" id="fields-meaning">
+                {% if fields_stats.total_specializations > 0 %}
+                  Your facility has <strong>{{ fields_stats.total_specializations }}</strong> specializations available. Patient bookings are distributed with an average of <strong>{{ fields_stats.mean }}</strong> bookings per specialization, with the most popular specialization receiving <strong>{{ fields_stats.max }}</strong> bookings. The range spans from <strong>{{ fields_stats.min }}</strong> to <strong>{{ fields_stats.max }}</strong> bookings, revealing specializations with varying levels of patient demand. {% if fields_caption %}{{ fields_caption }}{% endif %}
+                {% else %}
+                  No specialization booking data available yet. Once patients start booking specialists, their distribution patterns will be displayed here.
+                {% endif %}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+  <script>
+    // Initialize year selector
+    function initializeYearSelector() {
+      const yearSelect = document.getElementById('period-year');
+      const currentYear = new Date().getFullYear();
+      for (let i = currentYear; i >= currentYear - 5; i--) {
+        const option = document.createElement('option');
+        option.value = i;
+        option.textContent = i;
+        if (i === currentYear) option.selected = true;
+        yearSelect.appendChild(option);
+      }
+    }
+
+    // Update period type and show/hide relevant selectors
+    function updatePeriodType(type) {
+      document.getElementById('day-selector').classList.toggle('hidden', type !== 'daily');
+      document.getElementById('month-selector').classList.toggle('hidden', type === 'daily');
+      document.getElementById('week-selector').classList.toggle('hidden', type !== 'weekly');
+      
+      // Set current day if switching to daily
+      if (type === 'daily') {
+        document.getElementById('period-day').value = new Date().getDate();
+      }
+      
+      loadStatistics();
+    }
+
+    // Load statistics for selected period
+    async function loadStatistics() {
+      const periodType = document.getElementById('period-type').value;
+      const year = document.getElementById('period-year').value;
+      const month = document.getElementById('period-month').value;
+      const week = document.getElementById('period-week').value;
+      const day = document.getElementById('period-day').value;
+      
+      try {
+        const params = new URLSearchParams();
+        params.set('period_type', periodType);
+        params.set('year', year);
+        if (periodType !== 'daily') {
+          params.set('month', month);
+        }
+        if (periodType === 'weekly') {
+          params.set('week', week);
+        }
+        if (periodType === 'daily') {
+          params.set('day', day);
+        }
+        
+        const response = await fetch(`{% url 'get_dynamic_statistics' %}?${params.toString()}`);
+        if (!response.ok) {
+          const errorData = await response.text();
+          console.error('Server error response:', errorData, 'Status:', response.status);
+          throw new Error(`Server returned status ${response.status}`);
+        }
+        
+        const data = await response.json();
+        if (!data) throw new Error('No data returned from server');
+        
+        updateStatisticCharts(data);
+        updateStatisticValues(data);
+      } catch (error) {
+        console.error('Error loading statistics:', error);
+        // Don't show alert - just log the error, data may still display from static template
+      }
+    }
+
+    // Update statistical charts with new data
+    function updateStatisticCharts(data) {
+      try {
+        // Update total displays
+        if (data.total_lab_results !== undefined) {
+          const labDisplay = document.getElementById('total-lab-results-display');
+          if (labDisplay) labDisplay.textContent = data.total_lab_results;
+        }
+        
+        if (data.total_booked_services !== undefined) {
+          // Update booked services display if there's an element for it
+        }
+        
+        // Update Role Chart
+        if (data.role_distribution && window.roleChart) {
+          const roleData = data.role_distribution;
+          // Format role names for display
+          const roleNames = {
+            'admin': 'Admin',
+            'doctor': 'Doctor',
+            'nurse': 'Nurse',
+            'lab_tech': 'Lab Technician',
+            'patient': 'Patient'
+          };
+          const roleLabels = Object.keys(roleData).map(role => roleNames[role] || role.charAt(0).toUpperCase() + role.slice(1));
+          
+          window.roleChart.data.labels = roleLabels;
+          window.roleChart.data.datasets[0].data = Object.values(roleData);
+          const roleDisplay = document.getElementById('total-roles-display');
+          if (roleDisplay) roleDisplay.textContent = Object.keys(roleData).length;
+          window.roleChart.update();
+        }
+        
+        // Update Status Chart
+        if (data.consultation_status && window.statusChart) {
+          window.statusChart.data.labels = data.consultation_status.map(item => item.status);
+          window.statusChart.data.datasets[0].data = data.consultation_status.map(item => item.count);
+          const statusDisplay = document.getElementById('total-statuses-display');
+          if (statusDisplay) statusDisplay.textContent = data.consultation_status.length;
+          window.statusChart.update();
+        }
+        
+        // Update Monthly Chart (Lab Results)
+        if (data.lab_results && window.monthlyChart) {
+          window.monthlyChart.data.labels = data.lab_results.map(item => item.month);
+          window.monthlyChart.data.datasets[0].data = data.lab_results.map(item => item.count);
+          window.monthlyChart.update();
+        }
+        
+        // Update Lab Results Type Chart
+        if (data.lab_results_by_type && window.labResultsTypeChart) {
+        window.labResultsTypeChart.data.labels = Object.keys(data.lab_results_by_type);
+        window.labResultsTypeChart.data.datasets[0].data = Object.values(data.lab_results_by_type);
+        window.labResultsTypeChart.update();
+      }
+      
+      // Update Doctor Chart
+      if (data.doctor_performance && window.doctorChart) {
+        window.doctorChart.data.labels = data.doctor_performance.map(d => d.name + ' (' + d.specialization + ')');
+        window.doctorChart.data.datasets[0].data = data.doctor_performance.map(d => d.consultation_count);
+        const doctorDisplay = document.getElementById('total-doctors-display');
+        if (doctorDisplay) doctorDisplay.textContent = data.doctor_performance.length;
+        window.doctorChart.update();
+      }
+      
+      // Update Booked Services Status Chart
+      if (data.booked_services_status_distribution && window.bookedServicesStatusChart) {
+        window.bookedServicesStatusChart.data.labels = Object.keys(data.booked_services_status_distribution);
+        window.bookedServicesStatusChart.data.datasets[0].data = Object.values(data.booked_services_status_distribution);
+        window.bookedServicesStatusChart.update();
+      }
+      
+      // Update Booked Services Type Chart
+      if (data.booked_services_service_distribution && window.bookedServicesTypeChart) {
+        window.bookedServicesTypeChart.data.labels = Object.keys(data.booked_services_service_distribution);
+        window.bookedServicesTypeChart.data.datasets[0].data = Object.values(data.booked_services_service_distribution);
+        window.bookedServicesTypeChart.update();
+      }
+      
+      // Update Fields Chart
+      if (data.fields_distribution && window.fieldsChart) {
+        window.fieldsChart.data.labels = Object.keys(data.fields_distribution);
+        window.fieldsChart.data.datasets[0].data = Object.values(data.fields_distribution);
+        const fieldsDisplay = document.getElementById('total-fields-display');
+        if (fieldsDisplay) fieldsDisplay.textContent = Object.keys(data.fields_distribution).length;
+        window.fieldsChart.update();
+      }
+      } catch (error) {
+        // Log chart update errors but don't break the page
+        console.error('Error updating charts:', error);
+      }
+    }
+
+    // Update statistical values in collapsible sections
+    function updateStatisticValues(data) {
+      // Role Stats
+      if (data.role_stats) {
+        updateStatsDisplay('role-stats', data.role_stats);
+      }
+      
+      // Status Stats
+      if (data.status_stats) {
+        updateStatsDisplay('status-stats', data.status_stats);
+      }
+      
+      // Monthly Stats
+      if (data.monthly_stats) {
+        updateStatsDisplay('monthly-stats', data.monthly_stats);
+      }
+      
+      // Doctor Stats
+      if (data.doctor_stats) {
+        updateStatsDisplay('doctor-stats', data.doctor_stats);
+      }
+    }
+
+    // Generic function to update stats display
+    function updateStatsDisplay(containerIdPrefix, stats) {
+      const container = document.getElementById(containerIdPrefix);
+      if (!container) return;
+      
+      const rows = container.querySelectorAll('.stat-row');
+      rows.forEach(row => {
+        const label = row.querySelector('.stat-label').textContent;
+        const valueEl = row.querySelector('.stat-value');
+        
+        if (label.includes('Mean') || label.includes('Average')) {
+          valueEl.textContent = stats.mean || 'N/A';
+        } else if (label.includes('Median')) {
+          valueEl.textContent = stats.median || 'N/A';
+        } else if (label.includes('Standard Deviation')) {
+          valueEl.textContent = stats.std_dev || 'N/A';
+        } else if (label.includes('Minimum')) {
+          valueEl.textContent = stats.min || 'N/A';
+        } else if (label.includes('Maximum')) {
+          valueEl.textContent = stats.max || 'N/A';
+        } else if (label.includes('Range')) {
+          valueEl.textContent = stats.range || 'N/A';
+        } else if (label.includes('Variance')) {
+          valueEl.textContent = stats.variance || 'N/A';
+        } else if (label.includes('Total')) {
+          valueEl.textContent = stats.total_roles || stats.total_statuses || stats.total_doctors || 'N/A';
+        } else if (label.includes('Most Common')) {
+          valueEl.textContent = stats.most_common || 'N/A';
+        }
+      });
+    }
+
+    // Toggle statistics visibility
+    function toggleStats(statsId) {
+      const statsContent = document.getElementById(statsId);
+      const button = statsContent.previousElementSibling;
+      const span = button.querySelector('span');
+      
+      if (statsContent.classList.contains('show')) {
+        statsContent.classList.remove('show');
+        span.textContent = 'Show Descriptive Statistics';
+        button.querySelector('i').className = 'fas fa-chart-bar';
+      } else {
+        statsContent.classList.add('show');
+        span.textContent = 'Hide Descriptive Statistics';
+        button.querySelector('i').className = 'fas fa-chevron-up';
+      }
+    }
+    
+    // Update global timeframe - Live refresh all charts
+    async function updateGlobalTimeframe(value) {
+      // Show refresh indicator
+      const spinner = document.getElementById('refresh-spinner');
+      const status = document.getElementById('refresh-status');
+      if (spinner) spinner.classList.remove('hidden');
+      if (status) status.classList.remove('hidden');
+      
+      try {
+        // Refresh all analytics data
+        await refreshAllAnalyticsData(value);
+        
+        // Update all charts
+        await refreshAllCharts(value);
+      } catch (error) {
+        console.error('Error updating analytics:', error);
+        alert('Error refreshing analytics data. Please try again.');
+      } finally {
+        // Hide refresh indicator
+        if (spinner) spinner.classList.add('hidden');
+        if (status) status.classList.add('hidden');
+      }
+    }
+    
+    // Helper: collect extra analytics filters from UI and append to params
+    function appendAnalyticsFilters(params) {
+      const search = document.getElementById('analytics-search')?.value;
+      const dateFrom = document.getElementById('analytics-date-from')?.value;
+      const dateTo = document.getElementById('analytics-date-to')?.value;
+      const status = document.getElementById('analytics-status')?.value;
+      const doctor = document.getElementById('analytics-doctor')?.value;
+
+      if (search) params.set('search', search);
+      if (dateFrom) params.set('date_from', dateFrom);
+      if (dateTo) params.set('date_to', dateTo);
+      if (status) params.set('status', status);
+      if (doctor) params.set('doctor', doctor);
+    }
+
+    // Refresh all analytics data (includes extra filters)
+    async function refreshAllAnalyticsData(timeframe) {
+      const params = new URLSearchParams();
+      params.set('timeframe', timeframe);
+      appendAnalyticsFilters(params);
+
+      try {
+        const response = await fetch(`{% url 'analytics_api' %}?${params.toString()}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch analytics data');
+        }
+        return await response.json();
+      } catch (err) {
+        console.error('Error fetching analytics data (all):', err);
+        // Fallback to reload page with filters so server can render filtered data
+        const fallbackUrl = window.location.pathname + '?' + params.toString();
+        window.location.href = fallbackUrl;
+      }
+    }
+    
+    // Refresh all charts with new data
+    async function refreshAllCharts(timeframe) {
+      const data = await refreshAllAnalyticsData(timeframe);
+      
+      // Update all charts
+      if (data.consultation_status) updateStatusChart(data.consultation_status);
+      if (data.monthly_consultations) updateMonthlyChart(data.monthly_consultations);
+      if (data.doctor_performance) {
+        const doctorSort = document.getElementById('doctor-sort');
+        const sortValue = doctorSort ? doctorSort.value : 'consultations';
+        updateDoctorChart(data.doctor_performance, sortValue);
+      }
+      if (data.gender_distribution) updateGenderChart(data.gender_distribution);
+      if (data.blood_type_distribution) updateBloodChart(data.blood_type_distribution);
+      if (data.booked_services_status_distribution && data.booked_services_service_distribution) {
+        updateBookedServicesCharts(data.booked_services_status_distribution, data.booked_services_service_distribution);
+      }
+      if (data.fields_distribution) updateFieldsChart(data.fields_distribution);
+    }
+    
+    // Legacy function for backward compatibility
+    async function updateTimeframe(value) {
+      // Redirect to global timeframe update
+      await updateGlobalTimeframe(value);
+    }
+    
+    // Update doctor sort - Live update without page reload
+    async function updateDoctorSort(value) {
+      const globalTimeframe = document.getElementById('global-timeframe');
+      const timeframe = globalTimeframe ? globalTimeframe.value : 'month';
+      await refreshAnalyticsData(timeframe, value, 'doctor');
+    }
+    
+    // Refresh analytics data via API
+    async function refreshAnalyticsData(timeframe, doctorSort, activeTab) {
+      try {
+        // Show loading indicator
+        const loadingIndicator = document.getElementById('loading-indicator');
+        if (loadingIndicator) {
+          loadingIndicator.style.display = 'block';
+        }
+        
+        // Build API URL
+        const params = new URLSearchParams();
+        params.set('timeframe', timeframe);
+        if (doctorSort) {
+          params.set('doctor_sort', doctorSort);
+        }
+        appendAnalyticsFilters(params);
+
+        // Fetch data from API
+        const response = await fetch(`{% url 'analytics_api' %}?${params.toString()}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch analytics data');
+        }
+        
+        const data = await response.json();
+        
+        // Update all charts (not just active tab when using global filter)
+        if (data.consultation_status) updateStatusChart(data.consultation_status);
+        if (data.monthly_consultations) updateMonthlyChart(data.monthly_consultations);
+        if (data.doctor_performance) {
+          const doctorSort = document.getElementById('doctor-sort');
+          const sortValue = doctorSort ? doctorSort.value : (data.doctor_sort || 'consultations');
+          updateDoctorChart(data.doctor_performance, sortValue);
+        }
+        if (data.gender_distribution) updateGenderChart(data.gender_distribution);
+        if (data.blood_type_distribution) updateBloodChart(data.blood_type_distribution);
+        if (data.booked_services_status_distribution && data.booked_services_service_distribution) {
+          updateBookedServicesCharts(data.booked_services_status_distribution, data.booked_services_service_distribution);
+        }
+        if (data.fields_distribution) updateFieldsChart(data.fields_distribution);
+        
+        // Hide loading indicator
+        if (loadingIndicator) {
+          loadingIndicator.style.display = 'none';
+        }
+        
+        // Update URL without reload using the exact params we sent
+        const url = new URL(window.location);
+        url.search = params.toString();
+        window.history.pushState({}, '', url);
+        
+      } catch (error) {
+        console.error('Error refreshing analytics:', error);
+        // If live refresh fails, fallback to a full page reload with the same filter params
+        const fallbackUrl = window.location.pathname + '?' + params.toString();
+        window.location.href = fallbackUrl;
+      }
+    }
+    
+    // Chart update functions
+    
+    function updateStatusChart(data) {
+      if (window.statusChart) {
+        window.statusChart.data.labels = data.map(item => item.status);
+        window.statusChart.data.datasets[0].data = data.map(item => item.count);
+        window.statusChart.update();
+      }
+    }
+    
+    function updateMonthlyChart(data) {
+      if (window.monthlyChart) {
+        window.monthlyChart.data.labels = data.map(item => item.month);
+        window.monthlyChart.data.datasets[0].data = data.map(item => item.count);
+        window.monthlyChart.update();
+      }
+    }
+    
+    function updateDoctorChart(data, sort) {
+      if (window.doctorChart) {
+        window.doctorChart.data.labels = data.map(doctor => {
+          if (sort === 'specialization') {
+            return doctor.specialization || doctor.name || doctor.username || 'Unknown';
+          } else {
+            const name = doctor.name || doctor.username;
+            const spec = doctor.specialization || '';
+            return spec ? `${name} (${spec})` : name;
+          }
+        });
+        window.doctorChart.data.datasets[0].label = sort === 'specialization' ? 'Consultations by Specialization' : 'Consultations';
+        window.doctorChart.data.datasets[0].data = data.map(doctor => doctor.consultation_count);
+        window.doctorChart.update();
+      }
+    }
+    
+    function updateFieldsChart(data) {
+      if (window.fieldsChart) {
+        window.fieldsChart.data.labels = Object.keys(data);
+        window.fieldsChart.data.datasets[0].data = Object.values(data);
+        window.fieldsChart.update();
+      }
+    }
+
+    // Tab switching function
+    function switchTab(tabName, buttonElement) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      
+      // Show selected tab
+      document.getElementById('tab-' + tabName).classList.add('active');
+      // Activate the clicked button
+      if (buttonElement) {
+        buttonElement.classList.add('active');
+      }
+    }
+
+    // Chart Configuration
+    const chartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom'
+        }
+      }
+    };
+
+    // User Role Distribution Chart
+    const roleData = {{ role_distribution|safe }};
+    // Format role names for display
+    const roleLabels = Object.keys(roleData).map(role => {
+      const roleNames = {
+        'admin': 'Admin',
+        'doctor': 'Doctor',
+        'nurse': 'Nurse',
+        'lab_tech': 'Lab Technician',
+        'patient': 'Patient'
+      };
+      return roleNames[role] || role.charAt(0).toUpperCase() + role.slice(1);
+    });
+    
+    window.roleChart = new Chart(document.getElementById('roleChart'), {
+      type: 'pie',
+      data: {
+        labels: roleLabels,
+        datasets: [{
+          label: 'Users',
+          data: Object.values(roleData),
+          backgroundColor: [
+            '#003366', // Admin - Dark Blue
+            '#0066CC', // Doctor - Blue
+            '#10B981', // Nurse - Green
+            '#FBBF24', // Lab Tech - Yellow
+            '#EF4444'  // Patient - Red
+          ],
+          borderWidth: 2,
+          borderColor: '#ffffff'
+        }]
+      },
+      options: {
+        ...chartOptions,
+        plugins: {
+          ...chartOptions.plugins,
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = context.parsed || 0;
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                return `${label}: ${value} user${value !== 1 ? 's' : ''} (${percentage}%)`;
+              }
+            }
+          },
+          legend: {
+            position: 'bottom',
+            labels: {
+              padding: 15,
+              font: {
+                size: 12
+              },
+              generateLabels: function(chart) {
+                const data = chart.data;
+                if (data.labels.length && data.datasets.length) {
+                  return data.labels.map((label, i) => {
+                    const value = data.datasets[0].data[i];
+                    return {
+                      text: `${label}: ${value}`,
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: false,
+                      index: i
+                    };
+                  });
+                }
+                return [];
+              }
+            }
+          }
+        },
+        elements: {
+          arc: {
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }
+        }
+      }
+    });
+
+    // Users and Role Chart (for Users and Role tab)
+    const usersRoleChartElement = document.getElementById('usersRoleChart');
+    if (usersRoleChartElement) {
+      window.usersRoleChart = new Chart(usersRoleChartElement, {
+        type: 'pie',
+        data: {
+          labels: roleLabels,
+          datasets: [{
+            label: 'Users',
+            data: Object.values(roleData),
+            backgroundColor: [
+              '#003366', // Admin - Dark Blue
+              '#0066CC', // Doctor - Blue
+              '#10B981', // Nurse - Green
+              '#FBBF24', // Lab Tech - Yellow
+              '#EF4444'  // Patient - Red
+            ],
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          ...chartOptions,
+          plugins: {
+            ...chartOptions.plugins,
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const label = context.label || '';
+                  const value = context.parsed || 0;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                  return `${label}: ${value} user${value !== 1 ? 's' : ''} (${percentage}%)`;
+                }
+              }
+            },
+            legend: {
+              position: 'bottom',
+              labels: {
+                padding: 15,
+                font: {
+                  size: 12
+                },
+                generateLabels: function(chart) {
+                  const data = chart.data;
+                  if (data.labels.length && data.datasets.length) {
+                    return data.labels.map((label, i) => {
+                      const value = data.datasets[0].data[i];
+                      return {
+                        text: `${label}: ${value}`,
+                        fillStyle: data.datasets[0].backgroundColor[i],
+                        hidden: false,
+                        index: i
+                      };
+                    });
+                  }
+                  return [];
+                }
+              }
+            }
+          },
+          elements: {
+            arc: {
+              borderWidth: 2,
+              borderColor: '#ffffff'
+            }
+          }
+        }
+      });
+    }
+    
+    // Consultation Status Chart
+    const consultationStatusData = {{ consultation_status|safe }};
+    window.statusChart = new Chart(document.getElementById('consultationStatusChart'), {
+      type: 'doughnut',
+      data: {
+        labels: consultationStatusData.map(item => item.status),
+        datasets: [{
+          data: consultationStatusData.map(item => item.count),
+          backgroundColor: ['#10B981', '#FBBF24', '#EF4444']
+        }]
+      },
+      options: chartOptions
+    });
+
+    // Lab Results Upload Trends Chart (Previously Monthly Consultations)
+    const labResultsData = {{ lab_results_by_month|safe }};
+    window.monthlyChart = new Chart(document.getElementById('monthlyChart'), {
+      type: 'bar',
+      data: {
+        labels: labResultsData.map(item => item.month),
+        datasets: [{
+          label: 'Lab Results Uploaded',
+          data: labResultsData.map(item => item.count),
+          backgroundColor: '#7C3AED'
+        }]
+      },
+      options: chartOptions
+    });
+
+    // Lab Results by Type Chart
+    const labResultsTypeData = {{ lab_results_type_distribution|safe }};
+    const labResultsTypeElement = document.getElementById('labResultsTypeChart');
+    if (labResultsTypeElement) {
+      window.labResultsTypeChart = new Chart(labResultsTypeElement, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(labResultsTypeData),
+          datasets: [{
+            label: 'Number of Tests',
+            data: Object.values(labResultsTypeData),
+            backgroundColor: '#EC4899'
+          }]
+        },
+        options: chartOptions
+      });
+    }
+
+    // Doctor Performance Chart
+    const doctorData = {{ doctor_performance|safe }};
+    const doctorSort = '{{ doctor_sort }}';
+    window.doctorChart = new Chart(document.getElementById('doctorChart'), {
+      type: 'bar',
+      data: {
+        labels: doctorData.map(doctor => {
+          if (doctorSort === 'specialization') {
+            // When sorted by specialization, show specialization name
+            return doctor.specialization || doctor.name || doctor.username || 'Unknown';
+          } else {
+            // When sorted by consultations, show doctor name with specialization
+            const name = doctor.name || doctor.username;
+            const spec = doctor.specialization || '';
+            return spec ? `${name} (${spec})` : name;
+          }
+        }),
+        datasets: [{
+          label: doctorSort === 'specialization' ? 'Consultations by Specialization' : 'Consultations',
+          data: doctorData.map(doctor => doctor.consultation_count),
+          backgroundColor: '#0066CC'
+        }]
+      },
+      options: chartOptions
+    });
+
+    // Booked Services Status Chart
+    const bookedServicesStatusData = {{ booked_services_status_distribution|safe }};
+    window.bookedServicesStatusChart = new Chart(document.getElementById('bookedServicesStatusChart'), {
+      type: 'doughnut',
+      data: {
+        labels: Object.keys(bookedServicesStatusData),
+        datasets: [{
+          data: Object.values(bookedServicesStatusData),
+          backgroundColor: ['#10B981', '#FBBF24', '#EF4444', '#3B82F6']
+        }]
+      },
+      options: chartOptions
+    });
+
+    // Booked Services Type Chart
+    const bookedServicesTypeData = {{ booked_services_service_distribution|safe }};
+    window.bookedServicesTypeChart = new Chart(document.getElementById('bookedServicesTypeChart'), {
+      type: 'bar',
+      data: {
+        labels: Object.keys(bookedServicesTypeData),
+        datasets: [{
+          label: 'Bookings',
+          data: Object.values(bookedServicesTypeData),
+          backgroundColor: '#8B5CF6'
+        }]
+      },
+      options: chartOptions
+    });
+
+    // Top Performing Fields Chart (Patient Bookings by Specialization)
+    const fieldsData = {{ fields_distribution|safe }};
+    const fieldsChartElement = document.getElementById('fieldsChart');
+    if (fieldsChartElement) {
+      // Generate colors for pie chart
+      const fieldsColors = [
+        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+        '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384',
+        '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
+      ];
+      
+      window.fieldsChart = new Chart(fieldsChartElement, {
+        type: 'pie',
+        data: {
+          labels: Object.keys(fieldsData),
+          datasets: [{
+            label: 'Patient Bookings',
+            data: Object.values(fieldsData),
+            backgroundColor: fieldsColors.slice(0, Object.keys(fieldsData).length),
+            borderColor: '#fff',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'right',
+              labels: {
+                font: { size: 12 },
+                padding: 15
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const label = context.label || '';
+                  const value = context.parsed || 0;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = ((value / total) * 100).toFixed(1);
+                  return label + ': ' + value + ' (' + percentage + '%)';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Report Generation Function
+    function generateReport() {
+      const reportData = {
+        total_users: {{ total_users }},
+        total_patients: {{ total_patients }},
+        total_consultations: {{ total_consultations }},
+        approval_rate: {{ approval_rate }},
+        active_users: {{ active_users }},
+        inactive_users: {{ inactive_users }},
+        recent_registrations: {{ recent_registrations }},
+        generated_at: new Date().toISOString()
+      };
+
+      // Create a downloadable JSON report
+      const dataStr = JSON.stringify(reportData, null, 2);
+      const dataBlob = new Blob([dataStr], {type: 'application/json'});
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `analytics_report_${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      // Show success message
+      alert('Analytics report generated successfully!');
+    }
+
+    // Refresh Data Function - Live update without page reload
+    async function refreshData() {
+      const activeTab = document.querySelector('.tab-content.active');
+      if (activeTab) {
+        const tabId = activeTab.id.replace('tab-', '');
+        const globalTimeframe = document.getElementById('global-timeframe');
+        const timeframe = globalTimeframe ? globalTimeframe.value : 'month';
+        const doctorSortSelect = document.getElementById('doctor-sort');
+        const doctorSort = doctorSortSelect ? doctorSortSelect.value : 'consultations';
+        await refreshAnalyticsData(timeframe, tabId === 'doctor' ? doctorSort : null, tabId);
+      }
+    }
+
+    // Build export params including current filters
+    function buildExportParams(exportType) {
+      const params = new URLSearchParams(window.location.search);
+      const globalTimeframe = document.getElementById('global-timeframe');
+      const timeframe = globalTimeframe ? globalTimeframe.value : '{{ timeframe_type }}';
+      params.set('timeframe', timeframe);
+      // include analytics filters
+      const search = document.getElementById('analytics-search')?.value;
+      const dateFrom = document.getElementById('analytics-date-from')?.value;
+      const dateTo = document.getElementById('analytics-date-to')?.value;
+      const status = document.getElementById('analytics-status')?.value;
+      const doctor = document.getElementById('analytics-doctor')?.value;
+      if (search) params.set('search', search);
+      if (dateFrom) params.set('date_from', dateFrom);
+      if (dateTo) params.set('date_to', dateTo);
+      if (status) params.set('status', status);
+      if (doctor) params.set('doctor', doctor);
+      params.set('export', exportType);
+      return params.toString();
+    }
+
+    // Sync CSV links initially
+    (function syncCsvLinks() {
+      const csvLink = document.getElementById('csvExportLink');
+      if (csvLink) csvLink.href = `?${buildExportParams('csv')}`;
+      const doctorCsvLink = document.getElementById('doctorCsvExportLink');
+      if (doctorCsvLink) doctorCsvLink.href = `?${buildExportParams('doctor_csv')}`;
+    })();
+
+    // Update export links when filters change
+    ['analytics-search','analytics-date-from','analytics-date-to','analytics-status','analytics-doctor','global-timeframe'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('change', () => {
+        const csvLink = document.getElementById('csvExportLink');
+        if (csvLink) csvLink.href = `?${buildExportParams('csv')}`;
+        const doctorCsvLink = document.getElementById('doctorCsvExportLink');
+        if (doctorCsvLink) doctorCsvLink.href = `?${buildExportParams('doctor_csv')}`;
+      });
+      if (el && el.tagName === 'INPUT') {
+        el.addEventListener('input', () => {
+          const csvLink = document.getElementById('csvExportLink');
+          if (csvLink) csvLink.href = `?${buildExportParams('csv')}`;
+          const doctorCsvLink = document.getElementById('doctorCsvExportLink');
+          if (doctorCsvLink) doctorCsvLink.href = `?${buildExportParams('doctor_csv')}`;
+        });
+      }
+    });
+
+    // Add change listener to global timeframe select
+    const globalTimeframeSelect = document.getElementById('global-timeframe');
+    if (globalTimeframeSelect) {
+      globalTimeframeSelect.addEventListener('change', function() {
+        updateGlobalTimeframe(this.value);
+      });
+    }
+
+    // Trigger refresh when analytics filters change
+    ['analytics-search','analytics-date-from','analytics-date-to','analytics-status','analytics-doctor'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const handler = () => {
+        // Refresh active tab with new filters
+        refreshData();
+      };
+      if (el.tagName === 'INPUT') el.addEventListener('input', handler);
+      el.addEventListener('change', handler);
+    });
+
+    // Auto-refresh every 5 minutes
+    setInterval(refreshData, 300000);
+
+    // Initialize analytics inputs from URL parameters so filtered state persists after reload
+    function initAnalyticsFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const search = params.get('search');
+      const dateFrom = params.get('date_from');
+      const dateTo = params.get('date_to');
+      const status = params.get('status');
+      const doctor = params.get('doctor');
+      const timeframe = params.get('timeframe');
+      const doctorSort = params.get('doctor_sort');
+
+      if (search) document.getElementById('analytics-search').value = search;
+      if (dateFrom) document.getElementById('analytics-date-from').value = dateFrom;
+      if (dateTo) document.getElementById('analytics-date-to').value = dateTo;
+      if (status) document.getElementById('analytics-status').value = status;
+      if (doctor) document.getElementById('analytics-doctor').value = doctor;
+      if (timeframe && document.getElementById('global-timeframe')) document.getElementById('global-timeframe').value = timeframe;
+      if (doctorSort && document.getElementById('doctor-sort')) document.getElementById('doctor-sort').value = doctorSort;
+
+      // Re-sync export links now that inputs are restored
+      const csvLink = document.getElementById('csvExportLink');
+      if (csvLink) csvLink.href = `?${buildExportParams('csv')}`;
+      const doctorCsvLink = document.getElementById('doctorCsvExportLink');
+      if (doctorCsvLink) doctorCsvLink.href = `?${buildExportParams('doctor_csv')}`;
+    }
+
+    // Call init on load so filters persist
+    document.addEventListener('DOMContentLoaded', () => {
+      try {
+        initAnalyticsFromUrl();
+        initializeYearSelector();
+        // Set current month
+        document.getElementById('period-month').value = new Date().getMonth() + 1;
+        // Load initial statistics
+        loadStatistics();
+      } catch (e) {
+        // ignore init errors
+        console.warn('Analytics init error', e);
+      }
+    });
+  </script>
+</body>
+</html>

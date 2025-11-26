@@ -1,0 +1,950 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Prescriptions - MediSafe{% endblock %}
+
+{% block extra_css %}
+<style>
+    .prescriptions-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, var(--blue), var(--red));
+        color: white;
+        padding: 2.5rem;
+        border-radius: 16px;
+        margin-bottom: 2rem;
+        text-align: center;
+        box-shadow: 0 8px 24px rgba(11, 61, 145, 0.2);
+    }
+
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+    }
+
+    .page-subtitle {
+        font-size: 1.1rem;
+        opacity: 0.95;
+    }
+
+    .prescriptions-table-container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        overflow: hidden;
+        border: 2px solid var(--border);
+    }
+
+    .table-header {
+        background: linear-gradient(90deg, var(--blue) 0%, #1E3A8A 100%);
+        color: white;
+        padding: 1.5rem;
+        font-size: 1.2rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .prescriptions-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .prescriptions-table th {
+        background: #f8fafc;
+        color: var(--ink);
+        padding: 1.2rem;
+        text-align: left;
+        font-weight: 700;
+        border-bottom: 3px solid var(--border);
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .prescriptions-table td {
+        padding: 1.2rem;
+        border-bottom: 1px solid var(--border);
+        vertical-align: middle;
+    }
+
+    .prescriptions-table tr:hover {
+        background: #fafbfc;
+        transition: background 0.3s;
+    }
+
+    .prescription-number {
+        font-weight: 700;
+        color: var(--blue);
+        font-family: 'Courier New', monospace;
+        font-size: 1rem;
+    }
+
+    .prescription-date {
+        color: var(--gray);
+        font-size: 0.95rem;
+        font-weight: 500;
+    }
+
+    .prescription-date-time {
+        font-size: 0.85rem;
+        color: var(--gray);
+        opacity: 0.8;
+    }
+
+    .doctor-name {
+        font-weight: 700;
+        color: var(--ink);
+        font-size: 1rem;
+    }
+
+    .doctor-specialization {
+        color: var(--gray);
+        font-size: 0.9rem;
+        margin-top: 0.25rem;
+    }
+
+    .medicines-list {
+        max-width: 350px;
+    }
+
+    .medicine-item {
+        background: #f0f3f6;
+        padding: 0.6rem;
+        margin: 0.3rem 0;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        border-left: 3px solid var(--blue);
+        transition: all 0.3s;
+    }
+
+    .medicine-item:hover {
+        background: #e0e8f5;
+        transform: translateX(4px);
+    }
+
+    .medicine-name {
+        font-weight: 700;
+        color: var(--ink);
+    }
+
+    .medicine-details {
+        color: var(--gray);
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 0.4rem 1rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-draft {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-signed {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .status-printed {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .status-cancelled {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .btn {
+        padding: 0.6rem 1.2rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        white-space: nowrap;
+    }
+
+    .btn-view {
+        background: linear-gradient(135deg, var(--blue), #1E3A8A);
+        color: white;
+        border: 2px solid var(--blue);
+    }
+
+    .btn-view:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(11, 61, 145, 0.3);
+    }
+
+    .btn-download {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        border: 2px solid #10b981;
+    }
+
+    .btn-download:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-primary {
+        background: var(--blue);
+        color: white;
+        padding: 1rem 2rem;
+        font-size: 1rem;
+    }
+
+    .btn-primary:hover {
+        background: var(--blue2);
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        background: var(--bg);
+        color: var(--ink);
+        border: 2px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+        background: #d4e3f7;
+        border-color: var(--blue);
+    }
+
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        animation: fadeIn 0.3s ease-in;
+    }
+
+    .modal.active {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .modal-content {
+        background: white;
+        padding: 2rem;
+        border-radius: 16px;
+        width: 90%;
+        max-width: 700px;
+        max-height: 85vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.3s ease-out;
+    }
+
+    @keyframes slideUp {
+        from { transform: translateY(50px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 3px solid var(--border);
+    }
+
+    .modal-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--ink);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .modal-close-btn {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: var(--gray);
+        transition: color 0.3s;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+    }
+
+    .modal-close-btn:hover {
+        background: var(--border);
+        color: var(--ink);
+    }
+
+    .prescription-detail {
+        background: var(--light-bg);
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        border-left: 4px solid var(--blue);
+    }
+
+    .detail-label {
+        font-size: 0.85rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--gray);
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+    }
+
+    .detail-value {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--ink);
+    }
+
+    .medicines-grid {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        border: 2px solid var(--border);
+        margin-bottom: 1rem;
+    }
+
+    .medicines-grid-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--ink);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .medicine-card {
+        background: #f8fafc;
+        padding: 1rem;
+        border-radius: 10px;
+        margin-bottom: 0.8rem;
+        border-left: 4px solid var(--blue);
+        transition: all 0.3s;
+    }
+
+    .medicine-card:last-child {
+        margin-bottom: 0;
+    }
+
+    .medicine-card:hover {
+        background: #f0f3f6;
+        transform: translateX(4px);
+    }
+
+    .medicine-card-name {
+        font-weight: 700;
+        color: var(--ink);
+        margin-bottom: 0.5rem;
+    }
+
+    .medicine-card-details {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        font-size: 0.9rem;
+        color: var(--gray);
+    }
+
+    .modal-footer {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 2px solid var(--border);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--gray);
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        color: var(--border);
+    }
+
+    .empty-state h3 {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+        color: var(--ink);
+    }
+
+    .empty-state p {
+        font-size: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        border: 2px solid var(--border);
+        transition: all 0.3s;
+    }
+
+    .stat-card:hover {
+        border-color: var(--blue);
+        box-shadow: 0 4px 16px rgba(11, 61, 145, 0.1);
+        transform: translateY(-4px);
+    }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--blue);
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        color: var(--gray);
+        font-weight: 600;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .prescriptions-container {
+            padding: 1rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .prescriptions-table {
+            font-size: 0.9rem;
+        }
+
+        .prescriptions-table th,
+        .prescriptions-table td {
+            padding: 0.75rem 0.5rem;
+        }
+
+        .medicines-list {
+            max-width: 200px;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+            gap: 0.25rem;
+            width: 100%;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .modal-content {
+            width: 95%;
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            flex-direction: column;
+        }
+
+        .btn-view, .btn-download {
+            width: 100%;
+        }
+
+        .stats-container {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .page-header {
+            padding: 1.5rem;
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+        }
+
+        .page-subtitle {
+            font-size: 0.95rem;
+        }
+
+        .prescriptions-table th {
+            padding: 0.6rem 0.3rem;
+            font-size: 0.8rem;
+        }
+
+        .prescriptions-table td {
+            padding: 0.6rem 0.3rem;
+        }
+
+        .modal-content {
+            max-height: 90vh;
+        }
+
+        .medicine-card-details {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="prescriptions-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="fas fa-prescription-bottle-alt"></i> My Prescriptions
+        </h1>
+        <p class="page-subtitle">View, manage, and download your prescription history</p>
+    </div>
+
+    <!-- Statistics Cards -->
+    {% if prescriptions %}
+    <div class="stats-container">
+        <div class="stat-card">
+            <div class="stat-number">{{ prescriptions|length }}</div>
+            <div class="stat-label">Total Prescriptions</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ prescriptions|length }}</div>
+            <div class="stat-label">Available Files</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">
+                {% with prescriptions|first as first_prescription %}
+                    {% if first_prescription.created_at %}
+                        {{ first_prescription.created_at|date:"M d, Y" }}
+                    {% else %}
+                        —
+                    {% endif %}
+                {% endwith %}
+            </div>
+            <div class="stat-label">Latest Prescription</div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if prescriptions %}
+    <!-- Prescriptions Table -->
+    <div class="prescriptions-table-container">
+        <div class="table-header">
+            <i class="fas fa-prescription-bottle-alt"></i> Prescription History
+        </div>
+        <table class="prescriptions-table">
+            <thead>
+                <tr>
+                    <th>Prescription #</th>
+                    <th>Date</th>
+                    <th>Doctor</th>
+                    <th>Medicines</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for prescription in prescriptions %}
+                <tr>
+                    <td>
+                        <div class="prescription-number">#{{ prescription.prescription_number }}</div>
+                    </td>
+                    <td>
+                        <div class="prescription-date">{{ prescription.created_at|date:"M d, Y" }}</div>
+                        <div class="prescription-date-time">{{ prescription.created_at|time:"g:i A" }}</div>
+                    </td>
+                    <td>
+                        <div class="doctor-name">Dr. {{ prescription.live_appointment.appointment.doctor.user.get_full_name|default:"Doctor" }}</div>
+                        <div class="doctor-specialization">{{ prescription.live_appointment.appointment.doctor.specialization|default:"General Medicine" }}</div>
+                    </td>
+                    <td>
+                        <div class="medicines-list">
+                            {% if prescription.medicines %}
+                                {% for medicine in prescription.medicines %}
+                                <div class="medicine-item">
+                                    <div class="medicine-name">{{ medicine.name|default:"Unknown Medicine" }}</div>
+                                    <div class="medicine-details">{{ medicine.dosage|default:"As prescribed" }} - {{ medicine.frequency|default:"As directed" }}</div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <span style="color: var(--gray); font-style: italic;">No medicines listed</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="status-badge status-{{ prescription.status }}">
+                            <i class="fas fa-{% if prescription.status == 'signed' %}check-circle{% elif prescription.status == 'printed' %}print{% elif prescription.status == 'cancelled' %}ban{% else %}file-alt{% endif %}"></i>
+                            {{ prescription.status|title }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-view" onclick="viewPrescription('{{ prescription.prescription_id }}', '{{ prescription.prescription_number }}', '{{ prescription.live_appointment.appointment.doctor.user.get_full_name|escapejs }}', '{{ prescription.created_at|date:"M d, Y" }}', '{{ prescription.status }}')">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                            <button class="btn btn-download" onclick="downloadPrescription('{{ prescription.prescription_id }}', '{{ prescription.prescription_number }}', event)">
+                                <i class="fas fa-download"></i> Download
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="empty-state">
+        <i class="fas fa-prescription-bottle-alt"></i>
+        <h3>No Prescriptions Yet</h3>
+        <p>You don't have any prescriptions yet. Prescriptions will appear here after your consultations with doctors.</p>
+        <a href="{% url 'consultations' %}" class="btn btn-primary">
+            <i class="fas fa-calendar-plus"></i> Book Consultation
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Prescription Detail Modal -->
+<div id="prescriptionModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title">
+                <i class="fas fa-prescription-bottle"></i>
+                <span id="modalPrescriptionNumber">Prescription Details</span>
+            </div>
+            <button class="modal-close-btn" onclick="closePrescriptionModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- Prescription Details -->
+        <div class="prescription-detail">
+            <div class="detail-label">Prescription Number</div>
+            <div class="detail-value" id="modalPrescriptionNo">#—</div>
+        </div>
+
+        <div class="prescription-detail">
+            <div class="detail-label">Doctor</div>
+            <div class="detail-value" id="modalDoctorName">Dr. —</div>
+        </div>
+
+        <div class="prescription-detail">
+            <div class="detail-label">Date Issued</div>
+            <div class="detail-value" id="modalDateIssued">—</div>
+        </div>
+
+        <div class="prescription-detail">
+            <div class="detail-label">Status</div>
+            <div class="detail-value" id="modalStatus" style="display: inline-block;"></div>
+        </div>
+
+        <!-- Medicines -->
+        <div class="medicines-grid">
+            <div class="medicines-grid-title">
+                <i class="fas fa-capsules"></i> Prescribed Medicines
+            </div>
+            <div id="medicinesContainer">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Footer with Actions -->
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closePrescriptionModal()">
+                <i class="fas fa-times"></i> Close
+            </button>
+            <button class="btn btn-download" id="modalDownloadBtn" onclick="downloadFromModal(event)">
+                <i class="fas fa-download"></i> Download Prescription
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Global notification system
+    function showNotification(message, type = 'info') {
+        // Create notification container if it doesn't exist
+        let notificationContainer = document.getElementById('notification-container');
+        if (!notificationContainer) {
+            notificationContainer = document.createElement('div');
+            notificationContainer.id = 'notification-container';
+            notificationContainer.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 10000;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            `;
+            document.body.appendChild(notificationContainer);
+        }
+
+        // Create notification element
+        const notification = document.createElement('div');
+        const bgColor = type === 'success' ? '#dcfce7' : type === 'error' ? '#fee2e2' : '#dbeafe';
+        const textColor = type === 'success' ? '#14532d' : type === 'error' ? '#7c2d12' : '#0c3c9e';
+        const borderColor = type === 'success' ? '#4ade80' : type === 'error' ? '#f87171' : '#3b82f6';
+        const icon = type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ';
+
+        notification.style.cssText = `
+            background: ${bgColor};
+            color: ${textColor};
+            padding: 12px 16px;
+            border-radius: 8px;
+            border-left: 4px solid ${borderColor};
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            min-width: 300px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease-out;
+        `;
+        notification.innerHTML = `<span style="font-weight: bold; font-size: 1.1em">${icon}</span> <span>${message}</span>`;
+
+        notificationContainer.appendChild(notification);
+
+        // Auto-remove after 4 seconds
+        setTimeout(() => {
+            notification.style.animation = 'slideOut 0.3s ease-out';
+            setTimeout(() => notification.remove(), 300);
+        }, 4000);
+    }
+
+    // Add CSS animations if not present
+    if (!document.getElementById('notification-styles')) {
+        const style = document.createElement('style');
+        style.id = 'notification-styles';
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(400px); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(400px); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Mock data for demonstration - Replace with actual backend calls
+    const prescriptionData = {
+        {% for prescription in prescriptions %}
+        '{{ prescription.prescription_id }}': {
+            id: '{{ prescription.prescription_id }}',
+            number: '{{ prescription.prescription_number }}',
+            doctor: 'Dr. {{ prescription.live_appointment.appointment.doctor.user.get_full_name }}',
+            date: '{{ prescription.created_at|date:"M d, Y" }}',
+            status: '{{ prescription.status }}',
+            medicines: [
+                {% for medicine in prescription.medicines %}
+                {
+                    name: '{{ medicine.name|default:"Unknown" }}',
+                    dosage: '{{ medicine.dosage|default:"As prescribed" }}',
+                    frequency: '{{ medicine.frequency|default:"As directed" }}',
+                    duration: '{{ medicine.duration|default:"—" }}'
+                }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ]
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    };
+
+    let currentPrescriptionId = null;
+
+    function viewPrescription(id, number, doctor, date, status) {
+        currentPrescriptionId = id;
+        
+        // Update modal header and details
+        document.getElementById('modalPrescriptionNumber').textContent = 'Rx #' + number;
+        document.getElementById('modalPrescriptionNo').textContent = '#' + number;
+        document.getElementById('modalDoctorName').textContent = doctor;
+        document.getElementById('modalDateIssued').textContent = date;
+        
+        // Set status badge
+        const statusMap = {
+            'signed': '<span class="status-badge status-signed"><i class="fas fa-check-circle"></i> Signed</span>',
+            'printed': '<span class="status-badge status-printed"><i class="fas fa-print"></i> Printed</span>',
+            'cancelled': '<span class="status-badge status-cancelled"><i class="fas fa-ban"></i> Cancelled</span>',
+            'draft': '<span class="status-badge status-draft"><i class="fas fa-file-alt"></i> Draft</span>'
+        };
+        document.getElementById('modalStatus').innerHTML = statusMap[status] || '<span class="status-badge status-draft">—</span>';
+
+        // Populate medicines
+        const medicinesContainer = document.getElementById('medicinesContainer');
+        medicinesContainer.innerHTML = '';
+        
+        const prescription = prescriptionData[id];
+        if (prescription && prescription.medicines && prescription.medicines.length > 0) {
+            prescription.medicines.forEach(medicine => {
+                const medicineCard = document.createElement('div');
+                medicineCard.className = 'medicine-card';
+                medicineCard.innerHTML = `
+                    <div class="medicine-card-name">💊 ${medicine.name}</div>
+                    <div class="medicine-card-details">
+                        <div><strong>Dosage:</strong> ${medicine.dosage}</div>
+                        <div><strong>Frequency:</strong> ${medicine.frequency}</div>
+                        <div><strong>Duration:</strong> ${medicine.duration}</div>
+                    </div>
+                `;
+                medicinesContainer.appendChild(medicineCard);
+            });
+        } else {
+            medicinesContainer.innerHTML = '<div style="text-align: center; color: var(--gray); padding: 1rem;">No medicines listed for this prescription</div>';
+        }
+
+        // Show modal
+        document.getElementById('prescriptionModal').classList.add('active');
+    }
+
+    function closePrescriptionModal() {
+        document.getElementById('prescriptionModal').classList.remove('active');
+    }
+
+    function downloadPrescription(id, number, evt) {
+        // Get the button that was clicked
+        const btn = evt?.target?.closest('button');
+        const originalHTML = btn?.innerHTML;
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
+            btn.disabled = true;
+        }
+
+        // Download from backend API endpoint
+        fetch(`/prescription-download/${id}/`, {
+            method: 'GET',
+            credentials: 'same-origin'
+        })
+        .then(res => {
+            if (!res.ok) {
+                return res.json().then(data => {
+                    showNotification(data.error || 'Failed to download prescription. Please try again.', 'error');
+                    throw new Error(data.error || 'Failed to download');
+                }).catch(err => {
+                    if (err.message.startsWith('Failed')) throw err;
+                    showNotification('Failed to download prescription (HTTP ' + res.status + ').', 'error');
+                    throw new Error('Failed to download');
+                });
+            }
+            // Get filename from content-disposition header if available
+            const disposition = res.headers.get('content-disposition');
+            let filename = `Prescription_${number}.pdf`;
+            if (disposition) {
+                const matches = /filename[^;=\n]*=([^;\n]*)/i.exec(disposition);
+                if (matches && matches[1]) {
+                    filename = matches[1].replace(/['"]/g, '');
+                }
+            }
+            return res.blob().then(blob => ({ blob, filename }));
+        })
+        .then(({ blob, filename }) => {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            showNotification('Prescription downloaded successfully!', 'success');
+        })
+        .catch(err => {
+            console.error('Download error:', err);
+        })
+        .finally(() => {
+            if (btn && originalHTML) {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
+        });
+    }
+
+    function downloadFromModal(evt) {
+        if (currentPrescriptionId) {
+            const prescription = prescriptionData[currentPrescriptionId];
+            if (prescription) {
+                downloadPrescription(currentPrescriptionId, prescription.number, evt);
+            }
+        }
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        const modal = document.getElementById('prescriptionModal');
+        if (event.target === modal) {
+            modal.classList.remove('active');
+        }
+    }
+
+    // Keyboard shortcut to close modal
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closePrescriptionModal();
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,1731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mod Dashboard | MediSafe+</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'healthcare-red': '#FF0000',
+            'healthcare-blue': '#003366',
+            'healthcare-light-blue': '#0066CC'
+          },
+          screens: {
+            'xs': '475px',
+            'sm': '640px',
+            'md': '768px',
+            'lg': '1024px',
+            'xl': '1280px',
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    .dashboard-card {
+      background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.9) 100%);
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+      border: 1px solid rgba(0, 51, 102, 0.1);
+    }
+
+    /* Mobile responsive styles */
+    @media (max-width: 640px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr !important;
+      }
+      
+      .stats-grid {
+        grid-template-columns: 1fr !important;
+      }
+      
+      .action-buttons {
+        flex-direction: column !important;
+        gap: 0.5rem !important;
+      }
+      
+      .search-container {
+        width: 100% !important;
+        margin-bottom: 1rem;
+      }
+    }
+
+    /* Tablet responsive styles */
+    @media (min-width: 641px) and (max-width: 1024px) {
+      .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+      
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+    }
+
+    /* Navigation responsive styles */
+    @media (max-width: 768px) {
+      .mobile-menu {
+        display: block !important;
+      }
+      
+      .nav-links {
+        display: none;
+      }
+      
+      .nav-links.active {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        padding: 1rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      }
+    }
+    
+    .dashboard-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 40px rgba(0, 51, 102, 0.15);
+      border-color: #0066CC;
+    }
+
+    .quick-link {
+      transition: all 0.3s ease;
+    }
+
+    .quick-link:hover {
+      transform: translateY(-2px);
+    }
+
+    /* Search bar styles */
+    .search-container {
+      position: relative;
+      width: 300px;
+    }
+    
+    .search-input {
+      width: 100%;
+      padding: 8px 16px 8px 40px;
+      border: 2px solid rgba(0, 51, 102, 0.1);
+      border-radius: 8px;
+      background: white;
+      color: #003366;
+      transition: all 0.3s ease;
+    }
+    
+    .search-input:focus {
+      outline: none;
+      border-color: #0066CC;
+      box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+    }
+    
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #003366;
+      opacity: 0.5;
+    }
+
+    /* Status badges */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .status-success {
+      background-color: #E8F5E9;
+      color: #2E7D32;
+      border: 1px solid #A5D6A7;
+    }
+
+    .status-pending {
+      background-color: #FFF3E0;
+      color: #E65100;
+      border: 1px solid #FFCC80;
+    }
+
+    .status-warning {
+      background-color: #FFF8E1;
+      color: #F57F17;
+      border: 1px solid #FFE082;
+    }
+
+    .status-error {
+      background-color: #FFEBEE;
+      color: #C62828;
+      border: 1px solid #FFCDD2;
+    }
+
+    /* Alert styles */
+    .alert-item {
+      background: white;
+      border: 1px solid #E3F2FD;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 8px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .alert-item::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: #0066CC;
+    }
+
+    .alert-item:hover {
+      transform: translateX(4px);
+      box-shadow: 0 4px 12px rgba(0, 51, 102, 0.1);
+    }
+
+    .alert-critical::before { background: #C62828; }
+    .alert-warning::before { background: #F57F17; }
+    .alert-info::before { background: #0066CC; }
+
+    /* Quick actions */
+    .quick-action-btn {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      background: #0066CC;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    .quick-action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 102, 204, 0.2);
+    }
+
+    .quick-action-btn.secondary {
+      background: white;
+      color: #003366;
+      border: 2px solid #0066CC;
+    }
+
+    .quick-action-btn.secondary:hover {
+      background: #0066CC;
+      color: white;
+    }
+
+    @media (max-width: 768px) {
+      .search-container {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
+  <!-- Main Layout -->
+  <div class="flex h-screen bg-gray-50">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-healthcare-blue text-white shadow-lg">
+      <!-- Logo -->
+      <div class="p-4 border-b border-healthcare-light-blue/30">
+        <div class="flex items-center space-x-3">
+          <div style="display:flex;align-items:center;gap:10px">
+            <img src="/media/logo/Medisafe%20Logo.jpg" alt="MediSafe" style="height:44px;width:auto;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.06)" />
+            <span class="font-bold text-lg">MediSafe+</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="p-4">
+        <div class="mb-4">
+          <div class="relative">
+            <input type="text" 
+                   placeholder="Search..." 
+                   class="w-full bg-white/10 text-white placeholder-white/60 px-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-white/30">
+            <i class="fas fa-search absolute right-3 top-2.5 text-white/60"></i>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+                    <a href="{% url 'moddashboard' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg bg-white/20 text-white">
+            <i class="fas fa-chart-pie"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="{% url 'mod_doctors' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-users-cog"></i>
+            <span>Medisafe Team</span>
+          </a>
+          <a href="{% url 'mod_records' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-hospital-user"></i>
+            <span>Patient Records</span>
+          </a>
+          <a href="{% url 'mod_users' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-users-cog"></i>
+            <span>User Management</span>
+          </a>
+          <a href="{% url 'mod_consultations' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-calendar-check"></i>
+            <span>Appointments</span>
+          </a>
+        </a>
+        <a href="{% url 'mod_analytics' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+          <i class="fas fa-chart-line"></i>
+          <span>Analytics</span>
+        </a>
+        </div>
+      </nav>
+
+      <!-- User Profile -->
+      <div class="mt-auto p-4 border-t border-healthcare-light-blue/30">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="bg-white/10 p-2 rounded-full">
+              <i class="fas fa-user-md"></i>
+            </div>
+            <div class="text-sm">
+              <p class="font-semibold">Admin</p>
+              <p class="text-white/60 text-xs">Online</p>
+            </div>
+          </div>
+          <a href="{% url 'logout' %}" class="text-white/60 hover:text-white transition-colors" title="Logout">
+            <i class="fas fa-sign-out-alt"></i>
+          </a>
+        </div>
+        
+        <!-- Super Admin Component Include -->
+        {% include 'super_admin_component.html' %}
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 overflow-auto">
+      <div class="p-8">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8">
+          <div>
+            <h1 class="text-2xl font-bold text-healthcare-blue">Dashboard Overview</h1>
+            <p class="text-gray-500 mt-1">Welcome back, Admin</p>
+          </div>
+          
+          <!-- Quick Actions -->
+          <div class="flex items-center space-x-3">
+            <!-- Password Reset Notifications Bell -->
+            <div class="relative">
+              <button id="passwordResetNotificationBell" onclick="togglePasswordResetNotifications()" class="relative inline-flex items-center justify-center w-10 h-10 border border-healthcare-blue text-healthcare-blue rounded-lg hover:bg-healthcare-blue hover:text-white transition-colors" title="Password Reset Requests">
+                <i class="fas fa-key"></i>
+                <span id="passwordResetNotificationBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
+              </button>
+              
+              <!-- Password Reset Notifications Panel -->
+              <div id="passwordResetNotificationPanel" class="hidden absolute right-0 top-12 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-y-auto">
+                <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+                  <h3 class="font-semibold text-gray-800">Password Reset Requests</h3>
+                  <button onclick="closePasswordResetNotifications()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+                <div id="passwordResetNotificationList" class="divide-y divide-gray-200">
+                  <div id="passwordResetNotificationEmpty" class="p-8 text-center text-gray-500">
+                    <i class="fas fa-key text-3xl mb-2 opacity-50"></i>
+                    <p>No password reset requests</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <button id="generateReport" class="inline-flex items-center px-4 py-2 bg-healthcare-blue text-white rounded-lg hover:bg-healthcare-light-blue transition-colors">
+              <i class="fas fa-file-pdf mr-2"></i>
+              Generate Report
+            </button>
+            <button id="viewScheduleBtn" type="button" class="inline-flex items-center px-4 py-2 border border-healthcare-blue text-healthcare-blue rounded-lg hover:bg-healthcare-blue hover:text-white transition-colors">
+              <i class="fas fa-calendar-alt mr-2"></i>
+              View Schedule
+            </button>
+            <button id="openSettingsBtn" onclick="if(typeof openSettings === 'function'){ openSettings(); }" class="inline-flex items-center px-4 py-2 border border-healthcare-blue text-healthcare-blue rounded-lg hover:bg-healthcare-blue hover:text-white transition-colors">
+              <i class="fas fa-cog mr-2"></i>
+              Settings
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-6 mb-8">
+          <!-- Total Patients -->
+          <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:border-healthcare-light-blue transition-colors">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center space-x-4">
+                <div class="bg-blue-100 p-3 rounded-lg">
+                  <i class="fas fa-user-injured text-healthcare-blue text-xl"></i>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-700">Total Patients</h3>
+                  <div class="flex items-baseline space-x-2">
+                    <p class="text-3xl font-bold text-healthcare-blue">{{ total_patients }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between text-sm text-gray-500">
+              <span>Registered patients</span>
+                <a href="{% url 'mod_records' %}" class="text-healthcare-blue hover:underline" title="View patients">
+                  <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+          </div>
+
+          <!-- Total Users -->
+          <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:border-healthcare-light-blue transition-colors">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center space-x-4">
+                <div class="bg-green-100 p-3 rounded-lg">
+                  <i class="fas fa-users text-green-600 text-xl"></i>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-700">Total Users</h3>
+                  <div class="flex items-baseline space-x-2">
+                    <p class="text-3xl font-bold text-healthcare-blue">{{ total_users }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between text-sm text-gray-500">
+              <span>System users</span>
+                <a href="{% url 'mod_users' %}" class="text-healthcare-blue hover:underline" title="Manage users">
+                  <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+          </div>
+
+          <!-- Lab Results -->
+          <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:border-healthcare-light-blue transition-colors">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center space-x-4">
+                <div class="bg-purple-100 p-3 rounded-lg">
+                  <i class="fas fa-flask text-purple-600 text-xl"></i>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-700">Lab Results</h3>
+                  <div class="flex items-baseline space-x-2">
+                    <p class="text-3xl font-bold text-healthcare-blue">{{ total_lab_results }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between text-sm text-gray-500">
+              <span>Uploaded results</span>
+                <a href="{% url 'mod_records' %}" class="text-healthcare-blue hover:underline" title="View lab results">
+                  <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+          </div>
+
+          <!-- Appointments -->
+          <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:border-healthcare-light-blue transition-colors">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center space-x-4">
+                <div class="bg-orange-100 p-3 rounded-lg">
+                  <i class="fas fa-calendar-check text-orange-600 text-xl"></i>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-700">Appointments</h3>
+                  <div class="flex items-baseline space-x-2">
+                    <p class="text-3xl font-bold text-healthcare-blue">{{ total_appointments }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between text-sm text-gray-500">
+              <span>Scheduled appointments</span>
+              <i class="fas fa-arrow-right text-healthcare-blue"></i>
+            </div>
+          </div>
+
+          <!-- Booked Services -->
+          <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:border-healthcare-light-blue transition-colors">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center space-x-4">
+                <div class="bg-teal-100 p-3 rounded-lg">
+                  <i class="fas fa-calendar-alt text-teal-600 text-xl"></i>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-700">Booked Services</h3>
+                  <div class="flex items-baseline space-x-2">
+                    <p class="text-3xl font-bold text-healthcare-blue">{{ total_booked_services|default:0 }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between text-sm text-gray-500">
+              <span>Total bookings</span>
+              <i class="fas fa-arrow-right text-healthcare-blue"></i>
+            </div>
+          </div>
+
+          <!-- Today's Schedule -->
+          <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:border-healthcare-light-blue transition-colors">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center space-x-4">
+                <div class="bg-yellow-100 p-3 rounded-lg">
+                  <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-700">Today's Schedule</h3>
+                  <div class="flex items-baseline space-x-2">
+                    <p class="text-3xl font-bold text-healthcare-blue">{{ today_appointments_count|default:0|add:today_booked_services_count|default:0 }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between text-sm text-gray-500">
+              <span>Appointments + Services</span>
+              <i class="fas fa-arrow-right text-healthcare-blue"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Today's Schedule Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <!-- Today's Appointments -->
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="border-b border-gray-200 p-4 bg-gradient-to-r from-orange-50 to-orange-100">
+              <h2 class="text-lg font-semibold text-healthcare-blue flex items-center">
+                <i class="fas fa-calendar-check mr-2 text-orange-600"></i>
+                Today's Appointments ({{ today_appointments_count|default:0 }})
+              </h2>
+            </div>
+            <div class="p-4">
+              <div class="overflow-x-auto">
+                {% if today_appointments %}
+                <table class="w-full text-left">
+                  <thead>
+                    <tr class="border-b border-gray-200">
+                      <th class="pb-3 font-semibold text-gray-600">Time</th>
+                      <th class="pb-3 font-semibold text-gray-600">Doctor</th>
+                      <th class="pb-3 font-semibold text-gray-600">Patient</th>
+                      <th class="pb-3 font-semibold text-gray-600">Type</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for appointment in today_appointments %}
+                    <tr class="border-b border-gray-100">
+                      <td class="py-3 text-gray-600">{{ appointment.consultation_time|time:"H:i" }}</td>
+                      <td class="py-3 text-gray-600">{% if appointment.doctor and appointment.doctor.user.first_name %}Dr. {{ appointment.doctor.user.first_name }} {{ appointment.doctor.user.last_name }}{% else %}Dr. {{ appointment.doctor.user.username }}{% endif %}</td>
+                      <td class="py-3 text-gray-600">{% if appointment.patient and appointment.patient.get_full_name %}{{ appointment.patient.get_full_name }}{% elif appointment.patient and appointment.patient.first_name %}{{ appointment.patient.first_name }} {{ appointment.patient.last_name }}{% else %}{{ appointment.patient.username }}{% endif %}</td>
+                      <td class="py-3 text-gray-600">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium {% if appointment.consultation_type == 'F2F' %}bg-blue-100 text-blue-700{% else %}bg-purple-100 text-purple-700{% endif %}">
+                          {{ appointment.consultation_type }}
+                        </span>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+                {% else %}
+                <div class="text-center py-8 text-gray-500">
+                  <i class="fas fa-calendar-times text-4xl mb-4"></i>
+                  <p>No appointments scheduled for today.</p>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Today's Booked Services -->
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="border-b border-gray-200 p-4 bg-gradient-to-r from-teal-50 to-teal-100">
+              <h2 class="text-lg font-semibold text-healthcare-blue flex items-center">
+                <i class="fas fa-calendar-alt mr-2 text-teal-600"></i>
+                Today's Booked Services ({{ today_booked_services_count|default:0 }})
+              </h2>
+            </div>
+            <div class="p-4">
+              <div class="overflow-x-auto">
+                {% if today_booked_services %}
+                <table class="w-full text-left">
+                  <thead>
+                    <tr class="border-b border-gray-200">
+                      <th class="pb-3 font-semibold text-gray-600">Time</th>
+                      <th class="pb-3 font-semibold text-gray-600">Patient</th>
+                      <th class="pb-3 font-semibold text-gray-600">Service</th>
+                      <th class="pb-3 font-semibold text-gray-600">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for booking in today_booked_services %}
+                    <tr class="border-b border-gray-100">
+                      <td class="py-3 text-gray-600">{{ booking.booking_time|time:"H:i" }}</td>
+                      <td class="py-3 text-gray-600">
+                        {% if booking.user.userprofile.first_name and booking.user.userprofile.last_name %}
+                          {{ booking.user.userprofile.first_name }} {{ booking.user.userprofile.last_name }}
+                        {% else %}
+                          {{ booking.user.username }}
+                        {% endif %}
+                      </td>
+                      <td class="py-3 text-gray-600">{{ booking.service_name }}</td>
+                      <td class="py-3">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium 
+                          {% if booking.status == 'Confirmed' %}bg-green-100 text-green-700
+                          {% elif booking.status == 'Completed' %}bg-blue-100 text-blue-700
+                          {% elif booking.status == 'Cancelled' %}bg-red-100 text-red-700
+                          {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                          {{ booking.status }}
+                        </span>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+                {% else %}
+                <div class="text-center py-8 text-gray-500">
+                  <i class="fas fa-calendar-times text-4xl mb-4"></i>
+                  <p>No booked services scheduled for today.</p>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activity Logs -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+          <div class="border-b border-gray-200 p-4 bg-gradient-to-r from-gray-50 to-gray-100 flex items-center justify-between">
+            <h2 class="text-lg font-semibold text-healthcare-blue flex items-center">
+              <i class="fas fa-history mr-2 text-healthcare-blue"></i>
+              Recent Activity Logs
+            </h2>
+            <div>
+              <button id="clearActivityBtn" class="px-3 py-1 text-xs bg-red-50 text-red-700 border border-red-100 rounded hover:bg-red-100">Clear Activity</button>
+            </div>
+          </div>
+          <div class="p-4">
+            {% if recent_activities %}
+              <ul class="divide-y divide-gray-100">
+                {% for act in recent_activities %}
+                <li data-recent-activity="1" class="py-3 flex items-start space-x-3 hover:bg-gray-50 p-2 rounded">
+                  <div class="flex-shrink-0">
+                    {% if act.type == 'Appointment' %}
+                      <i class="fas fa-calendar-check text-orange-500 text-xl"></i>
+                    {% elif act.type == 'LabResult' %}
+                      <i class="fas fa-flask text-teal-500 text-xl"></i>
+                    {% elif act.type == 'Auth' %}
+                      <i class="fas fa-user-clock text-indigo-500 text-xl"></i>
+                    {% else %}
+                      <i class="fas fa-concierge-bell text-green-500 text-xl"></i>
+                    {% endif %}
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center justify-between">
+                      <p class="text-sm font-medium text-gray-800 truncate">{{ act.summary }}</p>
+                      <p class="text-xs text-gray-500">{{ act.date|date:"M d, Y H:i" }}</p>
+                    </div>
+                    <p class="text-xs text-gray-500">{{ act.detail }}</p>
+                    <div class="mt-2">
+                      <a href="{% url act.link %}" class="text-healthcare-blue text-xs hover:underline">View</a>
+                    </div>
+                  </div>
+                </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-history text-4xl mb-4"></i>
+                <p>No recent activity.</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+    </div>
+
+      <!-- Quick Links Card -->
+      <div class="dashboard-card rounded-xl overflow-hidden">
+        <div class="bg-gradient-to-r from-healthcare-blue to-healthcare-light-blue p-4 text-white font-bold text-lg">
+          <i class="fas fa-link mr-2"></i>Quick Links
+        </div>
+        <div class="p-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          <a href="{% url 'mod_analytics' %}" class="quick-link flex flex-col items-center justify-center p-4 rounded-xl bg-white border border-gray-200 hover:border-healthcare-light-blue hover:shadow-lg">
+            <i class="fas fa-chart-bar text-3xl text-healthcare-blue mb-2"></i>
+            <span class="text-sm font-medium text-gray-700">Analytics</span>
+          </a>
+          <a href="{% url 'mod_consultations' %}" class="quick-link flex flex-col items-center justify-center p-4 rounded-xl bg-white border border-gray-200 hover:border-healthcare-light-blue hover:shadow-lg">
+            <i class="fas fa-calendar-check text-3xl text-healthcare-blue mb-2"></i>
+            <span class="text-sm font-medium text-gray-700">Appointments</span>
+          </a>
+          <a href="{% url 'labresults' %}" class="quick-link flex flex-col items-center justify-center p-4 rounded-xl bg-white border border-gray-200 hover:border-healthcare-light-blue hover:shadow-lg">
+            <i class="fas fa-flask text-3xl text-healthcare-blue mb-2"></i>
+            <span class="text-sm font-medium text-gray-700">Lab Results</span>
+          </a>
+          <a href="{% url 'dashboard' %}" class="quick-link flex flex-col items-center justify-center p-4 rounded-xl bg-white border border-gray-200 hover:border-healthcare-light-blue hover:shadow-lg">
+            <i class="fas fa-columns text-3xl text-healthcare-blue mb-2"></i>
+            <span class="text-sm font-medium text-gray-700">Client View</span>
+          </a>
+          <a href="{% url 'mod_consultations' %}" class="quick-link flex flex-col items-center justify-center p-4 rounded-xl bg-white border border-gray-200 hover:border-healthcare-light-blue hover:shadow-lg">
+            <i class="fas fa-calendar-alt text-3xl text-healthcare-blue mb-2"></i>
+            <span class="text-sm font-medium text-gray-700">Schedule</span>
+          </a>
+          <a href="#" onclick="if(typeof openSettings === 'function'){ openSettings(); } return false;" class="quick-link flex flex-col items-center justify-center p-4 rounded-xl bg-white border border-gray-200 hover:border-healthcare-light-blue hover:shadow-lg">
+            <i class="fas fa-cog text-3xl text-healthcare-blue mb-2"></i>
+            <span class="text-sm font-medium text-gray-700">Settings</span>
+          </a>
+        </div>
+      </div>
+
+        <!-- Recent Data: Tabbed pane -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+          <div class="flex items-center justify-between mb-4">
+                  <div class="flex space-x-2">
+                    <button class="tab-btn px-3 py-1 rounded bg-healthcare-blue text-white text-sm" data-target="#tab-accounts">Recent · Accounts</button>
+                    <button class="tab-btn px-3 py-1 rounded bg-white text-healthcare-blue border border-gray-200 text-sm" data-target="#tab-labs">Recent · Labs</button>
+                    <button class="tab-btn px-3 py-1 rounded bg-white text-healthcare-blue border border-gray-200 text-sm" data-target="#tab-appointments">Recent · Appointments</button>
+                  </div>
+            <div>
+              <input type="text" id="recentSearch" placeholder="Search..." class="px-3 py-1 border rounded text-sm" />
+            </div>
+          </div>
+
+          <div id="tab-accounts" class="tab-content">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left">
+                <thead>
+                  <tr class="border-b border-gray-200 bg-gray-50">
+                    <th class="pb-3 font-semibold text-gray-700">Username</th>
+                    <th class="pb-3 font-semibold text-gray-700">Email</th>
+                    <th class="pb-3 font-semibold text-gray-700">Role</th>
+                    <th class="pb-3 font-semibold text-gray-700">Status</th>
+                    <th class="pb-3 font-semibold text-gray-700">Date Joined</th>
+                  </tr>
+                </thead>
+                <tbody id="accountsBody">
+                  {% for account in latest_accounts %}
+                  <tr class="border-b border-gray-100">
+                    <td class="py-3 text-gray-600">{{ account.username }}</td>
+                      <td class="py-3 text-gray-600">{{ account.email }}</td>
+                      <td class="py-3 text-gray-600">{{ account.role|title }}</td>
+                      <td class="py-3 text-gray-600">{% if account.status %}<span class="text-green-700 font-medium">Active</span>{% else %}<span class="text-red-600 font-medium">Deactivated</span>{% endif %}</td>
+                      <td class="py-3 text-gray-600">{{ account.date_joined|date:"M d, Y H:i" }}</td>
+                  </tr>
+                  {% empty %}
+                  <tr><td colspan="3" class="py-4 text-gray-500">No recent accounts.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="tab-labs" class="tab-content hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left">
+                <thead>
+                  <tr class="border-b border-gray-200">
+                    <th class="pb-3 font-semibold text-gray-600">Type</th>
+                    <th class="pb-3 font-semibold text-gray-600">Patient</th>
+                      <th class="pb-3 font-semibold text-gray-600">Uploaded By</th>
+                      <th class="pb-3 font-semibold text-gray-600">Uploaded</th>
+                  </tr>
+                </thead>
+                <tbody id="labsBody">
+                  {% for lr in latest_lab_results %}
+                  <tr class="border-b border-gray-100">
+                    <td class="py-3 text-gray-600">{{ lr.lab_type }}</td>
+                    <td class="py-3 text-gray-600">{{ lr.user.username }}</td>
+                      <td class="py-3 text-gray-600">{% if lr.uploaded_by %}{{ lr.uploaded_by.get_full_name|default:lr.uploaded_by.username }}{% else %}-{% endif %}</td>
+                      <td class="py-3 text-gray-600">{{ lr.upload_date|date:"M d, Y H:i" }}</td>
+                  </tr>
+                  {% empty %}
+                  <tr><td colspan="3" class="py-4 text-gray-500">No recent lab results.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="tab-appointments" class="tab-content hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left">
+                <thead>
+                  <tr class="border-b border-gray-200">
+                    <th class="pb-3 font-semibold text-gray-600">Doctor</th>
+                    <th class="pb-3 font-semibold text-gray-600">Patient</th>
+                    <th class="pb-3 font-semibold text-gray-600">Type</th>
+                      <th class="pb-3 font-semibold text-gray-600">Status</th>
+                      <th class="pb-3 font-semibold text-gray-600">Created</th>
+                    <th class="pb-3 font-semibold text-gray-600">Date/Time</th>
+                  </tr>
+                </thead>
+                <tbody id="appointmentsBody">
+                  {% for appointment in latest_appointments %}
+                  <tr class="border-b border-gray-100">
+                    <td class="py-3 text-gray-600">{% if appointment.doctor and appointment.doctor.user.first_name %}Dr. {{ appointment.doctor.user.first_name }} {{ appointment.doctor.user.last_name }}{% else %}Dr. {{ appointment.doctor.user.username }}{% endif %}</td>
+                    <td class="py-3 text-gray-600">{% if appointment.patient and appointment.patient.get_full_name %}{{ appointment.patient.get_full_name }}{% elif appointment.patient and appointment.patient.first_name %}{{ appointment.patient.first_name }} {{ appointment.patient.last_name }}{% else %}{{ appointment.patient.username }}{% endif %}</td>
+                    <td class="py-3 text-gray-600">{{ appointment.consultation_type }}</td>
+                      <td class="py-3 text-gray-600">{{ appointment.status }}</td>
+                      <td class="py-3 text-gray-600">{{ appointment.created_at|date:"M d, Y H:i" }}</td>
+                    <td class="py-3 text-gray-600">{{ appointment.consultation_date }} {{ appointment.consultation_time }}</td>
+                  </tr>
+                  {% empty %}
+                  <tr><td colspan="4" class="py-4 text-gray-500">No recent appointments.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+
+      <!-- Include Scripts -->
+      {% load static %}
+      <script src="{% static 'app.js' %}"></script>
+
+      <!-- Schedule Modal -->
+      <div id="scheduleModal" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl mx-4 overflow-hidden">
+          <div class="p-4 border-b flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-800">Schedule Overview — Upcoming 14 days</h3>
+            <button id="closeScheduleModal" class="text-gray-500 hover:text-gray-800">✕</button>
+          </div>
+          <div class="p-4">
+            <p class="text-sm text-gray-600 mb-4">Click a day to view appointments or lab services for that date.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {% for day in schedule_summary %}
+              <div class="flex items-center justify-between p-3 rounded-lg border hover:shadow-md transition bg-white">
+                <div>
+                  <div class="text-sm font-medium text-gray-700">{{ day.date_str }}</div>
+                  <div class="text-xs text-gray-500">{{ day.iso }}</div>
+                </div>
+                <div class="flex items-center space-x-3">
+                  <a href="{{ day.appt_link }}" class="inline-flex items-center px-3 py-1 rounded bg-blue-50 text-blue-700 text-sm hover:bg-blue-100">
+                    <i class="fas fa-calendar-check mr-2"></i>
+                    {{ day.appt_count }} Appt
+                  </a>
+                  <a href="{{ day.lab_link }}" class="inline-flex items-center px-3 py-1 rounded bg-purple-50 text-purple-700 text-sm hover:bg-purple-100">
+                    <i class="fas fa-flask mr-2"></i>
+                    {{ day.lab_count }} Labs
+                  </a>
+                </div>
+              </div>
+              {% empty %}
+              <div class="text-gray-500">No schedule data available.</div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Modal -->
+      <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 overflow-y-auto">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 my-8 overflow-hidden">
+          <div class="p-6 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-healthcare-blue to-healthcare-light-blue">
+            <h3 class="text-xl font-bold text-white">Settings</h3>
+            <button id="closeSettingsModal" class="text-white hover:text-gray-200 text-2xl">✕</button>
+          </div>
+
+          <!-- Settings Tabs -->
+          <div class="flex border-b border-gray-200">
+            <button class="settings-tab-btn flex-1 py-3 text-center font-medium text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-healthcare-blue transition" data-tab="permission-settings">
+              <i class="fas fa-shield-alt mr-2"></i> Permission Management
+            </button>
+            <button class="settings-tab-btn flex-1 py-3 text-center font-medium text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-healthcare-blue transition" data-tab="appearance-settings">
+              <i class="fas fa-palette mr-2"></i> Appearance
+            </button>
+          </div>
+
+          <!-- Settings Content -->
+          <div class="p-6 max-h-96 overflow-y-auto">
+            <!-- Permission Settings (Super Admin Only) -->
+            <div id="permission-settings" class="settings-tab-content hidden">
+              <div id="permissionSettingsContainer">
+                <div class="text-center py-4">
+                  <p class="text-gray-500">Only Super Admin can manage role permissions.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Appearance Settings (All Admins) -->
+            <div id="appearance-settings" class="settings-tab-content">
+              <h4 class="text-lg font-semibold text-gray-800 mb-4">Appearance Settings</h4>
+              
+              <div class="space-y-4">
+                <!-- Theme Selection -->
+                <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <label class="block text-sm font-medium text-gray-700 mb-3">Theme</label>
+                  <div class="flex gap-4">
+                    <label class="flex items-center cursor-pointer">
+                      <input type="radio" name="theme" value="light" class="theme-radio" checked>
+                      <span class="ml-2 text-sm text-gray-700">Light Theme</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer">
+                      <input type="radio" name="theme" value="dark" class="theme-radio">
+                      <span class="ml-2 text-sm text-gray-700">Dark Theme</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Color Scheme -->
+                <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <label class="block text-sm font-medium text-gray-700 mb-3">Primary Color</label>
+                  <div class="flex gap-3">
+                    <label class="flex items-center cursor-pointer">
+                      <input type="radio" name="primary-color" value="blue" class="color-radio" checked>
+                      <span class="ml-2 w-4 h-4 bg-blue-600 rounded-full"></span>
+                      <span class="ml-2 text-sm text-gray-700">Blue</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer">
+                      <input type="radio" name="primary-color" value="green" class="color-radio">
+                      <span class="ml-2 w-4 h-4 bg-green-600 rounded-full"></span>
+                      <span class="ml-2 text-sm text-gray-700">Green</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer">
+                      <input type="radio" name="primary-color" value="purple" class="color-radio">
+                      <span class="ml-2 w-4 h-4 bg-purple-600 rounded-full"></span>
+                      <span class="ml-2 text-sm text-gray-700">Purple</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Font Size -->
+                <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <label class="block text-sm font-medium text-gray-700 mb-3">Font Size</label>
+                  <input type="range" id="fontSizeSlider" min="12" max="18" value="14" class="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer">
+                  <div class="flex justify-between text-xs text-gray-500 mt-2">
+                    <span>Small (12px)</span>
+                    <span id="fontSizeValue">14px</span>
+                    <span>Large (18px)</span>
+                  </div>
+                </div>
+
+                <!-- Language -->
+                <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <label class="block text-sm font-medium text-gray-700 mb-3">Language</label>
+                  <select id="languageSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                    <option value="fr">Français</option>
+                    <option value="de">Deutsch</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Settings Footer -->
+          <div class="p-6 border-t border-gray-200 bg-gray-50 flex items-center justify-between gap-3">
+            <button id="resetSettingsBtn" class="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+              <i class="fas fa-redo mr-2"></i> Reset to Default
+            </button>
+            <div class="flex gap-3">
+              <button id="closeSettingsBtn" class="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                Cancel
+              </button>
+              <button id="saveSettingsBtn" class="px-4 py-2 text-white bg-healthcare-blue rounded-lg hover:bg-healthcare-light-blue transition-colors font-semibold">
+                <i class="fas fa-save mr-2"></i> Save Settings
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        // Settings Modal Functions
+        function openSettings() {
+          const modal = document.getElementById('settingsModal');
+          if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            loadAppearanceSettings();
+            loadRoleSettings();
+            
+            // Set default tab to permission-settings if Super Admin
+            const isSuperAdmin = window.isSuperAdmin || false;
+            if (isSuperAdmin) {
+              // Activate permission settings tab by default
+              const permissionTab = document.querySelector('[data-tab="permission-settings"]');
+              if (permissionTab) {
+                permissionTab.click();
+              }
+            }
+          }
+        }
+
+        function closeSettings() {
+          const modal = document.getElementById('settingsModal');
+          if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+          }
+        }
+
+        // Load appearance settings from localStorage
+        function loadAppearanceSettings() {
+          const theme = localStorage.getItem('medisafe-theme') || 'light';
+          const color = localStorage.getItem('medisafe-color') || 'blue';
+          const fontSize = localStorage.getItem('medisafe-font-size') || '14';
+          const language = localStorage.getItem('medisafe-language') || 'en';
+
+          document.querySelector(`input[name="theme"][value="${theme}"]`).checked = true;
+          document.querySelector(`input[name="primary-color"][value="${color}"]`).checked = true;
+          document.getElementById('fontSizeSlider').value = fontSize;
+          document.getElementById('fontSizeValue').textContent = fontSize + 'px';
+          document.getElementById('languageSelect').value = language;
+        }
+
+        // Load permission settings if Super Admin
+        function loadRoleSettings() {
+          const isSuperAdmin = window.isSuperAdmin || false;
+          const permissionContainer = document.getElementById('permissionSettingsContainer');
+          
+          if (!isSuperAdmin) {
+            permissionContainer.innerHTML = '<div class="text-center py-6"><p class="text-gray-500">Only Super Admin can manage role permissions.</p></div>';
+            return;
+          }
+
+          // Fetch current permission settings from server
+          fetch('/api/admin/permissions/', {
+            method: 'GET',
+            headers: {
+              'X-CSRFToken': getCookie('csrftoken')
+            },
+            credentials: 'same-origin'
+          })
+          .then(response => response.json())
+          .then(data => {
+            const permissions = data.permissions || {};
+            
+            // Build permission management UI
+            permissionContainer.innerHTML = `
+              <div class="space-y-4">
+                <h4 class="text-lg font-semibold text-gray-800 mb-4">Permission Management</h4>
+                <p class="text-sm text-gray-600 mb-4">Control access permissions for Medical Staff and Patients. When disabled, users with these roles will have restricted access.</p>
+                
+                <!-- Medical Staff Section -->
+                <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h5 class="text-sm font-semibold text-gray-800 mb-3">Medical Staff Permissions</h5>
+                  
+                  <div class="space-y-3">
+                    <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                      <div class="flex items-center">
+                        <input type="checkbox" id="perm-doctor" class="permission-toggle" data-role="doctor" ${permissions.doctor !== false ? 'checked' : ''}>
+                        <label for="perm-doctor" class="ml-3 text-sm font-medium text-gray-800 cursor-pointer">Doctor</label>
+                      </div>
+                      <span class="text-xs ${permissions.doctor !== false ? 'text-green-600' : 'text-red-600'} font-medium">
+                        ${permissions.doctor !== false ? 'Enabled' : 'Disabled'}
+                      </span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                      <div class="flex items-center">
+                        <input type="checkbox" id="perm-nurse" class="permission-toggle" data-role="nurse" ${permissions.nurse !== false ? 'checked' : ''}>
+                        <label for="perm-nurse" class="ml-3 text-sm font-medium text-gray-800 cursor-pointer">Nurse</label>
+                      </div>
+                      <span class="text-xs ${permissions.nurse !== false ? 'text-green-600' : 'text-red-600'} font-medium">
+                        ${permissions.nurse !== false ? 'Enabled' : 'Disabled'}
+                      </span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                      <div class="flex items-center">
+                        <input type="checkbox" id="perm-lab_tech" class="permission-toggle" data-role="lab_tech" ${permissions.lab_tech !== false ? 'checked' : ''}>
+                        <label for="perm-lab_tech" class="ml-3 text-sm font-medium text-gray-800 cursor-pointer">Lab Technician</label>
+                      </div>
+                      <span class="text-xs ${permissions.lab_tech !== false ? 'text-green-600' : 'text-red-600'} font-medium">
+                        ${permissions.lab_tech !== false ? 'Enabled' : 'Disabled'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Patient Section -->
+                <div class="p-4 bg-green-50 rounded-lg border border-green-200">
+                  <h5 class="text-sm font-semibold text-gray-800 mb-3">Patient Permissions</h5>
+                  
+                  <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <div class="flex items-center">
+                      <input type="checkbox" id="perm-patient" class="permission-toggle" data-role="patient" ${permissions.patient !== false ? 'checked' : ''}>
+                      <label for="perm-patient" class="ml-3 text-sm font-medium text-gray-800 cursor-pointer">Patient</label>
+                    </div>
+                    <span class="text-xs ${permissions.patient !== false ? 'text-green-600' : 'text-red-600'} font-medium">
+                      ${permissions.patient !== false ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </div>
+                </div>
+                
+                <p class="text-xs text-gray-500 mt-4">
+                  <i class="fas fa-info-circle mr-1"></i>
+                  Note: Disabling permissions will restrict access for users with these roles. Admin role permissions cannot be modified.
+                </p>
+              </div>
+            `;
+            
+            // Add event listeners to permission toggles
+            document.querySelectorAll('.permission-toggle').forEach(toggle => {
+              toggle.addEventListener('change', function() {
+                const role = this.getAttribute('data-role');
+                const isEnabled = this.checked;
+                updatePermission(role, isEnabled);
+              });
+            });
+          })
+          .catch(error => {
+            console.error('Error loading permissions:', error);
+            permissionContainer.innerHTML = '<div class="text-center py-6"><p class="text-red-500">Error loading permissions. Please try again.</p></div>';
+          });
+        }
+        
+        function updatePermission(role, isEnabled) {
+          fetch('/api/admin/permissions/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': getCookie('csrftoken')
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+              role: role,
+              is_enabled: isEnabled
+            })
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              // Update UI
+              const toggle = document.querySelector(`#perm-${role}`);
+              const statusSpan = toggle.closest('.flex').querySelector('.text-xs');
+              if (isEnabled) {
+                statusSpan.textContent = 'Enabled';
+                statusSpan.classList.remove('text-red-600');
+                statusSpan.classList.add('text-green-600');
+              } else {
+                statusSpan.textContent = 'Disabled';
+                statusSpan.classList.remove('text-green-600');
+                statusSpan.classList.add('text-red-600');
+              }
+            } else {
+              alert('Error updating permission: ' + (data.error || 'Unknown error'));
+              // Revert checkbox
+              const toggle = document.querySelector(`#perm-${role}`);
+              toggle.checked = !isEnabled;
+            }
+          })
+          .catch(error => {
+            console.error('Error updating permission:', error);
+            alert('Error updating permission. Please try again.');
+            // Revert checkbox
+            const toggle = document.querySelector(`#perm-${role}`);
+            toggle.checked = !isEnabled;
+          });
+        }
+        
+        function getCookie(name) {
+          let cookieValue = null;
+          if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+              const cookie = cookies[i].trim();
+              if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+              }
+            }
+          }
+          return cookieValue;
+        }
+
+        // Settings Tab Switching
+        document.querySelectorAll('.settings-tab-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+            const tabName = this.getAttribute('data-tab');
+            
+            // Update button styles
+            document.querySelectorAll('.settings-tab-btn').forEach(b => {
+              b.classList.remove('border-b-healthcare-blue', 'text-gray-900');
+              b.classList.add('text-gray-600', 'border-b-transparent');
+            });
+            this.classList.remove('text-gray-600', 'border-b-transparent');
+            this.classList.add('border-b-2', 'border-b-healthcare-blue', 'text-gray-900');
+
+            // Update content
+            document.querySelectorAll('.settings-tab-content').forEach(content => {
+              content.classList.add('hidden');
+            });
+            document.getElementById(tabName).classList.remove('hidden');
+          });
+        });
+
+        // Font size slider
+        const fontSizeSlider = document.getElementById('fontSizeSlider');
+        if (fontSizeSlider) {
+          fontSizeSlider.addEventListener('input', function() {
+            document.getElementById('fontSizeValue').textContent = this.value + 'px';
+          });
+        }
+
+        // Settings Button Event Listeners
+        const settingsModal = document.getElementById('settingsModal');
+        const closeSettingsModal = document.getElementById('closeSettingsModal');
+        const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+        const resetSettingsBtn = document.getElementById('resetSettingsBtn');
+
+        if (closeSettingsModal) {
+          closeSettingsModal.addEventListener('click', closeSettings);
+        }
+        if (closeSettingsBtn) {
+          closeSettingsBtn.addEventListener('click', closeSettings);
+        }
+        if (settingsModal) {
+          settingsModal.addEventListener('click', function(e) {
+            if (e.target === settingsModal) {
+              closeSettings();
+            }
+          });
+        }
+
+        if (saveSettingsBtn) {
+          saveSettingsBtn.addEventListener('click', function() {
+            // Save appearance settings
+            const theme = document.querySelector('input[name="theme"]:checked')?.value || 'light';
+            const color = document.querySelector('input[name="primary-color"]:checked')?.value || 'blue';
+            const fontSize = document.getElementById('fontSizeSlider')?.value || '14';
+            const language = document.getElementById('languageSelect')?.value || 'en';
+
+            localStorage.setItem('medisafe-theme', theme);
+            localStorage.setItem('medisafe-color', color);
+            localStorage.setItem('medisafe-font-size', fontSize);
+            localStorage.setItem('medisafe-language', language);
+
+            alert('Settings saved successfully!');
+            closeSettings();
+            // Optional: Reload page to apply theme
+            // location.reload();
+          });
+        }
+
+        if (resetSettingsBtn) {
+          resetSettingsBtn.addEventListener('click', function() {
+            if (!confirm('Reset all settings to default?')) return;
+            localStorage.removeItem('medisafe-theme');
+            localStorage.removeItem('medisafe-color');
+            localStorage.removeItem('medisafe-font-size');
+            localStorage.removeItem('medisafe-language');
+            loadAppearanceSettings();
+            alert('Settings reset to default');
+          });
+        }
+        
+        // Notification Bell Functions
+        function toggleNotificationPanel() {
+          const panel = document.getElementById('notificationPanel');
+          if (panel) {
+            if (panel.classList.contains('hidden')) {
+              panel.classList.remove('hidden');
+              loadNotifications();
+            } else {
+              panel.classList.add('hidden');
+            }
+          }
+        }
+        
+        function closeNotificationPanel() {
+          const panel = document.getElementById('notificationPanel');
+          if (panel) {
+            panel.classList.add('hidden');
+          }
+        }
+        
+        function loadNotifications() {
+          fetch('/api/notifications/unread/', {
+            method: 'GET',
+            headers: {
+              'X-CSRFToken': getCookie('csrftoken')
+            },
+            credentials: 'same-origin'
+          })
+          .then(response => response.json())
+          .then(data => {
+            updateNotificationUI(data);
+          })
+          .catch(error => {
+            console.error('Error loading notifications:', error);
+          });
+        }
+        
+        function updateNotificationUI(data) {
+          const badge = document.getElementById('notificationBadge');
+          const notificationList = document.getElementById('notificationList');
+          const emptyState = document.getElementById('notificationEmpty');
+          
+          let notifications = data.notifications || [];
+          
+          // Filter for password_reset notifications only
+          notifications = notifications.filter(notif => notif.notification_type === 'password_reset');
+          
+          // Count unread password_reset notifications
+          const unreadCount = notifications.filter(notif => !notif.is_read).length;
+          
+          // Update badge count with filtered unread count
+          if (badge) {
+            if (unreadCount > 0) {
+              badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+              badge.classList.remove('hidden');
+            } else {
+              badge.classList.add('hidden');
+            }
+          }
+          
+          // Update notification list
+          if (notificationList) {
+            if (notifications.length === 0) {
+              notificationList.innerHTML = '<div id="notificationEmpty" class="p-8 text-center text-gray-500"><i class="fas fa-inbox text-3xl mb-2 opacity-50"></i><p>No password reset requests</p></div>';
+            } else {
+              let html = '';
+              notifications.forEach(notif => {
+                const isUnread = !notif.is_read;
+                const icon = getAdminNotificationIcon(notif.notification_type);
+                const color = getAdminNotificationColor(notif.notification_type);
+                const timestamp = formatAdminNotificationTime(notif.created_at);
+                
+                html += `
+                  <div class="notification-item" data-id="${notif.notification_id}" data-user-id="${notif.user_id || ''}" style="padding:12px 16px;border-bottom:1px solid #f1f5f9;cursor:pointer;transition:all 0.2s;${isUnread ? 'background:#f0f7ff;' : ''}" onclick="handlePasswordResetNotification(this, ${notif.notification_id})" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='${isUnread ? '#f0f7ff' : 'transparent'}'">
+                    <div style="display:flex;gap:10px;">
+                      <div style="font-size:16px;color:${color};flex-shrink:0;margin-top:2px;">${icon}</div>
+                      <div style="flex:1;min-width:0;">
+                        <div style="font-weight:600;font-size:13px;color:#2c2c2f;margin-bottom:2px;">${notif.title}</div>
+                        <div style="font-size:12px;color:#64748b;line-height:1.4;margin-bottom:6px;">${notif.message}</div>
+                        <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+                          <span style="font-size:11px;color:#64748b;">${timestamp}</span>
+                          ${notif.file_url ? `<a href="${notif.file_url}" target="_blank" rel="noopener" style="font-size:11px;color:#2c71b7;font-weight:600;text-decoration:none;">📥 Download</a>` : ''}
+                          ${isUnread ? '<button onclick="markAdminNotificationRead(event, ${notif.notification_id})" style="background:none;border:none;color:#2c71b7;font-size:11px;cursor:pointer;font-weight:600;padding:0;margin:0;">Mark read</button>' : '<span style="font-size:11px;color:#64748b;">✓</span>'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                `;
+              });
+              notificationList.innerHTML = html;
+            }
+          }
+        }
+        
+        function handlePasswordResetNotification(element, notificationId) {
+          const userId = element.getAttribute('data-user-id');
+          
+          // Mark as read asynchronously
+          markPasswordResetNotificationRead(null, notificationId);
+          
+          // Close the notification panel
+          closePasswordResetNotifications();
+          
+          // Redirect to user management with highlight - add timestamp to prevent caching
+          setTimeout(() => {
+            if (userId) {
+              window.location.href = `/admin/manage/users/?highlight=${userId}&tab=users&t=${Date.now()}`;
+            } else {
+              window.location.href = `/admin/manage/users/?tab=users&t=${Date.now()}`;
+            }
+          }, 100);
+        }
+        
+        function getAdminNotificationIcon(type) {
+          const icons = {
+            'account': '<i class="fas fa-user-shield"></i>',
+            'password_reset': '<i class="fas fa-key"></i>',
+            'urgent': '<i class="fas fa-exclamation-circle"></i>',
+            'appointment': '<i class="fas fa-calendar-check"></i>',
+            'lab_result': '<i class="fas fa-flask-vial"></i>',
+            'system': '<i class="fas fa-info-circle"></i>',
+            'user': '<i class="fas fa-users"></i>',
+            'security': '<i class="fas fa-lock"></i>'
+          };
+          return icons[type] || '<i class="fas fa-bell"></i>';
+        }
+        
+        function getAdminNotificationColor(type) {
+          const colors = {
+            'account': '#ff4757',
+            'password_reset': '#f59e0b',
+            'urgent': '#f15e2c',
+            'appointment': '#2c71b7',
+            'lab_result': '#b7cce4',
+            'system': '#d4cac9',
+            'user': '#2c71b7',
+            'security': '#ef4444'
+          };
+          return colors[type] || '#64748b';
+        }
+        
+        function formatAdminNotificationTime(timestamp) {
+          const date = new Date(timestamp);
+          const now = new Date();
+          const diffMs = now - date;
+          const diffMins = Math.floor(diffMs / 60000);
+          const diffHours = Math.floor(diffMs / 3600000);
+          const diffDays = Math.floor(diffMs / 86400000);
+
+          if (diffMins < 1) return 'just now';
+          if (diffMins < 60) return `${diffMins}m ago`;
+          if (diffHours < 24) return `${diffHours}h ago`;
+          if (diffDays < 7) return `${diffDays}d ago`;
+          
+          return date.toLocaleDateString();
+        }
+        
+        function markAdminNotificationRead(event, notificationId) {
+          if (event) {
+            event.stopPropagation();
+          }
+          fetch(`/api/notifications/${notificationId}/mark-read/`, {
+            method: 'POST',
+            headers: {
+              'X-CSRFToken': getCookie('csrftoken')
+            },
+            credentials: 'same-origin'
+          })
+          .then(response => response.json())
+          .then(data => {
+            loadNotifications();
+          })
+          .catch(error => console.error('Error marking notification read:', error));
+        }
+
+        function getCookie(name) {
+          let cookieValue = null;
+          if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+              const cookie = cookies[i].trim();
+              if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+              }
+            }
+          }
+          return cookieValue;
+        }
+      </script>
+      <script>
+        // Initialize Dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+
+          // Task Checkboxes
+          document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+              const taskItem = this.closest('.flex-grow');
+              const taskText = taskItem.querySelector('h3');
+              const taskDesc = taskItem.querySelector('p');
+              const statusBadge = taskItem.querySelector('.inline-flex');
+
+              if (this.checked) {
+                taskText.classList.add('text-gray-400', 'line-through');
+                taskDesc.classList.add('text-gray-400');
+                statusBadge.classList.remove('bg-red-100', 'text-red-800', 'bg-yellow-100', 'text-yellow-800');
+                statusBadge.classList.add('bg-green-100', 'text-green-800');
+                statusBadge.textContent = 'Completed';
+              } else {
+                taskText.classList.remove('text-gray-400', 'line-through');
+                taskDesc.classList.remove('text-gray-400');
+                // Reset to default status (you may want to store the original status somewhere)
+              }
+            });
+          });
+
+          // Quick Action Buttons
+          document.querySelectorAll('.quick-action-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+              // Add your quick action handling here
+              console.log('Quick action clicked:', this.textContent.trim());
+            });
+          });
+
+          // Calendar View Toggle
+          const calendarViewBtn = document.querySelector('button[class*="text-healthcare-blue"]');
+          if (calendarViewBtn) {
+            calendarViewBtn.addEventListener('click', function() {
+              // Add your calendar view toggle handling here
+              console.log('Calendar view toggled');
+            });
+          }
+
+          // Generate Report button - navigate to analytics as a quick action
+          const genBtn = document.getElementById('generateReport');
+          if (genBtn) {
+            genBtn.addEventListener('click', function() {
+              window.location.href = "{% url 'mod_analytics' %}";
+            });
+          }
+
+          // Settings quick action (if base openSettings exists, it's already wired on the button)
+          const openSettingsBtn = document.getElementById('openSettingsBtn');
+          if (openSettingsBtn) {
+            // fallback: ensure it opens settings modal
+            openSettingsBtn.addEventListener('click', function(e){
+              e.preventDefault();
+              if (typeof openSettings === 'function') openSettings();
+            });
+          }
+          
+          // Load notifications on page load
+          loadNotifications();
+          
+          // Refresh notifications every 30 seconds
+          setInterval(loadNotifications, 30000);
+
+          // Tabbed pane for Recent Data
+          function activateTab(targetSelector){
+            document.querySelectorAll('.tab-content').forEach(c=> c.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(b=> b.classList.remove('bg-healthcare-blue','text-white'));
+            const t = document.querySelector(targetSelector);
+            if(t) t.classList.remove('hidden');
+            const btn = document.querySelector('.tab-btn[data-target="'+targetSelector+'"]');
+            if(btn) btn.classList.add('bg-healthcare-blue','text-white');
+          }
+          document.querySelectorAll('.tab-btn').forEach(btn=>{
+            btn.addEventListener('click', function(){
+              activateTab(this.getAttribute('data-target'));
+            });
+          });
+          // default active
+          activateTab('#tab-accounts');
+
+          // Simple search for current tab
+          const recentSearch = document.getElementById('recentSearch');
+          if(recentSearch){
+            recentSearch.addEventListener('input', function(){
+              const q = this.value.trim().toLowerCase();
+              document.querySelectorAll('.tab-content:not(.hidden) tbody tr').forEach(row=>{
+                const text = row.textContent.toLowerCase();
+                row.style.display = q && text.indexOf(q) === -1 ? 'none' : '';
+              });
+            });
+          }
+
+          // Clear activity button
+          const clearBtn = document.getElementById('clearActivityBtn');
+          if(clearBtn){
+            clearBtn.addEventListener('click', function(){
+              if(!confirm('Clear recent activity events? This cannot be undone.')) return;
+              // fetch with CSRF
+              function getCookie(name){
+                const v = document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)');
+                return v ? v.pop() : '';
+              }
+              fetch('{% url "clear_recent_activity" %}', {
+                method: 'POST',
+                headers: {
+                  'X-CSRFToken': getCookie('csrftoken'),
+                  'Accept': 'application/json'
+                }
+              }).then(r=>r.json()).then(data=>{
+                if(data.ok){
+                  // remove list items
+                  document.querySelectorAll('[data-recent-activity]').forEach(n=> n.remove());
+                  // fallback: refresh page
+                  setTimeout(()=> location.reload(), 300);
+                } else {
+                  alert('Failed to clear activity: '+(data.error||'unknown'));
+                }
+              }).catch(err=> alert('Network error clearing activity'));
+            });
+          }
+
+          // Schedule modal wiring
+          const scheduleModal = document.getElementById('scheduleModal');
+          const viewScheduleBtnEl = document.getElementById('viewScheduleBtn');
+          const closeScheduleModal = document.getElementById('closeScheduleModal');
+          if(viewScheduleBtnEl && scheduleModal){
+            viewScheduleBtnEl.addEventListener('click', function(e){
+              e.preventDefault();
+              scheduleModal.classList.remove('hidden');
+              scheduleModal.classList.add('flex');
+            });
+          }
+          if(closeScheduleModal && scheduleModal){
+            closeScheduleModal.addEventListener('click', function(){
+              scheduleModal.classList.add('hidden');
+              scheduleModal.classList.remove('flex');
+            });
+            // close when clicking backdrop
+            scheduleModal.addEventListener('click', function(ev){
+              if(ev.target === scheduleModal){
+                scheduleModal.classList.add('hidden');
+                scheduleModal.classList.remove('flex');
+              }
+            });
+          }
+
+          // Removed: Super Admin code now in reusable component
+
+          // Load notifications on page load
+          loadNotifications();
+          // Refresh notifications every 30 seconds
+          setInterval(loadNotifications, 30000);
+          
+          // Load password reset notifications
+          loadPasswordResetNotifications();
+          setInterval(loadPasswordResetNotifications, 30000);
+        });
+        
+        // Password Reset Notifications Functions
+        function togglePasswordResetNotifications() {
+          const panel = document.getElementById('passwordResetNotificationPanel');
+          if (panel) {
+            panel.classList.toggle('hidden');
+            
+            // Load notifications immediately when opening
+            if (!panel.classList.contains('hidden')) {
+              loadPasswordResetNotifications();
+              
+              // Faster refresh while panel is open (every 3 seconds for live updates)
+              if (window.passwordResetNotificationInterval) {
+                clearInterval(window.passwordResetNotificationInterval);
+              }
+              window.passwordResetNotificationInterval = setInterval(loadPasswordResetNotifications, 3000);
+            } else {
+              // Clear fast interval when closing
+              if (window.passwordResetNotificationInterval) {
+                clearInterval(window.passwordResetNotificationInterval);
+              }
+            }
+          }
+        }
+        
+        function closePasswordResetNotifications() {
+          const panel = document.getElementById('passwordResetNotificationPanel');
+          if (panel) {
+            panel.classList.add('hidden');
+            // Clear fast interval when closing
+            if (window.passwordResetNotificationInterval) {
+              clearInterval(window.passwordResetNotificationInterval);
+            }
+          }
+        }
+        
+        function loadPasswordResetNotifications() {
+          fetch('/api/admin/password-reset-notifications/', {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          })
+          .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+          })
+          .then(data => {
+            updatePasswordResetNotificationUI(data);
+          })
+          .catch(error => {
+            console.error('Error loading password reset notifications:', error);
+          });
+        }
+        
+        function updatePasswordResetNotificationUI(data) {
+          const badge = document.getElementById('passwordResetNotificationBadge');
+          const notificationList = document.getElementById('passwordResetNotificationList');
+          
+          let notifications = data.notifications || [];
+          const unreadCount = notifications.filter(notif => !notif.is_read).length;
+          
+          // Update badge
+          if (badge) {
+            if (unreadCount > 0) {
+              badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+              badge.classList.remove('hidden');
+            } else {
+              badge.classList.add('hidden');
+            }
+          }
+          
+          // Update notification list
+          if (notificationList) {
+            if (notifications.length === 0) {
+              notificationList.innerHTML = '<div class="p-8 text-center text-gray-500"><i class="fas fa-key text-3xl mb-2 opacity-50"></i><p>No password reset requests</p></div>';
+            } else {
+              let html = '';
+              notifications.forEach(notif => {
+                const isUnread = !notif.is_read;
+                const timestamp = formatAdminNotificationTime(notif.created_at);
+                const userName = notif.user_name || notif.title;
+                
+                html += `
+                  <div class="notification-item" data-id="${notif.notification_id}" data-user-id="${notif.user_id || ''}" style="padding:12px 16px;border-bottom:1px solid #f1f5f9;cursor:pointer;transition:all 0.2s;${isUnread ? 'background:#f0f7ff;' : ''}" onclick="handlePasswordResetNotification(this, ${notif.notification_id})" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='${isUnread ? '#f0f7ff' : 'transparent'}'">
+                    <div style="display:flex;gap:10px;">
+                      <div style="font-size:16px;color:#2c71b7;flex-shrink:0;margin-top:2px;"><i class="fas fa-key"></i></div>
+                      <div style="flex:1;min-width:0;">
+                        <div style="font-weight:600;font-size:13px;color:#2c2c2f;margin-bottom:2px;">Password Reset Request</div>
+                        <div style="font-size:12px;color:#64748b;line-height:1.4;margin-bottom:6px;">${notif.message}</div>
+                        <div style="display:flex;gap:6px;align-items:center;justify-content:space-between;">
+                          <span style="font-size:11px;color:#64748b;">${timestamp}</span>
+                          ${isUnread ? '<button onclick="markPasswordResetNotificationRead(event, ${notif.notification_id})" style="background:none;border:none;color:#2c71b7;font-size:11px;cursor:pointer;font-weight:600;padding:0;margin:0;">Mark read</button>' : '<span style="font-size:11px;color:#64748b;">✓</span>'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                `;
+              });
+              notificationList.innerHTML = html;
+            }
+          }
+        }
+        
+        function markPasswordResetNotificationRead(event, notificationId) {
+          if (event) event.stopPropagation();
+          
+          fetch(`/api/admin/mark-password-reset-read/${notificationId}/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            },
+            body: JSON.stringify({notification_id: notificationId})
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              loadPasswordResetNotifications();
+            }
+          })
+          .catch(error => console.error('Error marking notification as read:', error));
+        }
+        
+        function formatAdminNotificationTime(dateString) {
+          const date = new Date(dateString);
+          const now = new Date();
+          const diff = now - date;
+          
+          const minutes = Math.floor(diff / 60000);
+          const hours = Math.floor(diff / 3600000);
+          const days = Math.floor(diff / 86400000);
+          
+          if (minutes < 1) return 'Just now';
+          if (minutes < 60) return `${minutes}m ago`;
+          if (hours < 24) return `${hours}h ago`;
+          if (days < 7) return `${days}d ago`;
+          
+          return date.toLocaleDateString();
+        }
+      </script>
+    </div>
+  </div>
+
+</body>
+</html>

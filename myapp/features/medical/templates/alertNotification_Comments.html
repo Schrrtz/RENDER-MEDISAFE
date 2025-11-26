@@ -1,0 +1,582 @@
+{% extends 'base.html' %}
+
+{% block title %}Notifications & Comments{% endblock %}
+
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        
+        :root {
+            --primary-blue: #2c71b7;
+            --orange-accent: #f15e2c;
+            --white-bg: #f0f3f6;
+            --light-blue: #b7cce4;
+            --beige: #d4cac9;
+            --black-text: #2c2c2f;
+        }
+        
+        .notification-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 4px;
+        }
+        
+        .notification-card.unread {
+            box-shadow: 0 4px 12px rgba(44, 113, 183, 0.15);
+            transform: translateY(-1px);
+        }
+        
+        .notification-card.read {
+            opacity: 0.85;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .notification-card:hover {
+            background-color: rgba(183, 204, 228, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(44, 113, 183, 0.2);
+        }
+        
+        .slide-out {
+            transform: translateX(100%);
+            opacity: 0;
+            transition: all 0.4s ease-in-out;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .pulse-dot {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .notification-counter {
+            background: linear-gradient(135deg, var(--orange-accent), #ff7a4d);
+            animation: bounce 0.6s ease-out;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+        
+        .filter-btn.active, .date-filter-btn.active {
+            background-color: var(--primary-blue);
+            color: white;
+        }
+        
+        .mobile-expand {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        .mobile-expand.expanded {
+            max-height: 200px;
+        }
+        
+        .account-alert {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+            border-left: 4px solid #ff4757;
+        }
+        
+        .account-alert .alert-icon {
+            background-color: rgba(255, 71, 87, 0.1);
+            color: #ff4757;
+        }
+        
+        .notification-badge {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: var(--orange-accent);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(241, 94, 44, 0.3);
+            z-index: 1000;
+            animation: slideInRight 0.5s ease-out;
+        }
+        
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .notification-sound {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .notification-card {
+                padding: 12px;
+            }
+            
+            .notification-content {
+                font-size: 14px;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-full" style="background-color: var(--white-bg); color: var(--black-text); padding-top: 20px;">
+
+  {% if not is_logged_in %}
+    <!-- Compact Encouraging Message for Non-Logged-In Users -->
+    <div style="background: linear-gradient(135deg, #2c71b7 0%, #2c71b7 100%); color: white; padding: 20px; border-radius: 12px; margin: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+        <div style="flex: 1; min-width: 250px;">
+          <h3 style="font-size: 20px; font-weight: 700; margin: 0 0 8px 0;">Welcome to MediSafe+ Notifications</h3>
+          <p style="font-size: 14px; opacity: 0.9; margin: 0; line-height: 1.4;">{{ encouraging_message }}</p>
+        </div>
+                <button class="standard-login-btn" onclick="document.getElementById('loginBtn')?.click();" aria-label="Login to View Notifications">
+                    <i class="fas fa-sign-in-alt" style="margin-right: 6px;"></i>Login to View Notifications
+                </button>
+      </div>
+    </div>
+    
+        <!-- Login Button now triggers standardized header login modal -->
+  {% else %}
+    <!-- Full Notifications Content for Logged-In Users -->
+    <!-- Main Content -->
+        <main class="max-w-6xl mx-auto px-4 py-8">
+            <!-- Controls -->
+            <div class="mb-8">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl font-semibold mb-2">Notifications</h2>
+                        <p class="text-gray-600">Stay updated with your healthcare information</p>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="filterNotifications('all')" class="filter-btn {% if current_filter == 'all' %}active{% endif %} px-4 py-2 rounded text-sm font-medium transition-colors" style="border: 1px solid var(--light-blue);">
+                            All
+                        </button>
+                        <button onclick="filterNotifications('account')" class="filter-btn {% if current_filter == 'account' %}active{% endif %} px-4 py-2 rounded text-sm font-medium transition-colors" style="border: 1px solid var(--light-blue);">
+                            Account
+                        </button>
+                        <button onclick="filterNotifications('urgent')" class="filter-btn {% if current_filter == 'urgent' %}active{% endif %} px-4 py-2 rounded text-sm font-medium transition-colors" style="border: 1px solid var(--light-blue);">
+                            Urgent
+                        </button>
+                        <button onclick="filterNotifications('appointment')" class="filter-btn {% if current_filter == 'appointment' %}active{% endif %} px-4 py-2 rounded text-sm font-medium transition-colors" style="border: 1px solid var(--light-blue);">
+                            Appointments
+                        </button>
+                        <button onclick="filterNotifications('lab_result')" class="filter-btn {% if current_filter == 'lab_result' %}active{% endif %} px-4 py-2 rounded text-sm font-medium transition-colors" style="border: 1px solid var(--light-blue);">
+                            Lab Results
+                        </button>
+                        <button onclick="clearAllNotifications()" class="px-4 py-2 rounded text-sm font-medium text-white transition-colors" style="background-color: var(--beige);">
+                            Clear All
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Date Filter -->
+                <div class="mt-4">
+                    <label class="text-sm font-medium text-gray-700 mb-2 block">Filter by Date:</label>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="filterByDate('all')" class="date-filter-btn {% if current_date_filter == 'all' %}active{% endif %} px-3 py-2 rounded text-sm font-medium transition-colors" style="border: 1px solid var(--light-blue);">
+                            All Time
+                        </button>
+                        <button onclick="filterByDate('today')" class="date-filter-btn {% if current_date_filter == 'today' %}active{% endif %} px-3 py-2 rounded text-sm font-medium transition-colors" style="border: 1px solid var(--light-blue);">
+                            Today
+                        </button>
+                        <button onclick="filterByDate('week')" class="date-filter-btn {% if current_date_filter == 'week' %}active{% endif %} px-3 py-2 rounded text-sm font-medium transition-colors" style="border: 1px solid var(--light-blue);">
+                            This Week
+                        </button>
+                        <button onclick="filterByDate('month')" class="date-filter-btn {% if current_date_filter == 'month' %}active{% endif %} px-3 py-2 rounded text-sm font-medium transition-colors" style="border: 1px solid var(--light-blue);">
+                            This Month
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications Container -->
+            <div class="space-y-4" id="notificationsContainer">
+                {% for notification in notifications %}
+                <div class="notification-card {% if not notification.is_read %}unread{% else %}read{% endif %} bg-white p-6 border-l-4 fade-in" 
+                     data-type="{{ notification.notification_type }}" 
+                     data-notification-id="{{ notification.notification_id }}"
+                     style="border-left-color: {% if notification.notification_type == 'account' %}#ff4757{% elif notification.notification_type == 'urgent' %}var(--orange-accent){% elif notification.notification_type == 'appointment' %}var(--primary-blue){% elif notification.notification_type == 'lab_result' %}var(--light-blue){% else %}var(--beige){% endif %};">
+                    <div class="flex items-start space-x-4">
+                        <div class="flex-shrink-0">
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center {% if notification.notification_type == 'account' %}alert-icon{% endif %}" 
+                                 style="background-color: {% if notification.notification_type == 'account' %}rgba(255, 71, 87, 0.1){% elif notification.notification_type == 'urgent' %}rgba(241, 94, 44, 0.1){% elif notification.notification_type == 'appointment' %}rgba(44, 113, 183, 0.1){% elif notification.notification_type == 'lab_result' %}rgba(183, 204, 228, 0.2){% else %}rgba(212, 202, 201, 0.2){% endif %};">
+                                {% if notification.notification_type == 'account' %}
+                                    <svg class="w-6 h-6" style="color: #ff4757;" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1M12 7C13.4 7 14.8 8.6 14.8 10V11H16V16H8V11H9.2V10C9.2 8.6 10.6 7 12 7M12 8.2C11.2 8.2 10.4 8.7 10.4 10V11H13.6V10C13.6 8.7 12.8 8.2 12 8.2Z"/>
+                                    </svg>
+                                {% elif notification.notification_type == 'urgent' %}
+                                    <svg class="w-6 h-6" style="color: var(--orange-accent);" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z"/>
+                                    </svg>
+                                {% elif notification.notification_type == 'appointment' %}
+                                    <svg class="w-6 h-6" style="color: var(--primary-blue);" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M19 3H18V1H16V3H8V1H6V3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3M19 19H5V8H19V19M7 10H12V15H7"/>
+                                    </svg>
+                                {% elif notification.notification_type == 'lab_result' %}
+                                    <svg class="w-6 h-6" style="color: var(--light-blue);" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2M18 20H6V4H13V9H18V20Z"/>
+                                    </svg>
+                                {% else %}
+                                    <svg class="w-6 h-6" style="color: var(--beige);" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 8L10.67 8.09C10.38 7.67 10.04 7.27 9.63 6.94L10 5.5L8.5 4L7.06 4.37C6.73 4.16 6.37 3.97 6 3.85L5.5 2H4.5L4 3.85C3.63 3.97 3.27 4.16 2.94 4.37L1.5 4L0 5.5L0.37 6.94C0.16 7.27 -0.03 7.63 -0.15 8H-2V9H-0.15C-0.03 9.37 0.16 9.73 0.37 10.06L0 11.5L1.5 13L2.94 12.63C3.27 12.84 3.63 13.03 4 13.15L4.5 15H5.5L6 13.15C6.37 13.03 6.73 12.84 7.06 12.63L8.5 13L10 11.5L9.63 10.06C9.84 9.73 10.03 9.37 10.15 9H12V8M5 10.5C4.17 10.5 3.5 9.83 3.5 9S4.17 7.5 5 7.5 6.5 8.17 6.5 9 5.83 10.5 5 10.5M24 16V15H22.15C22.03 14.63 21.84 14.27 21.63 13.94L22 12.5L20.5 11L19.06 11.37C18.73 11.16 18.37 10.97 18 10.85L17.5 9H16.5L16 10.85C15.63 10.97 15.27 11.16 14.94 11.37L13.5 11L12 12.5L12.37 13.94C12.16 14.27 11.97 14.63 11.85 15H10V16H11.85C11.97 16.37 12.16 16.73 12.37 17.06L12 18.5L13.5 20L14.94 19.63C15.27 19.84 15.63 20.03 16 20.15L16.5 22H17.5L18 20.15C18.37 20.03 18.73 19.84 19.06 19.63L20.5 20L22 18.5L21.63 17.06C21.84 16.73 22.03 16.37 22.15 16H24M17 18.5C16.17 18.5 15.5 17.83 15.5 17S16.17 15.5 17 15.5 18.5 16.17 18.5 17 17.83 18.5 17 18.5Z"/>
+                                    </svg>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-2 mb-1">
+                                        <h3 class="font-semibold text-lg">{{ notification.title }}</h3>
+                                        {% if not notification.is_read %}
+                                        <span class="pulse-dot w-2 h-2 rounded-full" style="background-color: {% if notification.notification_type == 'account' %}#ff4757{% elif notification.notification_type == 'urgent' %}var(--orange-accent){% elif notification.notification_type == 'appointment' %}var(--primary-blue){% elif notification.notification_type == 'lab_result' %}var(--light-blue){% else %}var(--beige){% endif %};"></span>
+                                        {% endif %}
+                                        <span class="px-2 py-1 text-xs font-medium text-white rounded" style="background-color: {% if notification.notification_type == 'account' %}#ff4757{% elif notification.notification_type == 'urgent' %}var(--orange-accent){% elif notification.notification_type == 'appointment' %}var(--primary-blue){% elif notification.notification_type == 'lab_result' %}var(--light-blue){% else %}var(--beige){% endif %};">
+                                            {{ notification.priority|upper }}
+                                        </span>
+                                    </div>
+                                    <p class="text-gray-700 mb-3">{{ notification.message }}</p>
+                                    <div class="mobile-expand" id="details-{{ notification.notification_id }}">
+                                        <div class="text-sm text-gray-600 space-y-1">
+                                            <p><strong>Created:</strong> {{ notification.created_at|date:"M d, Y H:i" }}</p>
+                                            <p><strong>Type:</strong> {{ notification.notification_type|title }}</p>
+                                            {% if notification.related_id %}
+                                            <p><strong>Related ID:</strong> {{ notification.related_id }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col items-end space-y-2">
+                                    <span class="text-xs text-gray-500">{{ notification.created_at|timesince }} ago</span>
+                                    <button onclick="toggleMobileDetails('details-{{ notification.notification_id }}')" class="md:hidden text-xs" style="color: var(--primary-blue);">Details</button>
+                                </div>
+                            </div>
+                            <div class="flex space-x-2 mt-4">
+                                {% if not notification.is_read %}
+                                <button onclick="markAsRead(this)" class="px-4 py-2 text-sm font-medium text-white rounded transition-colors" style="background-color: var(--primary-blue);">
+                                    Mark as Read
+                                </button>
+                                {% endif %}
+                                {% if notification.notification_type == 'account' %}
+                                <button onclick="handleAccountAction(this)" class="px-4 py-2 text-sm font-medium text-white rounded transition-colors" style="background-color: #ff4757;">
+                                    Take Action
+                                </button>
+                                {% elif notification.notification_type == 'appointment' %}
+                                <button onclick="viewAppointment(this)" class="px-4 py-2 text-sm font-medium text-white rounded transition-colors" style="background-color: var(--primary-blue);">
+                                    View Appointment
+                                </button>
+                                {% elif notification.notification_type == 'lab_result' %}
+                                <button onclick="viewLabResult(this)" class="px-4 py-2 text-sm font-medium text-white rounded transition-colors" style="background-color: var(--light-blue);">
+                                    View Results
+                                </button>
+                                {% endif %}
+                                <button onclick="dismissNotification(this)" class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-12">
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style="background-color: rgba(183, 204, 228, 0.2);">
+                        <svg class="w-8 h-8" style="color: var(--light-blue);" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.9 1 3 1.9 3 3V21C3 22.1 3.9 23 5 23H19C20.1 23 21 22.1 21 21V9M19 21H5V3H13V9H19V21Z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">No notifications</h3>
+                    <p class="text-gray-600">You're all caught up! Check back later for updates.</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden text-center py-12">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style="background-color: rgba(183, 204, 228, 0.2);">
+                    <svg class="w-8 h-8" style="color: var(--light-blue);" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.9 1 3 1.9 3 3V21C3 22.1 3.9 23 5 23H19C20.1 23 21 22.1 21 21V9M19 21H5V3H13V9H19V21Z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold mb-2">No notifications</h3>
+                <p class="text-gray-600">You're all caught up! Check back later for updates.</p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let notificationCount = {{ unread_count|default:0 }};
+
+        function updateNotificationCounter() {
+            const counter = document.getElementById('notificationCounter');
+            const visibleNotifications = document.querySelectorAll('.notification-card:not(.slide-out)').length;
+            counter.textContent = visibleNotifications;
+            
+            if (visibleNotifications === 0) {
+                counter.style.display = 'none';
+                document.getElementById('emptyState').classList.remove('hidden');
+            } else {
+                counter.style.display = 'flex';
+                document.getElementById('emptyState').classList.add('hidden');
+            }
+        }
+
+        function markAsRead(button) {
+            const notification = button.closest('.notification-card');
+            const notificationId = notification.dataset.notificationId;
+
+            // Use the API endpoint for consistent behavior across the app
+            fetch(`/api/notifications/mark-read/${notificationId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    notification.classList.remove('unread');
+                    notification.classList.add('read');
+                    const pulseDot = notification.querySelector('.pulse-dot');
+                    if (pulseDot) {
+                        pulseDot.style.display = 'none';
+                    }
+                    button.textContent = 'Read ✓';
+                    button.disabled = true;
+                    button.style.backgroundColor = 'var(--light-blue)';
+                    updateNotificationCounter();
+
+                    // Update the global notification badge/panel if available
+                    if (data.unread_count !== undefined) {
+                        const badge = document.getElementById('notificationBadge');
+                        if (badge) {
+                            badge.textContent = data.unread_count;
+                            badge.style.display = data.unread_count > 0 ? 'flex' : 'none';
+                        }
+                    }
+
+                    // Also trigger the shared loader to refresh the small bell panel
+                    if (typeof loadNotifications === 'function') {
+                        loadNotifications();
+                    }
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function dismissNotification(button) {
+            const notification = button.closest('.notification-card');
+            const notificationId = notification.dataset.notificationId;
+            
+            // Dismiss via AJAX
+            fetch(`/alertnotification/dismiss/${notificationId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    notification.classList.add('slide-out');
+                    setTimeout(() => {
+                        notification.remove();
+                        updateNotificationCounter();
+                        // Refresh global bell panel/badge
+                        if (typeof loadNotifications === 'function') {
+                            loadNotifications();
+                        }
+                    }, 400);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function filterNotifications(type) {
+            const notifications = document.querySelectorAll('.notification-card');
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            
+            // Update active filter button
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            notifications.forEach(notification => {
+                if (type === 'all' || notification.dataset.type === type) {
+                    notification.style.display = 'block';
+                } else {
+                    notification.style.display = 'none';
+                }
+            });
+            
+            updateNotificationCounter();
+        }
+
+        function filterByDate(dateFilter) {
+            const dateButtons = document.querySelectorAll('.date-filter-btn');
+            
+            // Update active date filter button
+            dateButtons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Reload page with new date filter
+            const url = new URL(window.location);
+            url.searchParams.set('date', dateFilter);
+            window.location.href = url.toString();
+        }
+
+        function clearAllNotifications() {
+            if (confirm('Are you sure you want to clear all notifications?')) {
+                const notifications = document.querySelectorAll('.notification-card');
+                notifications.forEach((notification, index) => {
+                    const notificationId = notification.dataset.notificationId;
+                    if (notificationId) {
+                        fetch(`/alertnotification/dismiss/${notificationId}/`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': getCookie('csrftoken')
+                            },
+                            body: JSON.stringify({})
+                        });
+                    }
+                    
+                    setTimeout(() => {
+                        notification.classList.add('slide-out');
+                        setTimeout(() => {
+                            notification.remove();
+                            if (index === notifications.length - 1) {
+                                updateNotificationCounter();
+                            }
+                        }, 400);
+                    }, index * 100);
+                });
+            }
+        }
+
+        function handleAccountAction(button) {
+            const notification = button.closest('.notification-card');
+            const title = notification.querySelector('h3').textContent;
+            
+            markAsRead(button);
+            button.textContent = 'Completed ✓';
+            button.disabled = true;
+            button.style.backgroundColor = '#2ed573';
+            
+            if (title.includes('Password') || title.includes('Two-Factor')) {
+                showNotificationBadge('Security settings updated!');
+            } else if (title.includes('Profile')) {
+                showNotificationBadge('Profile updated successfully!');
+            } else {
+                showNotificationBadge('Account action completed!');
+            }
+            
+            playNotificationSound();
+        }
+
+        function viewAppointment(button) {
+            const notification = button.closest('.notification-card');
+            const relatedId = notification.dataset.relatedId;
+            if (relatedId) {
+                window.location.href = `{% url 'consultations' %}?appointment_id=${relatedId}`;
+            } else {
+                window.location.href = '{% url "consultations" %}';
+            }
+        }
+
+        function viewLabResult(button) {
+            const notification = button.closest('.notification-card');
+            const relatedId = notification.dataset.relatedId;
+            if (relatedId) {
+                window.location.href = `{% url 'labresults' %}?result_id=${relatedId}`;
+            } else {
+                window.location.href = '{% url "labresults" %}';
+            }
+        }
+
+        function showNotificationBadge(message) {
+            // Remove existing badge if any
+            const existingBadge = document.querySelector('.notification-badge');
+            if (existingBadge) {
+                existingBadge.remove();
+            }
+
+            // Create new notification badge
+            const badge = document.createElement('div');
+            badge.className = 'notification-badge';
+            badge.textContent = message;
+            document.body.appendChild(badge);
+
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                badge.style.opacity = '0';
+                badge.style.transform = 'translateX(100%)';
+                setTimeout(() => badge.remove(), 300);
+            }, 3000);
+        }
+
+        function playNotificationSound() {
+            // Create audio element for notification sound
+            const audio = document.createElement('audio');
+            audio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwPVq3n7LJhGgY7kdfyzHksBSR3x/DdkEAKFF606euoVRQKRp/g8r5sIQUrgc7y2Yk2CBtpvfDknE4MD1at5+yyYRoGO5HX8sx5LAUkd8fw3ZBACBRd';
+            audio.volume = 0.3;
+            audio.play().catch(() => {
+                // Ignore errors if audio can't play
+            });
+        }
+
+        function toggleMobileDetails(detailsId) {
+            const details = document.getElementById(detailsId);
+            details.classList.toggle('expanded');
+        }
+
+        // Utility function to get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateNotificationCounter();
+        });
+    </script>
+    {% endif %}
+</div>
+{% endblock %}

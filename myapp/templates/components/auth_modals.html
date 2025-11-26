@@ -1,0 +1,1165 @@
+<!-- Login Modal -->
+<div id="loginModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center z-50">
+    <div class="bg-gradient-to-br from-green-50 via-white to-blue-50 rounded-2xl p-8 max-w-md w-full mx-4 relative shadow-2xl modal-enter">
+            <button id="closeLogin" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl transition-colors duration-200 hover:bg-gray-100 rounded-full w-10 h-10 flex items-center justify-center">
+            <i class="fas fa-times"></i>
+        </button>
+        
+        <div class="text-center mb-8">
+            <div class="bg-gradient-to-r from-healthcare-blue to-healthcare-light-blue text-white w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <i class="fas fa-user text-3xl"></i>
+            </div>
+            <h2 class="text-3xl font-bold text-healthcare-blue">Sign In</h2>
+        </div>
+        
+        <form id="loginForm" class="space-y-6">
+            {% csrf_token %}
+            <div id="loginError" class="hidden text-red-600 bg-red-50 p-3 rounded-lg mb-4 text-sm"></div>
+            <div>
+                <label class="block text-sm font-semibold text-healthcare-blue mb-2">Username</label>
+                <input type="text" name="username" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-light-blue focus:border-transparent outline-none transition-all duration-200 bg-white" placeholder="Enter your username" required>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-semibold text-healthcare-blue mb-2">Password</label>
+                <input type="password" name="password" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-light-blue focus:border-transparent outline-none transition-all duration-200 bg-white" placeholder="Enter your password" required>
+            </div>
+            
+            <button type="submit" class="w-full" style="background: var(--red); color:#fff; padding: 12px; border-radius: 12px; font-weight:700; box-shadow: 0 8px 18px rgba(241,94,44,.25);">
+                <i class="fas fa-sign-in-alt mr-2"></i>Sign In
+            </button>
+            
+            <div class="text-center space-y-3">
+                <a href="#" id="forgotPasswordLinkAuth" class="text-healthcare-light-blue hover:underline text-sm font-medium">Forgot Password?</a>
+                <div class="text-gray-600 text-sm">
+                    Don't have an account? 
+                    <button type="button" id="switchToSignup" class="text-healthcare-red hover:underline font-semibold">Click to Register</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Signup Modal -->
+<div id="signupModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center z-50">
+    <div class="bg-gradient-to-br from-red-50 via-white to-blue-50 rounded-2xl p-8 max-w-4xl w-full mx-4 relative shadow-2xl modal-enter max-h-[90vh] overflow-hidden flex flex-col">
+        <button id="closeSignup" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl transition-colors duration-200 hover:bg-gray-100 rounded-full w-10 h-10 flex items-center justify-center">
+            <i class="fas fa-times"></i>
+        </button>
+        
+        <div class="text-center mb-6 flex-shrink-0">
+            <div class="bg-gradient-to-r from-healthcare-red to-red-600 text-white w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <i class="fas fa-user-plus text-3xl"></i>
+            </div>
+            <h2 class="text-3xl font-bold text-healthcare-blue">Join MediSafe+</h2>
+            <p class="text-gray-600 mt-2">Create your healthcare account today</p>
+        </div>
+        
+        <!-- Scrollable Form Container -->
+        <div class="flex-1 overflow-y-auto pr-2">
+            <form id="signupForm" class="space-y-5" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-healthcare-blue mb-2">First Name</label>
+                    <input type="text" name="first_name" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" placeholder="First name" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-healthcare-blue mb-2">Last Name</label>
+                    <input type="text" name="last_name" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" placeholder="Last name" required>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-semibold text-healthcare-blue mb-2">Middle Name</label>
+                <input type="text" name="middle_name" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" placeholder="Middle name (optional)">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-semibold text-healthcare-blue mb-2">Birthday</label>
+                <input type="date" name="birthday" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" required>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-semibold text-healthcare-blue mb-2">Email Address</label>
+                <input type="email" name="email" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" placeholder="your.email@example.com" required>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-semibold text-healthcare-blue mb-2">Sex</label>
+                <div class="flex space-x-4">
+                    <label class="flex items-center">
+                        <input type="radio" name="sex" value="male" class="mr-2">
+                        <span>Male</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="radio" name="sex" value="female" class="mr-2">
+                        <span>Female</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="radio" name="sex" value="other" class="mr-2">
+                        <span>Other</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-semibold text-healthcare-blue mb-2">Civil Status</label>
+                <select name="civil_status" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" required>
+                    <option value="">Select Civil Status</option>
+                    <option value="single">Single</option>
+                    <option value="married">Married</option>
+                    <option value="divorced">Divorced</option>
+                    <option value="widowed">Widowed</option>
+                    <option value="separated">Separated</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-semibold text-healthcare-blue mb-2">Address</label>
+                <textarea name="address" rows="3" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" placeholder="Enter your complete address" required></textarea>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-semibold text-healthcare-blue mb-2">Contact Person</label>
+                <input type="text" name="contact_person" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" placeholder="Emergency contact person" required>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-semibold text-healthcare-blue mb-2">Relationship to Patient</label>
+                <input type="text" name="relationship_to_patient" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" placeholder="e.g., Spouse, Parent, Sibling" required>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-semibold text-healthcare-blue mb-2">Contact Number</label>
+                <input type="text" name="contact_number" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" placeholder="Emergency contact number" required>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-semibold text-healthcare-blue mb-2">Patient Photo</label>
+                <div class="space-y-3">
+                    <input type="file" name="photo_url" id="photo_url" accept="image/*" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white">
+                    <button type="button" id="cameraBtn" class="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-2 rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-semibold">
+                        <i class="fas fa-camera mr-2"></i>Take Photo with Camera
+                    </button>
+                    <div id="cameraPreview" class="hidden">
+                        <video id="cameraVideo" class="w-full h-48 bg-gray-100 rounded-xl"></video>
+                        <div class="flex space-x-2 mt-2">
+                            <button type="button" id="captureBtn" class="flex-1 bg-green-500 text-white py-2 rounded-xl hover:bg-green-600 transition-all duration-200">
+                                <i class="fas fa-camera mr-2"></i>Capture
+                            </button>
+                            <button type="button" id="cancelCameraBtn" class="flex-1 bg-red-500 text-white py-2 rounded-xl hover:bg-red-600 transition-all duration-200">
+                                <i class="fas fa-times mr-2"></i>Cancel
+                            </button>
+                        </div>
+                    </div>
+                    <canvas id="photoCanvas" class="hidden"></canvas>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-healthcare-blue mb-2">Phone Number</label>
+                    <input type="tel" name="phone_number" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" placeholder="+63 912 345 6789" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-healthcare-blue mb-2">Phone Type</label>
+                    <select name="phone_type" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" required>
+                        <option value="">Select Type</option>
+                        <option value="mobile">Mobile</option>
+                        <option value="home">Home</option>
+                        <option value="work">Work</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-semibold text-healthcare-blue mb-2">Username</label>
+                <input type="text" name="username" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" placeholder="Choose a username" required>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-semibold text-healthcare-blue mb-2">Password</label>
+                <input type="password" name="password" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-red focus:border-transparent outline-none transition-all duration-200 bg-white" placeholder="Create a secure password" required>
+            </div>
+            
+            <div class="flex items-start space-x-3">
+                <input type="checkbox" name="data_privacy_consent" id="data_privacy_consent" class="mt-1" required>
+                <label for="data_privacy_consent" class="text-sm text-gray-700">
+                    I agree to the <button type="button" id="privacyPolicyBtn" class="text-healthcare-blue hover:underline font-semibold">Data Privacy Policy</button> and consent to the processing of my personal data.
+                </label>
+            </div>
+            
+            </form>
+        </div>
+        
+        <!-- Fixed Submit Button -->
+        <div class="flex-shrink-0 mt-6 pt-4 border-t border-gray-200">
+            <button type="submit" form="signupForm" class="w-full bg-gradient-to-r from-healthcare-red to-red-600 text-white py-3 rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105">
+                <i class="fas fa-user-plus mr-2"></i>Create Account
+            </button>
+            
+            <div class="text-center mt-4">
+                <div class="text-gray-600 text-sm">
+                    Already have an account? 
+                    <button type="button" id="switchToLogin" class="text-healthcare-light-blue hover:underline font-semibold">Sign In Here</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Data Privacy Policy Modal -->
+<div id="privacyPolicyModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl max-w-4xl w-full mx-4 relative shadow-2xl max-h-[90vh] overflow-y-auto modal-enter">
+        <button id="closePrivacyPolicy" class="absolute top-6 right-6 text-gray-500 hover:text-gray-700 text-2xl z-10 bg-gray-100 rounded-full w-12 h-12 flex items-center justify-center transition-all duration-200 hover:bg-gray-200">
+            <i class="fas fa-times"></i>
+        </button>
+        
+        <div class="p-8">
+            <h2 class="text-3xl font-bold text-healthcare-blue mb-6">Data Privacy Policy</h2>
+            
+            <div class="prose max-w-none">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">1. Information We Collect</h3>
+                <p class="text-gray-700 mb-4">
+                    We collect personal information that you provide directly to us, including but not limited to:
+                </p>
+                <ul class="list-disc list-inside text-gray-700 mb-6 space-y-2">
+                    <li>Personal identification information (name, date of birth, gender, civil status)</li>
+                    <li>Contact information (address, phone numbers, email)</li>
+                    <li>Medical information and health records</li>
+                    <li>Emergency contact information</li>
+                    <li>Profile photographs</li>
+                </ul>
+
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">2. How We Use Your Information</h3>
+                <p class="text-gray-700 mb-4">
+                    We use your personal information for the following purposes:
+                </p>
+                <ul class="list-disc list-inside text-gray-700 mb-6 space-y-2">
+                    <li>To provide healthcare services and medical consultations</li>
+                    <li>To maintain accurate medical records</li>
+                    <li>To communicate with you about appointments and medical care</li>
+                    <li>To contact emergency contacts when necessary</li>
+                    <li>To improve our healthcare services</li>
+                </ul>
+
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">3. Information Sharing</h3>
+                <p class="text-gray-700 mb-4">
+                    We do not sell, trade, or otherwise transfer your personal information to third parties without your consent, except:
+                </p>
+                <ul class="list-disc list-inside text-gray-700 mb-6 space-y-2">
+                    <li>When required by law or legal process</li>
+                    <li>To protect our rights and the safety of our users</li>
+                    <li>With your explicit consent</li>
+                    <li>In case of medical emergencies</li>
+                </ul>
+
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">4. Data Security</h3>
+                <p class="text-gray-700 mb-4">
+                    We implement appropriate security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction.
+                </p>
+
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">5. Your Rights</h3>
+                <p class="text-gray-700 mb-4">
+                    You have the right to:
+                </p>
+                <ul class="list-disc list-inside text-gray-700 mb-6 space-y-2">
+                    <li>Access your personal information</li>
+                    <li>Correct inaccurate information</li>
+                    <li>Request deletion of your information</li>
+                    <li>Withdraw consent at any time</li>
+                    <li>File a complaint with relevant authorities</li>
+                </ul>
+
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">6. Contact Information</h3>
+                <p class="text-gray-700 mb-4">
+                    If you have any questions about this Privacy Policy, please contact us at:
+                </p>
+                <p class="text-gray-700">
+                    Email: privacy@medisafe.com<br>
+                    Phone: +1 (555) 123-4567<br>
+                    Address: 123 Healthcare Ave, Medical District, NY 10001
+                </p>
+            </div>
+            
+            <div class="mt-8 pt-6 border-t border-gray-200">
+                <button id="acceptPrivacyPolicy" class="w-full bg-gradient-to-r from-healthcare-blue to-healthcare-light-blue text-white py-3 rounded-xl hover:from-healthcare-light-blue hover:to-blue-700 transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl">
+                    <i class="fas fa-check mr-2"></i>I Understand and Accept
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Forgot Password Modal -->
+<div id="forgotPasswordModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 relative shadow-2xl modal-enter max-h-[90vh] overflow-y-auto">
+        <button id="closeForgotPassword" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl transition-colors duration-200 hover:bg-gray-100 rounded-full w-10 h-10 flex items-center justify-center">
+            <i class="fas fa-times"></i>
+        </button>
+        
+        <div class="text-center mb-6">
+            <div class="bg-gradient-to-r from-healthcare-blue to-healthcare-light-blue text-white w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <i class="fas fa-key text-3xl"></i>
+            </div>
+            <h2 class="text-3xl font-bold text-healthcare-blue">Recover Your Password</h2>
+            <p class="text-gray-600 mt-2">We'll help you regain access to your account safely</p>
+        </div>
+        
+        <!-- Error and Success Messages -->
+        <div id="forgotPasswordError" class="hidden text-red-600 bg-red-50 p-4 rounded-lg text-sm mb-4 border-l-4 border-red-600"></div>
+        <div id="forgotPasswordSuccess" class="hidden text-green-600 bg-green-50 p-4 rounded-lg text-sm mb-4 border-l-4 border-green-600"></div>
+        
+        <!-- Step 1: Account Verification -->
+        <div id="verificationStep" class="space-y-6 mb-8">
+            <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
+                <p class="text-sm text-blue-800"><strong>Step 1:</strong> Verify your account existence</p>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-semibold text-healthcare-blue mb-2">Username or Email <span class="text-red-500">*</span></label>
+                <div class="flex gap-2">
+                    <input type="text" id="username_or_email_verify" class="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-healthcare-light-blue focus:border-transparent outline-none transition-all duration-200 bg-white" placeholder="Enter your username or email" required>
+                    <button type="button" id="verifyAccountBtn" class="px-6 py-3 bg-gradient-to-r from-healthcare-blue to-healthcare-light-blue text-white rounded-xl hover:from-healthcare-light-blue hover:to-blue-700 transition-all duration-200 font-semibold whitespace-nowrap">
+                        <i class="fas fa-check-circle mr-2"></i>Verify
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Verification Result -->
+            <div id="verificationResult" class="hidden space-y-4">
+                <div id="accountFoundAlert" class="hidden bg-green-50 border-l-4 border-green-400 p-4 rounded">
+                    <p class="text-green-800"><i class="fas fa-check-circle mr-2"></i><strong>Account Found!</strong></p>
+                    <p id="accountName" class="text-green-700 mt-2"></p>
+                </div>
+                <div id="accountNotFoundAlert" class="hidden bg-orange-50 border-l-4 border-orange-400 p-4 rounded">
+                    <p class="text-orange-800"><i class="fas fa-exclamation-triangle mr-2"></i><strong>Account Not Found</strong></p>
+                    <p class="text-orange-700 mt-2">Please check your username or email and try again.</p>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <p class="text-sm text-gray-600 font-semibold mb-3">Other ways to reach MediSafe for password assistance:</p>
+                <div class="grid gap-3 md:grid-cols-2">
+                    <a href="https://www.facebook.com/medisafemedical" target="_blank" rel="noopener" class="flex items-center gap-3 px-3 py-2 rounded-lg border border-blue-100 hover:border-healthcare-light-blue hover:bg-white transition-all text-sm text-healthcare-blue">
+                        <i class="fab fa-facebook text-xl"></i>
+                        facebook.com/medisafemedical
+                    </a>
+                    <a href="mailto:medisafe.medicalpateros@gmail.com" class="flex items-center gap-3 px-3 py-2 rounded-lg border border-blue-100 hover:border-healthcare-light-blue hover:bg-white transition-all text-sm text-healthcare-blue">
+                        <i class="fas fa-envelope text-lg"></i>
+                        medisafe.medicalpateros@gmail.com
+                    </a>
+                    <div class="flex items-center gap-3 px-3 py-2 rounded-lg border border-blue-100 bg-white text-sm text-gray-700">
+                        <i class="fas fa-phone-alt text-lg text-healthcare-blue"></i>
+                        <span>0968 569 9664 / 8800 6290</span>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500 mt-3">These channels are available for follow-ups, but official password resets are still processed through this secure form.</p>
+            </div>
+        </div>
+        
+        <!-- Step 2: Password Reset Form (shown after verification) -->
+        <form id="forgotPasswordForm" class="hidden space-y-6" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" id="verified_user_id" name="verified_user_id">
+            <input type="hidden" id="contact_method" name="contact_method" value="sms">
+            
+            <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
+                <p class="text-sm text-blue-800"><strong>Step 2:</strong> Upload your ID for verification. We will text your registered mobile number once the request is processed.</p>
+            </div>
+            
+            <!-- ID Photo Upload -->
+            <div>
+                <label class="block text-sm font-semibold text-healthcare-blue mb-2">ID Photo (for verification) <span class="text-red-500">*</span></label>
+                <div class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-healthcare-light-blue transition-colors duration-200 cursor-pointer" id="photoDropZone">
+                    <input type="file" name="id_photo" id="id_photo" accept="image/*" class="hidden" required>
+                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3 block"></i>
+                    <p class="text-sm text-gray-600 mb-2">Click to upload or drag and drop your ID photo</p>
+                    <p class="text-xs text-gray-500">PNG, JPG, JPEG up to 5MB</p>
+                    <div id="fileName" class="mt-2 text-sm text-gray-600 hidden"></div>
+                </div>
+            </div>
+            
+            <!-- Contact Method Information -->
+            <div class="bg-green-50 border border-green-200 rounded-xl p-4">
+                <div class="flex items-start gap-3">
+                    <div class="text-green-600">
+                        <i class="fas fa-sms text-2xl"></i>
+                    </div>
+            <div>
+                        <p class="font-semibold text-green-800 text-sm">SMS Notification Only</p>
+                        <p class="text-sm text-green-700 mt-1">
+                            For security, password reset updates are sent exclusively through a text message to the mobile number saved on your MediSafe profile. Please make sure that number is active and accessible.
+                        </p>
+                        <p class="text-xs text-green-600 mt-3">
+                            You will receive the confirmation from <strong>0968 569 9664</strong> or <strong>8800 6290</strong>. Other channels (Facebook, email, phone) remain available for follow-ups but will not contain the reset details.
+                        </p>
+                        </div>
+                </div>
+            </div>
+            
+            <!-- Agreement -->
+            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <p class="text-sm text-gray-700"><i class="fas fa-info-circle mr-2 text-healthcare-blue"></i>
+                    <strong>Important:</strong> An administrator will review your ID and assist with password recovery. Please ensure your ID is clear and readable.
+                </p>
+            </div>
+            
+            <div class="flex gap-3">
+                <button type="button" id="cancelReset" class="flex-1 px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-semibold">
+                    <i class="fas fa-times mr-2"></i>Cancel
+                </button>
+                <button type="submit" class="flex-1 px-4 py-3 bg-gradient-to-r from-healthcare-blue to-healthcare-light-blue text-white rounded-xl hover:from-healthcare-light-blue hover:to-blue-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl">
+                    <i class="fas fa-paper-plane mr-2"></i>Submit Request
+                </button>
+            </div>
+        </form>
+        
+        <!-- Footer -->
+        <div class="text-center mt-6 pt-4 border-t border-gray-200">
+            <button type="button" id="backToLogin" class="text-healthcare-light-blue hover:underline text-sm font-medium">
+                <i class="fas fa-arrow-left mr-2"></i>Back to Login
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Modal elements
+    const loginBtn = document.getElementById('loginBtn');
+    const loginModal = document.getElementById('loginModal');
+    const signupModal = document.getElementById('signupModal');
+    const privacyPolicyModal = document.getElementById('privacyPolicyModal');
+    const closeLogin = document.getElementById('closeLogin');
+    const closeSignup = document.getElementById('closeSignup');
+    const closePrivacyPolicy = document.getElementById('closePrivacyPolicy');
+    const switchToSignup = document.getElementById('switchToSignup');
+    const switchToLogin = document.getElementById('switchToLogin');
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+    if (signupForm && typeof signupForm.setAttribute === 'function') {
+        // Mark that this form has a custom handler to avoid duplicate listeners from global scripts
+        signupForm.setAttribute('data-custom-handler', '1');
+    }
+    const privacyPolicyBtn = document.getElementById('privacyPolicyBtn');
+    const acceptPrivacyPolicy = document.getElementById('acceptPrivacyPolicy');
+    
+    // Camera elements
+    const cameraBtn = document.getElementById('cameraBtn');
+    const cameraPreview = document.getElementById('cameraPreview');
+    const cameraVideo = document.getElementById('cameraVideo');
+    const captureBtn = document.getElementById('captureBtn');
+    const cancelCameraBtn = document.getElementById('cancelCameraBtn');
+    const photoCanvas = document.getElementById('photoCanvas');
+    const patientPhotoInput = document.getElementById('photo_url');
+    
+    let stream = null;
+
+    // Show modal with animation
+    function showModal(modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        modal.style.opacity = '0';
+        modal.style.transition = 'opacity 0.3s ease-in';
+        setTimeout(() => {
+            modal.style.opacity = '1';
+        }, 50);
+    }
+
+    // Hide modal with animation
+    function hideModal(modal) {
+        modal.style.opacity = '0';
+        modal.style.transition = 'opacity 0.3s ease-out';
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            modal.style.opacity = '1';
+        }, 300);
+    }
+
+    // Show login modal
+    if (loginBtn) {
+        loginBtn.addEventListener('click', () => showModal(loginModal));
+    }
+
+    // Close modals
+    if (closeLogin) {
+        closeLogin.addEventListener('click', () => hideModal(loginModal));
+    }
+    if (closeSignup) {
+        closeSignup.addEventListener('click', () => hideModal(signupModal));
+    }
+    if (closePrivacyPolicy) {
+        closePrivacyPolicy.addEventListener('click', () => hideModal(privacyPolicyModal));
+    }
+    
+    // Privacy Policy Modal
+    if (privacyPolicyBtn) {
+        privacyPolicyBtn.addEventListener('click', () => showModal(privacyPolicyModal));
+    }
+    if (acceptPrivacyPolicy) {
+        acceptPrivacyPolicy.addEventListener('click', () => {
+            hideModal(privacyPolicyModal);
+            document.getElementById('data_privacy_consent').checked = true;
+        });
+    }
+
+    // Switch between login and signup
+    if (switchToSignup) {
+        switchToSignup.addEventListener('click', () => {
+            hideModal(loginModal);
+            setTimeout(() => showModal(signupModal), 100);
+        });
+    }
+
+    if (switchToLogin) {
+        switchToLogin.addEventListener('click', () => {
+            hideModal(signupModal);
+            setTimeout(() => showModal(loginModal), 100);
+        });
+    }
+
+    // Close modals when clicking outside
+    [loginModal, signupModal, privacyPolicyModal].forEach(modal => {
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    hideModal(modal);
+                }
+            });
+        }
+    });
+    
+    // Camera functionality
+    if (cameraBtn) {
+        cameraBtn.addEventListener('click', async () => {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'user',
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    } 
+                });
+                cameraVideo.srcObject = stream;
+                cameraPreview.classList.remove('hidden');
+                cameraBtn.classList.add('hidden');
+            } catch (error) {
+                alert('Camera access denied. Please allow camera access to take a photo.');
+                console.error('Camera error:', error);
+            }
+        });
+    }
+    
+    if (captureBtn) {
+        captureBtn.addEventListener('click', () => {
+            const canvas = photoCanvas;
+            const video = cameraVideo;
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Convert canvas to blob and set as file input
+            canvas.toBlob((blob) => {
+                const file = new File([blob], 'photo_url.jpg', { type: 'image/jpeg' });
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                patientPhotoInput.files = dataTransfer.files;
+            }, 'image/jpeg', 0.8);
+            
+            // Stop camera
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            
+            cameraPreview.classList.add('hidden');
+            cameraBtn.classList.remove('hidden');
+            
+            alert('Photo captured successfully!');
+        });
+    }
+    
+    if (cancelCameraBtn) {
+        cancelCameraBtn.addEventListener('click', () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            cameraPreview.classList.add('hidden');
+            cameraBtn.classList.remove('hidden');
+        });
+    }
+
+    // Login form submission
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            console.log('Login form submitted');
+            const username = loginForm.querySelector('input[name="username"]').value;
+            const password = loginForm.querySelector('input[name="password"]').value;
+            const csrfToken = loginForm.querySelector('input[name="csrfmiddlewaretoken"]').value;
+            console.log('Login data:', { username });
+
+            try {
+                const response = await fetch('/login/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({ username, password }),
+                    credentials: 'same-origin'
+                });
+
+                const data = await response.json();
+                console.log('Login response:', data);
+
+                const errorDiv = document.getElementById('loginError');
+                
+                // Check if account is deactivated
+                if (data.is_deactivated) {
+                    errorDiv.textContent = data.detail + ' Contact email: ' + data.contact_email;
+                    errorDiv.classList.remove('hidden');
+                    errorDiv.style.backgroundColor = '#fee2e2';
+                    errorDiv.style.borderLeft = '4px solid #dc2626';
+                    errorDiv.style.padding = '12px';
+                    errorDiv.style.borderRadius = '8px';
+                    errorDiv.style.color = '#dc2626';
+                    errorDiv.style.fontWeight = '600';
+                } else if (response.ok) {
+                    errorDiv.classList.add('hidden');
+                    
+                    // Show welcome message if available
+                    if (data.welcome_message) {
+                        const welcomeDiv = document.createElement('div');
+                        welcomeDiv.style.position = 'fixed';
+                        welcomeDiv.style.top = '20px';
+                        welcomeDiv.style.right = '20px';
+                        welcomeDiv.style.backgroundColor = '#d1fae5';
+                        welcomeDiv.style.borderLeft = '4px solid #10b981';
+                        welcomeDiv.style.color = '#065f46';
+                        welcomeDiv.style.padding = '14px 16px';
+                        welcomeDiv.style.borderRadius = '8px';
+                        welcomeDiv.style.fontWeight = '600';
+                        welcomeDiv.style.fontSize = '14px';
+                        welcomeDiv.style.zIndex = '9999';
+                        welcomeDiv.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                        welcomeDiv.textContent = data.welcome_message;
+                        document.body.appendChild(welcomeDiv);
+                        
+                        // Auto remove after 4 seconds
+                        setTimeout(() => {
+                            welcomeDiv.style.opacity = '0';
+                            welcomeDiv.style.transition = 'opacity 0.3s ease-out';
+                            setTimeout(() => welcomeDiv.remove(), 300);
+                        }, 4000);
+                    }
+                    
+                    // Redirect after brief delay to allow welcome message to show
+                    setTimeout(() => {
+                        window.location.href = data.redirect;
+                    }, 500);
+                } else {
+                    errorDiv.textContent = data.message || 'Login failed. Please check your credentials.';
+                    errorDiv.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                const errorDiv = document.getElementById('loginError');
+                errorDiv.textContent = 'A network error occurred. Please check your connection and try again.';
+                errorDiv.classList.remove('hidden');
+                errorDiv.classList.add('bg-red-50', 'border', 'border-red-100');
+            }
+        });
+    }
+
+    // Handle signup form submission
+    if (signupForm) {
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+
+            // Remove any existing error states
+            form.querySelectorAll('input').forEach(input => {
+                input.classList.remove('border-red-500', 'bg-red-50');
+            });
+
+            const userData = {
+                first_name: form.querySelector('input[name="first_name"]').value.trim(),
+                middle_name: form.querySelector('input[name="middle_name"]').value.trim(),
+                last_name: form.querySelector('input[name="last_name"]').value.trim(),
+                birthday: form.querySelector('input[name="birthday"]').value,
+                email: form.querySelector('input[name="email"]').value.trim(),
+                sex: form.querySelector('input[name="sex"]:checked')?.value,
+                civil_status: form.querySelector('select[name="civil_status"]').value,
+                address: form.querySelector('textarea[name="address"]').value.trim(),
+                contact_person: form.querySelector('input[name="contact_person"]').value.trim(),
+                relationship_to_patient: form.querySelector('input[name="relationship_to_patient"]').value.trim(),
+                contact_number: form.querySelector('input[name="contact_number"]').value.trim(),
+                phone_number: form.querySelector('input[name="phone_number"]').value.trim(),
+                phone_type: form.querySelector('select[name="phone_type"]').value,
+                username: form.querySelector('input[name="username"]').value.trim(),
+                password: form.querySelector('input[name="password"]').value,
+                data_privacy_consent: form.querySelector('input[name="data_privacy_consent"]').checked,
+                role: 'patient'
+            };
+
+            try {
+                const result = await HealthcareAPI.register(userData);
+                // The HealthcareAPI.register function will handle all success cases
+            } catch (error) {
+                // Show error message
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center';
+                
+                // Handle specific error cases
+                let errorText = 'Registration failed. Please try again.';
+                if (error.message.includes('Email already exists')) {
+                    errorText = 'This email address is already registered. Please use a different email or login to your existing account.';
+                    // Highlight the email field
+                    const emailInput = form.querySelector('input[name="email"]');
+                    emailInput.classList.add('border-red-500', 'bg-red-50');
+                    emailInput.focus();
+                } else if (error.message.includes('Username already exists')) {
+                    errorText = 'This username is already taken. Please choose a different username.';
+                    // Highlight the username field
+                    const usernameInput = form.querySelector('input[name="username"]');
+                    usernameInput.classList.add('border-red-500', 'bg-red-50');
+                    usernameInput.focus();
+                }
+                
+                errorMessage.innerHTML = `
+                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    <span>${errorText}</span>
+                `;
+                document.body.appendChild(errorMessage);
+                
+                // Remove error highlighting when user starts typing
+                const inputs = form.querySelectorAll('input');
+                inputs.forEach(input => {
+                    input.addEventListener('input', function() {
+                        this.classList.remove('border-red-500', 'bg-red-50');
+                    });
+                });
+
+                // Remove error message after 5 seconds
+                setTimeout(() => {
+                    errorMessage.style.opacity = '0';
+                    errorMessage.style.transition = 'opacity 0.5s ease-out';
+                    setTimeout(() => {
+                        document.body.removeChild(errorMessage);
+                    }, 500);
+                }, 5000);
+            }
+        });
+    }
+
+    // Forgot Password Modal Elements
+    let forgotPasswordModal, forgotPasswordLink, closeForgotPassword, backToLogin, forgotPasswordForm, idPhotoInput, fileName;
+    let verificationStep, verificationResult, accountFoundAlert, accountNotFoundAlert, accountName;
+    let verifyAccountBtn, usernameOrEmailVerify, cancelReset, photoDropZone;
+    let verifiedUserId = null;
+    
+    function initForgotPasswordModal() {
+        forgotPasswordModal = document.getElementById('forgotPasswordModal');
+        forgotPasswordLink = document.getElementById('forgotPasswordLinkAuth');
+        closeForgotPassword = document.getElementById('closeForgotPassword');
+        backToLogin = document.getElementById('backToLogin');
+        forgotPasswordForm = document.getElementById('forgotPasswordForm');
+        idPhotoInput = document.getElementById('id_photo');
+        fileName = document.getElementById('fileName');
+        
+        // Verification elements
+        verificationStep = document.getElementById('verificationStep');
+        verificationResult = document.getElementById('verificationResult');
+        accountFoundAlert = document.getElementById('accountFoundAlert');
+        accountNotFoundAlert = document.getElementById('accountNotFoundAlert');
+        accountName = document.getElementById('accountName');
+        verifyAccountBtn = document.getElementById('verifyAccountBtn');
+        usernameOrEmailVerify = document.getElementById('username_or_email_verify');
+        cancelReset = document.getElementById('cancelReset');
+        photoDropZone = document.getElementById('photoDropZone');
+        
+        // Show forgot password modal
+        if (forgotPasswordLink) {
+            forgotPasswordLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (loginModal) {
+                    hideModal(loginModal);
+                }
+                if (forgotPasswordModal) {
+                    showModal(forgotPasswordModal);
+                    resetForgotPasswordForm();
+                }
+            });
+        }
+        
+        // Close forgot password modal
+        if (closeForgotPassword) {
+            closeForgotPassword.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (forgotPasswordModal) {
+                    hideModal(forgotPasswordModal);
+                }
+            });
+        }
+        
+        // Back to login
+        if (backToLogin) {
+            backToLogin.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (forgotPasswordModal) {
+                    hideModal(forgotPasswordModal);
+                }
+                if (loginModal) {
+                    setTimeout(() => showModal(loginModal), 100);
+                }
+            });
+        }
+        
+        // Cancel reset button
+        if (cancelReset) {
+            cancelReset.addEventListener('click', function(e) {
+                e.preventDefault();
+                resetForgotPasswordForm();
+            });
+        }
+        
+        // File input handler
+        if (idPhotoInput && fileName) {
+            idPhotoInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    fileName.textContent = `✓ ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+                    fileName.classList.remove('hidden');
+                } else {
+                    fileName.classList.add('hidden');
+                }
+            });
+        }
+        
+        // Drag and drop for photo
+        if (photoDropZone) {
+            photoDropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                photoDropZone.classList.add('border-healthcare-light-blue', 'bg-blue-50');
+            });
+            
+            photoDropZone.addEventListener('dragleave', () => {
+                photoDropZone.classList.remove('border-healthcare-light-blue', 'bg-blue-50');
+            });
+            
+            photoDropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                photoDropZone.classList.remove('border-healthcare-light-blue', 'bg-blue-50');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    idPhotoInput.files = files;
+                    const event = new Event('change', { bubbles: true });
+                    idPhotoInput.dispatchEvent(event);
+                }
+            });
+            
+            photoDropZone.addEventListener('click', () => {
+                idPhotoInput.click();
+            });
+        }
+        
+        // Verify account
+        if (verifyAccountBtn) {
+            verifyAccountBtn.addEventListener('click', async function(e) {
+                e.preventDefault();
+                const usernameOrEmail = usernameOrEmailVerify.value.trim();
+                
+                if (!usernameOrEmail) {
+                    showErrorMessage('forgotPasswordError', 'Please enter your username or email');
+                    return;
+                }
+                
+                // Show loading state
+                const originalButtonText = verifyAccountBtn.innerHTML;
+                verifyAccountBtn.disabled = true;
+                verifyAccountBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Verifying...';
+                
+                try {
+                    const csrfToken = getCsrfToken();
+                    console.log('CSRF Token:', csrfToken ? 'Present' : 'Missing');
+                    
+                    const response = await fetch('/verify-account/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken || ''
+                        },
+                        body: JSON.stringify({ username_or_email: usernameOrEmail }),
+                        credentials: 'same-origin'
+                    });
+                    
+                    console.log('Verification response status:', response.status);
+                    const data = await response.json();
+                    console.log('Verification data:', data);
+                    
+                    if (data.exists) {
+                        // Account found
+                        verifiedUserId = data.user_id;
+                        document.getElementById('verified_user_id').value = verifiedUserId;
+                        
+                        accountFoundAlert.classList.remove('hidden');
+                        accountNotFoundAlert.classList.add('hidden');
+                        accountName.textContent = `Full Name: ${data.full_name} | Email: ${data.email}`;
+                        verificationResult.classList.remove('hidden');
+                        
+                        // Show form
+                        verificationStep.classList.add('hidden');
+                        forgotPasswordForm.classList.remove('hidden');
+                        
+                        // Clear errors
+                        document.getElementById('forgotPasswordError').classList.add('hidden');
+                    } else {
+                        // Account not found
+                        accountFoundAlert.classList.add('hidden');
+                        accountNotFoundAlert.classList.remove('hidden');
+                        verificationResult.classList.remove('hidden');
+                        verifiedUserId = null;
+                    }
+                } catch (error) {
+                    console.error('Verification error:', error);
+                    console.error('Error stack:', error.stack);
+                    showErrorMessage('forgotPasswordError', `Verification error: ${error.message}`);
+                } finally {
+                    verifyAccountBtn.disabled = false;
+                    verifyAccountBtn.innerHTML = originalButtonText;
+                }
+            });
+        }
+        
+        // Handle click-outside for forgot password modal
+        if (forgotPasswordModal) {
+            forgotPasswordModal.addEventListener('click', function(e) {
+                if (e.target === forgotPasswordModal) {
+                    hideModal(forgotPasswordModal);
+                }
+            });
+        }
+        
+        // Forgot password form submission
+        if (forgotPasswordForm) {
+            forgotPasswordForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const errorDiv = document.getElementById('forgotPasswordError');
+                const successDiv = document.getElementById('forgotPasswordSuccess');
+                if (errorDiv) errorDiv.classList.add('hidden');
+                if (successDiv) successDiv.classList.add('hidden');
+                
+                const formData = new FormData(forgotPasswordForm);
+                const idPhoto = formData.get('id_photo');
+                
+                if (!idPhoto) {
+                    if (errorDiv) {
+                        errorDiv.textContent = 'Please upload your ID photo.';
+                        errorDiv.classList.remove('hidden');
+                    }
+                    return;
+                }
+                
+                if (!verifiedUserId) {
+                    if (errorDiv) {
+                        errorDiv.textContent = 'Account verification failed. Please try again.';
+                        errorDiv.classList.remove('hidden');
+                    }
+                    return;
+                }
+                
+                // Add verified username/email to form data
+                formData.set('username_or_email', usernameOrEmailVerify.value);
+                
+                try {
+                    // Get CSRF token from form or cookie
+                    let csrfToken = getCsrfToken();
+                    
+                    if (!csrfToken) {
+                        if (errorDiv) {
+                            errorDiv.textContent = 'CSRF token not found. Please refresh the page.';
+                            errorDiv.classList.remove('hidden');
+                        }
+                        return;
+                    }
+                    
+                    // Show loading state
+                    const submitBtn = forgotPasswordForm.querySelector('button[type="submit"]');
+                    const originalButtonText = submitBtn.innerHTML;
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Submitting...';
+                    
+                    // Don't set Content-Type header for FormData - browser will set it with boundary
+                    const response = await fetch('/forgot-password/', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': csrfToken
+                        },
+                        credentials: 'same-origin'
+                    });
+                    
+                    // Check if response is ok before parsing JSON
+                    if (!response.ok) {
+                        let errorMessage = 'An error occurred. Please try again.';
+                        try {
+                            const errorData = await response.json();
+                            errorMessage = errorData.message || errorMessage;
+                        } catch (e) {
+                            errorMessage = `Server error (${response.status}). Please try again.`;
+                        }
+                        if (errorDiv) {
+                            errorDiv.textContent = errorMessage;
+                            errorDiv.classList.remove('hidden');
+                        }
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalButtonText;
+                        return;
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok && data.success) {
+                        if (successDiv) {
+                            successDiv.textContent = data.message || 'Password reset request submitted successfully! Expect a confirmation text message once our administrators verify your ID.';
+                            successDiv.classList.remove('hidden');
+                        }
+                        
+                        // Hide form
+                        forgotPasswordForm.classList.add('hidden');
+                        verificationStep.classList.remove('hidden');
+                        verificationResult.classList.add('hidden');
+                        
+                        // Reset
+                        resetForgotPasswordForm();
+                        
+                        // Hide modal after 4 seconds
+                        setTimeout(() => {
+                            if (forgotPasswordModal) hideModal(forgotPasswordModal);
+                            if (loginModal) showModal(loginModal);
+                        }, 4000);
+                    } else {
+                        if (errorDiv) {
+                            errorDiv.textContent = data.message || 'An error occurred. Please try again.';
+                            errorDiv.classList.remove('hidden');
+                        }
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalButtonText;
+                    }
+                } catch (error) {
+                    console.error('Forgot password error:', error);
+                    if (errorDiv) {
+                        errorDiv.textContent = 'A network error occurred. Please check your connection and try again.';
+                        errorDiv.classList.remove('hidden');
+                    }
+                }
+            });
+        }
+    }
+    
+    function resetForgotPasswordForm() {
+        if (forgotPasswordForm) {
+            forgotPasswordForm.reset();
+            forgotPasswordForm.classList.add('hidden');
+        }
+        
+        if (verificationStep) {
+            verificationStep.classList.remove('hidden');
+        }
+        
+        if (verificationResult) {
+            verificationResult.classList.add('hidden');
+        }
+        
+        if (fileName) {
+            fileName.classList.add('hidden');
+        }
+        
+        if (usernameOrEmailVerify) {
+            usernameOrEmailVerify.value = '';
+        }
+        
+        const contactMethodInput = document.getElementById('contact_method');
+        if (contactMethodInput) {
+            contactMethodInput.value = 'sms';
+        }
+        
+        verifiedUserId = null;
+        document.getElementById('forgotPasswordError').classList.add('hidden');
+        document.getElementById('forgotPasswordSuccess').classList.add('hidden');
+    }
+    
+    function getCsrfToken() {
+        const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (csrfInput) {
+            return csrfInput.value;
+        }
+        
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            const [name, value] = cookie.trim().split('=');
+            if (name === 'csrftoken') {
+                return value;
+            }
+        }
+        return null;
+    }
+    
+    function showErrorMessage(elementId, message) {
+        const errorDiv = document.getElementById(elementId);
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+    }
+    
+    // Initialize forgot password modal when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initForgotPasswordModal);
+    } else {
+        initForgotPasswordModal();
+    }
+    
+    // Use event delegation as backup for forgot password link
+    document.addEventListener('click', function(e) {
+        if (e.target && (e.target.id === 'forgotPasswordLinkAuth' || e.target.closest('#forgotPasswordLinkAuth'))) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (loginModal) hideModal(loginModal);
+            initForgotPasswordModal();
+            if (forgotPasswordModal) {
+                setTimeout(() => showModal(forgotPasswordModal), 100);
+            }
+        }
+    });
+
+    // Close modals with Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            if (loginModal) hideModal(loginModal);
+            if (signupModal) hideModal(signupModal);
+            if (privacyPolicyModal) hideModal(privacyPolicyModal);
+            if (forgotPasswordModal) hideModal(forgotPasswordModal);
+        }
+    });
+    
+    // Add forgot password modal to click-outside handler
+    if (forgotPasswordModal) {
+        forgotPasswordModal.addEventListener('click', function(e) {
+            if (e.target === forgotPasswordModal) {
+                hideModal(forgotPasswordModal);
+            }
+        });
+    }
+</script>
+

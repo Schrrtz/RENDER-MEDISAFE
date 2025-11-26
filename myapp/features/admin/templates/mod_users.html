@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Management | MediSafe+</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link href="{% static 'css/mod_users.css' %}" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'healthcare-red': '#FF0000',
+            'healthcare-blue': '#003366',
+            'healthcare-light-blue': '#0066CC'
+          },
+          zIndex: {
+            '60': '60',
+            '70': '70',
+            '80': '80',
+            '90': '90',
+            '100': '100'
+          }
+        }
+      }
+    }
+  </script>
+        
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
+  <!-- Main Layout -->
+  <div class="flex h-screen bg-gray-50">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-healthcare-blue text-white shadow-lg">
+      <!-- Logo -->
+      <div class="p-4 border-b border-healthcare-light-blue/30">
+        <div class="flex items-center space-x-3">
+          <div style="display:flex;align-items:center;gap:10px">
+            <img src="/media/logo/Medisafe%20Logo.jpg" alt="MediSafe" style="height:44px;width:auto;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.06)" />
+            <span class="font-bold text-lg">MediSafe+</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="p-4">
+        <div class="mb-4">
+          <div class="relative">
+            <input type="text" 
+                   placeholder="Search..." 
+                   class="w-full bg-white/10 text-white placeholder-white/60 px-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-white/30">
+            <i class="fas fa-search absolute right-3 top-2.5 text-white/60"></i>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <a href="{% url 'moddashboard' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-chart-pie"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="{% url 'mod_doctors' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-users-cog"></i>
+            <span>Medisafe Team</span>
+          </a>
+          <a href="{% url 'mod_records' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-hospital-user"></i>
+            <span>Patient Records</span>
+          </a>
+          <a href="{% url 'mod_users' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg bg-white/20 text-white">
+            <i class="fas fa-users"></i>
+            <span>User Management</span>
+          </a>
+          <a href="{% url 'mod_consultations' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-calendar-check"></i>
+            <span>Appointments</span>
+          </a>
+          <a href="{% url 'mod_analytics' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-chart-line"></i>
+            <span>Analytics</span>
+          </a>
+        </div>
+      </nav>
+
+      <!-- User Profile -->
+      <div class="mt-auto p-4 border-t border-healthcare-light-blue/30">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="bg-white/10 p-2 rounded-full">
+              <i class="fas fa-user-md"></i>
+            </div>
+            <div class="text-sm">
+              <p class="font-semibold">Admin</p>
+              <p class="text-white/60 text-xs">Online</p>
+            </div>
+          </div>
+          <a href="{% url 'logout' %}" class="text-white/60 hover:text-white">
+            <i class="fas fa-sign-out-alt"></i>
+          </a>
+        </div>
+        
+        <!-- Super Admin Component Include -->
+        {% include 'super_admin_component.html' %}
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-8">
+      <!-- Header -->
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-healthcare-blue mb-2">User Management</h1>
+        <p class="text-gray-600">Manage and monitor system users</p>
+      </div>
+
+          <!-- Stats Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <!-- Total Users Card -->
+        <div class="dashboard-card p-6 rounded-xl">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 mb-1">Total Users</p>
+              <h3 class="text-2xl font-bold text-healthcare-blue">{{ total_users_count }}</h3>
+            </div>
+            <div class="bg-healthcare-blue/10 p-3 rounded-lg">
+              <i class="fas fa-users text-2xl text-healthcare-blue"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Users Card -->
+        <div class="dashboard-card p-6 rounded-xl">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 mb-1">Active Users</p>
+              <h3 class="text-2xl font-bold text-green-600">{{ active_users_count }}</h3>
+            </div>
+            <div class="bg-green-100 p-3 rounded-lg">
+              <i class="fas fa-user-check text-2xl text-green-600"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inactive Users Card -->
+        <div class="dashboard-card p-6 rounded-xl">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 mb-1">Inactive Users</p>
+              <h3 class="text-2xl font-bold text-red-600">{{ inactive_users_count }}</h3>
+            </div>
+            <div class="bg-red-100 p-3 rounded-lg">
+              <i class="fas fa-user-slash text-2xl text-red-600"></i>
+            </div>
+          </div>
+        </div>        <!-- Active Users Card -->
+        <div class="dashboard-card p-6 rounded-xl">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 mb-1">Active Users</p>
+              <h3 class="text-2xl font-bold text-green-600">{{ users|length }}</h3>
+            </div>
+            <div class="bg-green-100 p-3 rounded-lg">
+              <i class="fas fa-user-check text-2xl text-green-600"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions Card -->
+        <div class="dashboard-card p-6 rounded-xl">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 mb-1">Quick Actions</p>
+              <div class="mt-2">
+                <button data-modal="addUserModal" class="bg-healthcare-blue text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                  <i class="fas fa-plus mr-2"></i>Add New User
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+              </div>
+
+      <!-- Users List -->
+      <div class="dashboard-card rounded-xl overflow-hidden">
+        <div class="p-6 border-b border-gray-200">
+          <div class="flex justify-between items-center">
+            <h2 class="text-xl font-bold text-healthcare-blue">System Users</h2>
+            <div class="flex space-x-4">
+              <div class="search-container flex">
+                <input type="text" id="searchInput" placeholder="Search by email or username..." 
+                       class="px-4 py-2 border border-gray-200 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-healthcare-light-blue focus:border-transparent">
+                <button id="searchButton" 
+                        class="px-4 py-2 bg-healthcare-blue text-white rounded-r-lg hover:bg-healthcare-light-blue transition-colors">
+                  <i class="fas fa-search"></i>
+                </button>
+              </div>
+              <select id="roleFilter" class="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-light-blue focus:border-transparent">
+                <option value="">All Roles</option>
+                <option value="admin">Admin</option>
+                <option value="doctor">Doctor</option>
+                <option value="staff">Staff</option>
+                <option value="nurse">Nurse</option>
+                <option value="patient">Patient</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        <div class="p-6">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left">
+              <thead>
+                <tr class="border-b border-gray-200">
+                  <th class="pb-3 font-semibold text-gray-600">User ID</th>
+                  <th class="pb-3 font-semibold text-gray-600">Username</th>
+                  <th class="pb-3 font-semibold text-gray-600">Role</th>
+                  <th class="pb-3 font-semibold text-gray-600">First Name</th>
+                  <th class="pb-3 font-semibold text-gray-600">Last Name</th>
+                  <th class="pb-3 font-semibold text-gray-600">Email</th>
+                  <th class="pb-3 font-semibold text-gray-600">Contact</th>
+                  <th class="pb-3 font-semibold text-gray-600">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for user in users %}
+                <tr class="border-b border-gray-100">
+                  <td class="py-3 text-gray-600">{{ user.user_id }}</td>
+                  <td class="py-3">
+                    <div class="flex items-center">
+                      <div class="bg-healthcare-blue/10 w-8 h-8 rounded-full flex items-center justify-center mr-3">
+                        <i class="fas fa-user text-healthcare-blue"></i>
+                      </div>
+                      {{ user.username }}
+                    </div>
+                  </td>
+                  <td class="py-3">
+                    <span class="px-2 py-1 rounded-full text-xs font-medium 
+                      {% if user.role == 'admin' %}bg-purple-100 text-purple-700
+                      {% elif user.role == 'doctor' %}bg-blue-100 text-blue-700
+                      {% elif user.role == 'nurse' %}bg-green-100 text-green-700
+                      {% else %}bg-gray-100 text-gray-700{% endif %}">
+                      {{ user.role|title }}
+                    </span>
+                  </td>
+                  <td class="py-3 text-gray-600">{{ user.userprofile.first_name }}</td>
+                  <td class="py-3 text-gray-600">{{ user.userprofile.last_name }}</td>
+                  <td class="py-3 text-gray-600">{{ user.email }}</td>
+                  <td class="py-3 text-gray-600">{{ user.userprofile.contact_number|default:'-' }}</td>
+                  <td class="py-3">
+                    <div class="flex space-x-2">
+                      <button type="button"
+                              data-id="{{ user.user_id }}"
+                              data-username="{{ user.username }}"
+                              data-email="{{ user.email }}"
+                              data-role="{{ user.role }}"
+                              data-first-name="{{ user.userprofile.first_name|default:''|escapejs }}"
+                              data-middle-name="{{ user.userprofile.middle_name|default:''|escapejs }}"
+                              data-last-name="{{ user.userprofile.last_name|default:''|escapejs }}"
+                              data-gender="{{ user.userprofile.gender|default:'' }}"
+                              data-birth-date="{{ user.userprofile.birth_date|date:'Y-m-d'|default:'' }}"
+                              data-contact-number="{{ user.userprofile.contact_number|default:''|escapejs }}"
+                              data-emergency-contact="{{ user.userprofile.emergency_contact|default:''|escapejs }}"
+                              data-address="{{ user.userprofile.address|default:''|escapejs }}"
+                              data-status="{{ user.is_active|yesno:'active,inactive' }}"
+                              class="edit-user-btn p-1 text-green-600 hover:text-green-800"
+                              title="Edit">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      {% if user.user_id != current_admin_id %}
+                      <a href="{% url 'mod_accounts' %}" class="p-1 text-blue-600 hover:text-blue-800" title="Manage Account">
+                        <i class="fas fa-user-cog"></i>
+                      </a>
+                      {% endif %}
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modals -->
+  <div class="z-50 relative">
+    <!-- Add User Modal -->
+    <div id="addUserModal" class="fixed inset-0 hidden z-50">
+      <div class="fixed inset-0 bg-black bg-opacity-50"></div>
+      <div class="relative flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full relative">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-bold text-healthcare-blue">Add New User</h3>
+            <button data-close class="text-gray-500 hover:text-gray-700">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <form method="POST" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add">
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+              <input type="text" name="username" required
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input type="email" name="email" required
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <input type="password" name="password" required
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+              <select name="role" required
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+                <option value="">Select Role</option>
+                <option value="admin">Admin</option>
+                <option value="staff">Staff</option>
+                <option value="patient">Patient</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Sex</label>
+              <select name="sex"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+                <option value="">Select Sex</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Birthday</label>
+              <input type="date" name="birthday"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+            </div>
+
+            <div class="flex justify-end space-x-3 mt-6">
+              <button type="button" data-close
+                      class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                Cancel
+              </button>
+              <button type="submit"
+                      class="px-4 py-2 bg-healthcare-blue text-white rounded-lg hover:bg-blue-700">
+                Add User
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div id="editUserModal" class="fixed inset-0 hidden z-50">
+      <div class="fixed inset-0 bg-black bg-opacity-50"></div>
+      <div class="relative flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg p-8 max-w-4xl w-full relative max-h-[90vh] overflow-y-auto">
+          <div class="flex justify-between items-center mb-6 sticky top-0 bg-white py-4 border-b border-gray-200">
+            <h3 class="text-2xl font-bold text-healthcare-blue">Edit User Profile</h3>
+            <button data-close class="text-gray-500 hover:text-gray-700">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <form method="POST" class="space-y-6">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="user_id" id="edit_user_id">
+            
+            <!-- Account Information Section -->
+            <div class="bg-gray-50 p-6 rounded-lg mb-6">
+              <h4 class="text-lg font-semibold text-healthcare-blue mb-4">Account Information</h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                  <input type="text" name="username" id="edit_username" required
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue bg-white">
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <input type="email" name="email" id="edit_email" required
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue bg-white">
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                  <input type="password" name="password" id="edit_password"
+                         placeholder="Leave blank to keep current password"
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue bg-white">
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                  <select name="role" id="edit_role" required
+                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue bg-white">
+                    <option value="admin">Admin</option>
+                    <option value="doctor">Doctor</option>
+                    <option value="nurse">Nurse</option>
+                    <option value="patient">Patient</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Personal Information Section -->
+            <div class="bg-gray-50 p-6 rounded-lg mb-6">
+              <h4 class="text-lg font-semibold text-healthcare-blue mb-4">Personal Information</h4>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                  <input type="text" name="first_name" id="edit_first_name"
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue bg-white">
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Middle Name</label>
+                  <input type="text" name="middle_name" id="edit_middle_name"
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue bg-white">
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                  <input type="text" name="last_name" id="edit_last_name"
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue bg-white">
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Sex</label>
+                  <select name="sex" id="edit_sex"
+                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue bg-white">
+                    <option value="">Select Sex</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Birthday</label>
+                  <input type="date" name="birthday" id="edit_birthday"
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue bg-white">
+                </div>
+              </div>
+            </div>
+
+          
+
+          
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Age</label>
+              <input type="number" name="age" id="edit_age" min="0" max="150"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+            </div>
+
+            <!-- Contact Information Section -->
+            <div class="bg-gray-50 p-6 rounded-lg mb-6">
+              <h4 class="text-lg font-semibold text-healthcare-blue mb-4">Contact Information</h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Contact Number</label>
+                  <input type="text" name="contact_number" id="edit_contact_number"
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue bg-white">
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Emergency Contact</label>
+                  <input type="text" name="emergency_contact" id="edit_emergency_contact"
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue bg-white">
+                </div>
+
+                <div class="md:col-span-2">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                  <textarea name="address" id="edit_address" rows="3"
+                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue bg-white resize-none"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Account Status Section -->
+            <div class="bg-gray-50 p-6 rounded-lg">
+              <h4 class="text-lg font-semibold text-healthcare-blue mb-4">Account Status</h4>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select name="status" id="edit_status" required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue bg-white">
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="sticky bottom-0 bg-white py-4 border-t border-gray-200 mt-6">
+              <div class="flex justify-end space-x-4">
+                <button type="button" data-close
+                        class="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors">
+                  Cancel
+                </button>
+                <button type="submit"
+                        class="px-6 py-3 bg-healthcare-blue text-white rounded-lg hover:bg-blue-700 font-medium transition-colors">
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // User data handling
+    function editUser(id, username, email, role, userProfile, status) {
+      // Update edit form values
+      document.getElementById('edit_user_id').value = id;
+      document.getElementById('edit_username').value = username;
+      document.getElementById('edit_email').value = email;
+      document.getElementById('edit_role').value = role;
+      document.getElementById('edit_status').value = status || 'active';
+      document.getElementById('edit_password').value = '';
+      
+      // Update profile fields
+      document.getElementById('edit_first_name').value = userProfile.first_name || '';
+      document.getElementById('edit_middle_name').value = userProfile.middle_name || '';
+      document.getElementById('edit_last_name').value = userProfile.last_name || '';
+      document.getElementById('edit_sex').value = userProfile.sex || '';
+      document.getElementById('edit_birthday').value = userProfile.birthday || '';
+      document.getElementById('edit_contact_number').value = userProfile.contact_number || '';
+      document.getElementById('edit_emergency_contact').value = userProfile.emergency_contact || '';
+      document.getElementById('edit_address').value = userProfile.address || '';
+      
+      // Open edit modal
+      toggleModal('editUserModal', true);
+    }
+
+    // Modal handling
+    function toggleModal(modalId, show) {
+      const modal = document.getElementById(modalId);
+      if (!modal) return;
+      
+      if (show) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      } else {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+      }
+    }
+
+    function setupModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (!modal) return;
+
+      // Close when clicking outside modal content
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          toggleModal(modalId, false);
+        }
+      });
+
+      // Close button handler if exists
+      const closeBtn = modal.querySelector('[data-close]');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => toggleModal(modalId, false));
+      }
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      // Setup modals
+      setupModal('addUserModal');
+      setupModal('editUserModal');
+
+      // Setup edit buttons
+      document.querySelectorAll('.edit-user-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const data = btn.dataset;
+          editUser(
+            data.id,
+            data.username,
+            data.email,
+            data.role,
+            {
+              first_name: data.firstName || '',
+              middle_name: data.middleName || '',
+              last_name: data.lastName || '',
+              gender: data.gender || '',
+              birth_date: data.birthDate || '',
+              contact_number: data.contactNumber || '',
+              emergency_contact: data.emergencyContact || '',
+              address: data.address || ''
+            },
+            data.status || 'active'
+          );
+        });
+      });
+
+      // Global ESC key handler for modals
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          toggleModal('addUserModal', false);
+          toggleModal('editUserModal', false);
+        }
+      });
+
+      // Mobile sidebar toggle
+      const toggleButton = document.querySelector('[data-drawer-toggle="admin-sidebar"]');
+      const adminSidebar = document.getElementById('admin-sidebar');
+      
+      if (toggleButton && adminSidebar) {
+        toggleButton.addEventListener('click', () => {
+          adminSidebar.classList.toggle('-translate-x-full');
+        });
+      }
+    });
+
+    // Search and Filter Functionality
+    function filterAndSearchUsers() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      const selectedRole = document.getElementById('roleFilter').value.toLowerCase();
+      const rows = document.querySelectorAll('tbody tr');
+
+      rows.forEach(row => {
+        const username = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+        const email = row.querySelector('td:nth-child(6)').textContent.toLowerCase();
+        const role = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
+        
+        const matchesSearch = searchTerm === '' || 
+                            username.includes(searchTerm) || 
+                            email.includes(searchTerm);
+        const matchesRole = selectedRole === '' || role.includes(selectedRole);
+
+        row.style.display = matchesSearch && matchesRole ? '' : 'none';
+      });
+    }
+
+    // Set up search and filter event listeners
+    document.addEventListener('DOMContentLoaded', () => {
+      const searchInput = document.getElementById('searchInput');
+      const searchButton = document.getElementById('searchButton');
+      const roleFilter = document.getElementById('roleFilter');
+
+      searchInput.addEventListener('input', filterAndSearchUsers);
+      searchButton.addEventListener('click', filterAndSearchUsers);
+      roleFilter.addEventListener('change', filterAndSearchUsers);
+
+      // Allow Enter key to trigger search
+      searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          filterAndSearchUsers();
+        }
+      });
+    });
+
+    // Convenience aliases for commonly used functions
+    const openAddUserModal = () => toggleModal('addUserModal', true);
+    const closeAddUserModal = () => toggleModal('addUserModal', false);
+    const closeEditUserModal = () => toggleModal('editUserModal', false);
+  </script>
+</body>
+</html>

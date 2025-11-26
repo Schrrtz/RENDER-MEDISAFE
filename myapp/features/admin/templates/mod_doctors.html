@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Medisafe Team Management | Medisafe+</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link href="{% static 'css/mod_doctors.css' %}" rel="stylesheet">
+  <style>
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+    }
+
+    .modal.active {
+      display: block;
+    }
+
+    .modal-content {
+      animation: modalSlideIn 0.3s ease-out;
+    }
+
+    @keyframes modalSlideIn {
+      from {
+        transform: translateY(-10%);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+  </style>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'healthcare-red': '#FF0000',
+            'healthcare-blue': '#003366',
+            'healthcare-light-blue': '#0066CC'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Send Message Modal (Admin -> Team Member) -->
+  <div id="sendMessageModalTeamMember" class="modal">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="modal-content bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-bold text-healthcare-blue"><i class="fas fa-envelope mr-2"></i>Send Message to Team Member</h2>
+          <button onclick="closeModal('sendMessageModalTeamMember')" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+        </div>
+        <form id="sendMessageTeamMemberForm" onsubmit="return false;">
+          <input type="hidden" id="send_team_member_target_id">
+          <div class="mb-3">
+            <label class="block text-sm font-medium text-gray-700 mb-1">To</label>
+            <p id="send_team_member_target_name" class="font-medium text-gray-900">-</p>
+          </div>
+          <div class="mb-3">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+            <input id="send_team_member_title" type="text" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+          </div>
+          <div class="mb-3">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+            <textarea id="send_team_member_body" rows="5" required class="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
+          </div>
+          <div class="flex justify-end gap-3">
+            <button type="button" onclick="closeModal('sendMessageModalTeamMember')" class="px-4 py-2 border rounded-lg">Cancel</button>
+            <button type="button" onclick="sendMessageToTeamMember()" class="px-4 py-2 bg-healthcare-blue text-white rounded-lg">Send</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Send Message Modal (Admin -> Doctor) -->
+  <div id="sendMessageModalDoctor" class="modal">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="modal-content bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-bold text-healthcare-blue"><i class="fas fa-envelope mr-2"></i>Send Message to Doctor</h2>
+          <button onclick="closeModal('sendMessageModalDoctor')" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+        </div>
+        <form id="sendMessageDoctorForm" onsubmit="return false;">
+          <input type="hidden" id="send_doctor_target_id">
+          <div class="mb-3">
+            <label class="block text-sm font-medium text-gray-700 mb-1">To</label>
+            <p id="send_doctor_target_name" class="font-medium text-gray-900">-</p>
+          </div>
+          <div class="mb-3">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+            <input id="send_doctor_title" type="text" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+          </div>
+          <div class="mb-3">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+            <textarea id="send_doctor_body" rows="5" required class="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
+          </div>
+          <div class="flex justify-end gap-3">
+            <button type="button" onclick="closeModal('sendMessageModalDoctor')" class="px-4 py-2 border rounded-lg">Cancel</button>
+            <button type="button" onclick="sendMessageToDoctor()" class="px-4 py-2 bg-healthcare-blue text-white rounded-lg">Send</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openSendMessageModalToDoctor(userId, userName) {
+      document.getElementById('send_doctor_target_id').value = userId;
+      document.getElementById('send_doctor_target_name').textContent = userName;
+      document.getElementById('send_doctor_title').value = '';
+      document.getElementById('send_doctor_body').value = '';
+      const m = document.getElementById('sendMessageModalDoctor');
+      if (m) m.classList.add('active');
+    }
+
+    function closeModal(id) {
+      const m = document.getElementById(id);
+      if (m) m.classList.remove('active');
+    }
+
+    // ============= SUPER ADMIN PERMISSION CHECKS =============
+    let isSuperAdmin = false;
+    async function checkSuperAdminStatus() {
+      try {
+        const response = await fetch('/check-super-admin-status/');
+        const data = await response.json();
+        isSuperAdmin = data.is_super_admin;
+        updatePermissionBasedUI();
+      } catch (error) {
+        console.log('Could not check super admin status');
+      }
+    }
+
+    function updatePermissionBasedUI() {
+      if (!isSuperAdmin) {
+        // Hide add buttons for regular admins
+        const addMemberBtn = document.querySelector('button[onclick*="addMedisafeMemberModal"]');
+        const addDoctorBtn = document.querySelector('button[onclick*="addDoctorModal"]');
+        
+        if (addMemberBtn) {
+          addMemberBtn.innerHTML = addMemberBtn.innerHTML + ' <span style="margin-left: 10px; font-size: 0.85em; opacity: 0.7;">(Super Admin Only)</span>';
+          addMemberBtn.disabled = true;
+          addMemberBtn.style.opacity = '0.6';
+          addMemberBtn.style.cursor = 'not-allowed';
+          addMemberBtn.onclick = function(e) { e.preventDefault(); showPermissionWarning('Add Medisafe Member is for Super Admin only'); return false; };
+        }
+        if (addDoctorBtn) {
+          addDoctorBtn.innerHTML = addDoctorBtn.innerHTML + ' <span style="margin-left: 10px; font-size: 0.85em; opacity: 0.7;">(Super Admin Only)</span>';
+          addDoctorBtn.disabled = true;
+          addDoctorBtn.style.opacity = '0.6';
+          addDoctorBtn.style.cursor = 'not-allowed';
+          addDoctorBtn.onclick = function(e) { e.preventDefault(); showPermissionWarning('Add New Doctor is for Super Admin only'); return false; };
+        }
+
+        // Disable export button
+        const exportPatientsCsvBtn = document.getElementById('exportPatientsCsvBtn');
+        if (exportPatientsCsvBtn) {
+          exportPatientsCsvBtn.innerHTML = '<i class="fas fa-file-export mr-1"></i>Export CSV (Super Admin Only)';
+          exportPatientsCsvBtn.style.opacity = '0.6';
+          exportPatientsCsvBtn.style.cursor = 'not-allowed';
+          exportPatientsCsvBtn.disabled = true;
+          exportPatientsCsvBtn.title = 'Export is for Super Admin only';
+        }
+
+        // Disable action buttons for team members
+        document.querySelectorAll('button[onclick*="editTeamMember"], button[onclick*="deleteTeamMember"], button[onclick*="convertTeamMemberToPatient"]').forEach(btn => {
+          btn.style.opacity = '0.5';
+          btn.style.cursor = 'not-allowed';
+          btn.onclick = function(e) { e.preventDefault(); showPermissionWarning('Team member actions are for Super Admin only'); return false; };
+        });
+
+        // Disable action buttons for doctors
+        document.querySelectorAll('button[onclick*="openEditModal"], button[onclick*="confirmDelete"], button[onclick*="confirmRoleChange"]').forEach(btn => {
+          btn.style.opacity = '0.5';
+          btn.style.cursor = 'not-allowed';
+          btn.onclick = function(e) { e.preventDefault(); showPermissionWarning('Doctor actions are for Super Admin only'); return false; };
+        });
+      }
+    }
+
+    function showPermissionWarning(message) {
+      const alertDiv = document.createElement('div');
+      alertDiv.className = 'fixed top-4 right-4 bg-yellow-500 text-white px-6 py-3 rounded shadow-lg z-50 max-w-md';
+      alertDiv.innerHTML = `<i class="fas fa-lock mr-2"></i>${message}`;
+      document.body.appendChild(alertDiv);
+      setTimeout(() => alertDiv.remove(), 3000);
+    }
+
+    async function sendMessageToDoctor() {
+      const target_id = document.getElementById('send_doctor_target_id').value;
+      const title = document.getElementById('send_doctor_title').value.trim();
+      const body = document.getElementById('send_doctor_body').value.trim();
+      if (!target_id || !title || !body) { alert('Please fill title and message'); return; }
+      const csrftoken = (function(){
+        const v = document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith('csrftoken='));
+        return v ? decodeURIComponent(v.split('=')[1]) : '';
+      })();
+      const form = new FormData();
+      form.append('action', 'send_message');
+      form.append('target_id', target_id);
+      form.append('title', title);
+      form.append('body', body);
+      try {
+        const resp = await fetch('{% url "admin_send_notification" %}', { method: 'POST', headers: { 'X-CSRFToken': csrftoken }, body: form });
+        if (resp.redirected) { window.location.href = resp.url; return; }
+        window.location.reload();
+      } catch (e) { console.error(e); alert('Error sending message'); }
+    }
+
+    // Team Member Functions
+    function openSendMessageModalToTeamMember(userId, userName) {
+      document.getElementById('send_team_member_target_id').value = userId;
+      document.getElementById('send_team_member_target_name').textContent = userName;
+      document.getElementById('send_team_member_title').value = '';
+      document.getElementById('send_team_member_body').value = '';
+      const m = document.getElementById('sendMessageModalTeamMember');
+      if (m) m.classList.add('active');
+    }
+
+    async function sendMessageToTeamMember() {
+      const target_id = document.getElementById('send_team_member_target_id').value;
+      const title = document.getElementById('send_team_member_title').value.trim();
+      const body = document.getElementById('send_team_member_body').value.trim();
+      if (!target_id || !title || !body) { alert('Please fill title and message'); return; }
+      const csrftoken = (function(){
+        const v = document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith('csrftoken='));
+        return v ? decodeURIComponent(v.split('=')[1]) : '';
+      })();
+      const form = new FormData();
+      form.append('action', 'send_message');
+      form.append('target_id', target_id);
+      form.append('title', title);
+      form.append('body', body);
+      try {
+        const resp = await fetch('{% url "admin_send_notification" %}', { method: 'POST', headers: { 'X-CSRFToken': csrftoken }, body: form });
+        if (resp.redirected) { window.location.href = resp.url; return; }
+        window.location.reload();
+      } catch (e) { console.error(e); alert('Error sending message'); }
+    }
+
+    function editTeamMember(userId) {
+      // Redirect to user management or open edit modal
+      window.location.href = `{% url 'mod_users' %}?user_id=${userId}`;
+    }
+
+    async function deleteTeamMember(userId, userName) {
+      if (!confirm(`Are you sure you want to delete ${userName}? This action cannot be undone.`)) {
+        return;
+      }
+      try {
+        showLoader();
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const response = await fetch(`/manage/accounts/delete/${userId}/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': csrftoken
+          }
+        });
+        const data = await response.json();
+        if (response.ok) {
+          const alertDiv = document.createElement('div');
+          alertDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded shadow-lg z-50';
+          alertDiv.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Team member deleted successfully';
+          document.body.appendChild(alertDiv);
+          setTimeout(() => alertDiv.remove(), 3000);
+          setTimeout(() => window.location.reload(), 1000);
+        } else {
+          throw new Error(data.error || 'Failed to delete team member');
+        }
+      } catch (error) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded shadow-lg z-50';
+        alertDiv.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i>${error.message}`;
+        document.body.appendChild(alertDiv);
+        setTimeout(() => alertDiv.remove(), 3000);
+      } finally {
+        hideLoader();
+      }
+    }
+
+    async function convertTeamMemberToPatient(userId, userName) {
+      // Permission check
+      if (!isSuperAdmin) {
+        showPermissionWarning();
+        return;
+      }
+
+      if (!confirm(`Are you sure you want to convert ${userName} to a patient? This will change their role and remove team member privileges.`)) {
+        return;
+      }
+      try {
+        showLoader();
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const response = await fetch(`/mod_doctors/convert-member-to-patient/${userId}/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': csrftoken,
+            'Content-Type': 'application/json'
+          }
+        });
+        const data = await response.json();
+        if (response.ok) {
+          const alertDiv = document.createElement('div');
+          alertDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded shadow-lg z-50';
+          alertDiv.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Team member converted to patient successfully';
+          document.body.appendChild(alertDiv);
+          setTimeout(() => alertDiv.remove(), 3000);
+          setTimeout(() => window.location.reload(), 1000);
+        } else {
+          throw new Error(data.error || 'Failed to convert team member');
+        }
+      } catch (error) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded shadow-lg z-50';
+        alertDiv.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i>${error.message}`;
+        document.body.appendChild(alertDiv);
+        setTimeout(() => alertDiv.remove(), 3000);
+      } finally {
+        hideLoader();
+      }
+    }
+  </script>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
+  <!-- Page Loader -->
+  <div id="pageLoader" class="fixed inset-0 hidden items-center justify-center bg-white/80 z-[2000]">
+    <div class="flex flex-col items-center gap-3">
+      <div class="w-12 h-12 border-4 border-gray-200 border-t-healthcare-blue rounded-full animate-spin"></div>
+      <div class="text-healthcare-blue font-bold">Loading…</div>
+    </div>
+  </div>
+  {% csrf_token %}
+  <!-- Main Layout -->
+  <div class="flex h-screen bg-gray-50">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-healthcare-blue text-white shadow-lg">
+      <!-- Logo -->
+      <div class="p-4 border-b border-healthcare-light-blue/30">
+        <div class="flex items-center space-x-3">
+          <div style="display:flex;align-items:center;gap:10px">
+            <img src="/media/logo/Medisafe%20Logo.jpg" alt="MediSafe" style="height:44px;width:auto;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.06)" />
+            <span class="font-bold text-lg">MediSafe+</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="p-4">
+        <div class="mb-4">
+          <div class="relative">
+            <input type="text" 
+                   placeholder="Search..." 
+                   class="w-full bg-white/10 text-white placeholder-white/60 px-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-white/30">
+            <i class="fas fa-search absolute right-3 top-2.5 text-white/60"></i>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <a href="{% url 'moddashboard' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-chart-pie"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="{% url 'mod_doctors' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg bg-white/20 text-white">
+            <i class="fas fa-users-cog"></i>
+            <span>Medisafe Team</span>
+          </a>
+          <a href="{% url 'mod_records' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-hospital-user"></i>
+            <span>Patient Records</span>
+          </a>
+          <a href="{% url 'mod_users' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-users"></i>
+            <span>User Management</span>
+          </a>
+          <a href="{% url 'mod_consultations' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-calendar-check"></i>
+            <span>Appointments</span>
+          </a>
+          <a href="{% url 'mod_analytics' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/20">
+            <i class="fas fa-chart-line"></i>
+            <span>Analytics</span>
+          </a>
+        </div>
+      </nav>
+
+      <!-- User Profile -->
+      <div class="mt-auto p-4 border-t border-healthcare-light-blue/30">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="bg-white/10 p-2 rounded-full">
+              <i class="fas fa-user-md"></i>
+            </div>
+            <div>
+              <p class="text-sm font-semibold">{{ admin.username }}</p>
+              <p class="text-xs text-gray-300">Administrator</p>
+            </div>
+          </div>
+          <a href="{% url 'logout' %}" class="text-gray-300 hover:text-white">
+            <i class="fas fa-sign-out-alt"></i>
+          </a>
+        </div>
+        
+        <!-- Super Admin Component Include -->
+        {% include 'super_admin_component.html' %}
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto">
+      <!-- Header -->
+      <header class="bg-white shadow-sm">
+        <div class="px-6 py-4">
+          <div class="flex items-center justify-between">
+            <h1 class="text-2xl font-bold text-healthcare-blue">Medisafe Team Management</h1>
+            <div class="flex items-center gap-3">
+              <button onclick="openModal('addMedisafeMemberModal')" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-colors flex items-center gap-2 shadow-md">
+                <i class="fas fa-user-plus"></i>
+                + Add Medisafe Member
+              </button>
+              <button onclick="openModal('addDoctorModal')" class="bg-healthcare-blue text-white px-4 py-2 rounded-lg hover:bg-healthcare-light-blue transition-colors flex items-center gap-2">
+                <i class="fas fa-plus"></i>
+                Add New Doctor
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content -->
+      <div class="p-6">
+        <!-- Medisafe Team Members Dropdown Section -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+          <div class="border-b border-gray-200">
+            <button onclick="toggleTeamMembers()" class="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+              <div class="flex items-center gap-3">
+                <i class="fas fa-users-cog text-healthcare-blue text-lg"></i>
+                <h2 class="text-lg font-bold text-healthcare-blue">Medisafe Team Members</h2>
+                <span class="ml-2 inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-healthcare-blue">{{ team_members|length }}</span>
+              </div>
+              <i id="teamMembersToggleIcon" class="fas fa-chevron-down text-gray-400 transition-transform"></i>
+            </button>
+          </div>
+          <div id="teamMembersContent" class="hidden">
+            <div class="p-4">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                  <thead class="bg-gray-50 text-gray-600 text-sm">
+                    <tr>
+                      <th class="px-4 py-3">User ID</th>
+                      <th class="px-4 py-3">Name</th>
+                      <th class="px-4 py-3">Email</th>
+                      <th class="px-4 py-3">Role</th>
+                      <th class="px-4 py-3">Status</th>
+                      <th class="px-4 py-3">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-100">
+                    {% for member in team_members %}
+                    <tr class="text-gray-700 hover:bg-gray-50" data-member-id="{{ member.user_id }}">
+                      <td class="px-4 py-3">{{ member.user_id }}</td>
+                      <td class="px-4 py-3">{{ member.get_full_name }}</td>
+                      <td class="px-4 py-3">{{ member.email }}</td>
+                      <td class="px-4 py-3">
+                        <span class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold
+                          {% if member.role == 'admin' %}bg-purple-100 text-purple-700
+                          {% elif member.role == 'nurse' %}bg-green-100 text-green-700
+                          {% elif member.role == 'lab_tech' %}bg-blue-100 text-blue-700
+                          {% endif %}">
+                          {% if member.role == 'admin' %}Admin
+                          {% elif member.role == 'nurse' %}Nurse
+                          {% elif member.role == 'lab_tech' %}Radiologic Technologist
+                          {% else %}{{ member.role }}{% endif %}
+                        </span>
+                      </td>
+                      <td class="px-4 py-3">
+                        <span class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold {% if member.status %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                          {% if member.status %}Active{% else %}Inactive{% endif %}
+                        </span>
+                      </td>
+                      <td class="px-4 py-3">
+                        <div class="flex items-center gap-2">
+                          <button onclick="editTeamMember('{{ member.user_id }}')" class="text-blue-600 hover:text-blue-800" title="Edit Member">
+                            <i class="fas fa-edit"></i>
+                          </button>
+                          <button onclick="deleteTeamMember('{{ member.user_id }}', '{{ member.get_full_name|escapejs }}')" class="text-red-600 hover:text-red-800" title="Delete Member">
+                            <i class="fas fa-trash"></i>
+                          </button>
+                          <button onclick="convertTeamMemberToPatient('{{ member.user_id }}', '{{ member.get_full_name|escapejs }}')" class="text-yellow-600 hover:text-yellow-800" title="Convert to Patient">
+                            <i class="fas fa-user-edit"></i>
+                          </button>
+                          <button onclick="openSendMessageModalToTeamMember('{{ member.user_id }}', '{{ member.get_full_name|escapejs }}')" class="text-indigo-600 hover:text-indigo-800" title="Send Message">
+                            <i class="fas fa-envelope"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                      <td colspan="6" class="px-4 py-8 text-center text-gray-500">No team members found</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Doctors Table -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+          <div class="overflow-x-auto">
+            <div class="p-4 flex items-center gap-3">
+              <input id="doctorSearch" type="text" placeholder="Search doctors by name, specialization, license, contact..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+            </div>
+            <table class="w-full text-left">
+              <thead class="bg-gray-50 text-gray-600 text-sm">
+                <tr>
+                  <th class="px-6 py-4">Doctor ID</th>
+                  <th class="px-6 py-4">User ID</th>
+                  <th class="px-6 py-4">Name</th>
+                  <th class="px-6 py-4">Specialization</th>
+                  <th class="px-6 py-4">License Number</th>
+                  <th class="px-6 py-4">Experience</th>
+                  <th class="px-6 py-4">Availability (Days)</th>
+                  <th class="px-6 py-4">Contact</th>
+                  <th class="px-6 py-4">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                <!-- Django Template Loop Here -->
+                {% for doctor in doctors %}
+                <tr class="text-gray-700 hover:bg-gray-50" data-doctor-id="{{ doctor.doctor_id }}">
+                  <td class="px-6 py-4">{{ doctor.doctor_id }}</td>
+                  <td class="px-6 py-4">{{ doctor.user_id }}</td>
+                  <td class="px-6 py-4">{{ doctor.user.get_full_name }}</td>
+                  <td class="px-6 py-4">{{ doctor.specialization }}</td>
+                  <td class="px-6 py-4">{{ doctor.license_number }}</td>
+                  <td class="px-6 py-4">{{ doctor.years_of_experience }} years</td>
+                  <td class="px-6 py-4">
+                    <div class="text-sm text-gray-700">
+                      {% if doctor.availability.schedules %}
+                        {% for schedule in doctor.availability.schedules %}
+                          <div class="mb-1">
+                            <span class="font-medium">{{ schedule.days|join:', '|title }}</span>
+                            {% if schedule.start and schedule.end %}
+                              <span class="text-gray-500">({{ schedule.start }} - {{ schedule.end }})</span>
+                            {% endif %}
+                          </div>
+                        {% endfor %}
+                      {% else %}
+                        Not set
+                      {% endif %}
+                    </div>
+                  </td>
+                  <td class="px-6 py-4">{{ doctor.contact_info }}</td>
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-2">
+                      <button onclick="openEditModal('{{ doctor.doctor_id }}')" class="text-blue-600 hover:text-blue-800">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button onclick="confirmDelete('{{ doctor.doctor_id }}')" class="text-red-600 hover:text-red-800">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                      <button onclick="confirmRoleChange('{{ doctor.doctor_id }}')" class="text-yellow-600 hover:text-yellow-800">
+                        <i class="fas fa-user-edit" title="Convert to Patient"></i>
+                      </button>
+                      <button onclick="viewDoctorPatients('{{ doctor.doctor_id }}', '{{ doctor.user.get_full_name|escapejs }}')" class="text-green-700 hover:text-green-900">
+                        <i class="fas fa-user-friends" title="View Patients"></i>
+                      </button>
+                      <!-- Quick Message to Doctor -->
+                      <button onclick="openSendMessageModalToDoctor('{{ doctor.user.user_id }}', '{{ doctor.user.get_full_name|escapejs }}')" class="text-indigo-600 hover:text-indigo-800" title="Send Message to Doctor">
+                        <i class="fas fa-envelope"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <!-- Patients / Appointments / Prescriptions Panel -->
+      <div class="p-6 pt-0">
+        <div id="doctorPatientsPanel" class="bg-white rounded-lg shadow-md overflow-hidden hidden">
+          <div class="px-6 py-4 border-b">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <i class="fas fa-user-friends text-healthcare-blue"></i>
+                <h2 id="patientsPanelTitle" class="text-lg font-bold text-healthcare-blue">Patients</h2>
+                <span id="patientsCountBadge" class="ml-2 inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-healthcare-blue">0</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <input id="patientsSearch" type="text" placeholder="Search..." class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-healthcare-blue">
+                <button id="exportPatientsCsvBtn" class="px-3 py-2 text-sm border rounded-lg hover:bg-gray-50"><i class="fas fa-file-export mr-1"></i>Export CSV</button>
+                <button onclick="hidePatientsPanel()" class="px-3 py-2 text-sm border rounded-lg hover:bg-gray-50"><i class="fas fa-times"></i></button>
+              </div>
+            </div>
+
+            <!-- Tab buttons -->
+            <div class="mt-4">
+              <div class="flex space-x-2" role="tablist">
+                <button id="tabPatientsBtn" class="px-3 py-1 rounded border-b-2 border-healthcare-blue text-healthcare-blue text-sm" data-target="#tabPatients">Patients</button>
+                <button id="tabAppointmentsBtn" class="px-3 py-1 rounded text-sm" data-target="#tabAppointments">Appointments of</button>
+                <button id="tabPrescriptionsBtn" class="px-3 py-1 rounded text-sm" data-target="#tabPrescriptions">Prescriptions made by</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="px-6 py-4">
+            <!-- Patients Table -->
+            <div id="tabPatients" class="tab-panel">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                  <thead class="bg-gray-50 text-gray-600 text-sm">
+                    <tr>
+                      <th class="px-4 py-2">Profile</th>
+                      <th class="px-4 py-2">Name</th>
+                      <th class="px-4 py-2">User ID</th>
+                      <th class="px-4 py-2">Email</th>
+                    </tr>
+                  </thead>
+                  <tbody id="patientsTableBody" class="divide-y divide-gray-100"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Appointments Table -->
+            <div id="tabAppointments" class="tab-panel hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                  <thead class="bg-gray-50 text-gray-600 text-sm">
+                    <tr>
+                      <th class="px-4 py-2">Appointment ID</th>
+                      <th class="px-4 py-2">Patient</th>
+                      <th class="px-4 py-2">Type</th>
+                      <th class="px-4 py-2">Date</th>
+                      <th class="px-4 py-2">Time</th>
+                      <th class="px-4 py-2">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="appointmentsTableBody" class="divide-y divide-gray-100"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Prescriptions Table -->
+            <div id="tabPrescriptions" class="tab-panel hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                  <thead class="bg-gray-50 text-gray-600 text-sm">
+                    <tr>
+                      <th class="px-4 py-2">Prescription #</th>
+                      <th class="px-4 py-2">Patient</th>
+                      <th class="px-4 py-2">Status</th>
+                      <th class="px-4 py-2">Created</th>
+                      <th class="px-4 py-2">File</th>
+                    </tr>
+                  </thead>
+                  <tbody id="prescriptionsTableBody" class="divide-y divide-gray-100"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add Doctor Modal -->
+  <div id="addDoctorModal" class="modal">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="modal-content bg-white rounded-lg shadow-xl max-w-2xl w-full p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold text-healthcare-blue">Add New Doctor</h2>
+          <button onclick="closeModal('addDoctorModal')" class="text-gray-400 hover:text-gray-600">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <!-- Add Doctor Form -->
+        <form id="addDoctorForm" class="space-y-6" method="post">
+          {% csrf_token %}
+          
+          <div class="grid grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Select User</label>
+              <select name="user_id" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-healthcare-blue focus:border-transparent" required>
+                <option value="">Select a user</option>
+                {% for user in available_users %}
+                <option value="{{ user.user_id }}">
+                  {{ user.get_full_name }} (ID: {{ user.user_id }})
+                </option>
+                {% endfor %}
+              </select>
+            </div>            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Specialization</label>
+              <input type="text" name="specialization" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-healthcare-blue focus:border-transparent" required>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">License Number</label>
+              <input type="text" name="license_number" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-healthcare-blue focus:border-transparent" required>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Experience</label>
+              <input type="text" name="years_of_experience" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-healthcare-blue focus:border-transparent" placeholder="e.g., 10 years, Senior Consultant" required>
+            </div>
+
+            <div class="col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Availability Schedule</label>
+              <div id="availability-container" class="space-y-4">
+                <div class="availability-slot border border-gray-300 rounded-lg p-4">
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm text-gray-600 mb-1">Days</label>
+                      <select name="availability_days[]" multiple class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-healthcare-blue focus:border-transparent">
+                        <option value="monday">Monday</option>
+                        <option value="tuesday">Tuesday</option>
+                        <option value="wednesday">Wednesday</option>
+                        <option value="thursday">Thursday</option>
+                        <option value="friday">Friday</option>
+                        <option value="saturday">Saturday</option>
+                        <option value="sunday">Sunday</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-sm text-gray-600 mb-1">Time Range</label>
+                      <div class="flex items-center gap-2">
+                        <input type="time" name="availability_start[]" class="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-healthcare-blue focus:border-transparent">
+                        <span class="text-gray-500">to</span>
+                        <input type="time" name="availability_end[]" class="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-healthcare-blue focus:border-transparent">
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mt-2 flex justify-end">
+                    <button type="button" onclick="removeAvailabilitySlot(this)" class="text-red-600 hover:text-red-800 text-sm">
+                      <i class="fas fa-trash"></i> Remove
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <button type="button" onclick="addAvailabilitySlot()" class="mt-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                <i class="fas fa-plus"></i> Add Another Time Slot
+              </button>
+            </div>
+
+            <div class="col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Contact Information</label>
+              <textarea name="contact_info" rows="3" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-healthcare-blue focus:border-transparent"></textarea>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-4 mt-6">
+            <button type="button" onclick="closeModal('addDoctorModal')" class="px-6 py-2 border rounded-lg hover:bg-gray-50">
+              Cancel
+            </button>
+            <button type="submit" class="px-6 py-2 bg-healthcare-blue text-white rounded-lg hover:bg-healthcare-light-blue">
+              Save Doctor
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Medisafe Member Modal -->
+  <div id="addMedisafeMemberModal" class="modal">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="modal-content bg-white rounded-lg shadow-xl max-w-2xl w-full p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+            <i class="fas fa-user-plus mr-2"></i>Add Medisafe Team Member
+          </h2>
+          <button onclick="closeModal('addMedisafeMemberModal')" class="text-gray-400 hover:text-gray-600">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <!-- Add Medisafe Member Form -->
+        <form id="addMedisafeMemberForm" class="space-y-6" method="post">
+          {% csrf_token %}
+          
+          <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+            <p class="text-sm text-blue-700">
+              <i class="fas fa-info-circle mr-2"></i>
+              <strong>Note:</strong> This will convert an existing user to a Medisafe Team member (Admin, Nurse, or Radiologic Technologist). The user must not already be a doctor.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-6">
+            <div class="col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Select User</label>
+              <select name="user_id" id="medisafeMemberUserId" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" required>
+                <option value="">Select a user to convert</option>
+                {% for user in available_users %}
+                <option value="{{ user.user_id }}">
+                  {{ user.get_full_name }} (ID: {{ user.user_id }}) - {{ user.email }}
+                </option>
+                {% endfor %}
+              </select>
+              <p class="text-xs text-gray-500 mt-1">Only users who are not doctors or team members are shown</p>
+            </div>
+
+            <div class="col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Select Role</label>
+              <div class="grid grid-cols-3 gap-4">
+                <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-purple-500 transition-colors">
+                  <input type="radio" name="role" value="admin" class="mr-3 text-purple-600 focus:ring-purple-500" required>
+                  <div>
+                    <div class="font-semibold text-gray-900">Admin</div>
+                    <div class="text-xs text-gray-500">System Administrator</div>
+                  </div>
+                </label>
+                <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-green-500 transition-colors">
+                  <input type="radio" name="role" value="nurse" class="mr-3 text-green-600 focus:ring-green-500" required>
+                  <div>
+                    <div class="font-semibold text-gray-900">Nurse</div>
+                    <div class="text-xs text-gray-500">Medical Nurse</div>
+                  </div>
+                </label>
+                <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                  <input type="radio" name="role" value="lab_tech" class="mr-3 text-blue-600 focus:ring-blue-500" required>
+                  <div>
+                    <div class="font-semibold text-gray-900">Radiologic Technologist</div>
+                    <div class="text-xs text-gray-500">Lab Technician</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div class="col-span-2">
+              <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <p class="text-sm text-amber-800">
+                  <i class="fas fa-exclamation-triangle mr-2"></i>
+                  <strong>Warning:</strong> Converting a user will change their role and may affect their access permissions. If the user is currently a patient, their patient record will be removed.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-4 mt-6">
+            <button type="button" onclick="closeModal('addMedisafeMemberModal')" class="px-6 py-2 border rounded-lg hover:bg-gray-50">
+              Cancel
+            </button>
+            <button type="submit" class="px-6 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-colors">
+              <i class="fas fa-user-plus mr-2"></i>Add Team Member
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Doctor Modal -->
+  <div id="editDoctorModal" class="modal">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="modal-content bg-white rounded-lg shadow-xl max-w-2xl w-full p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold text-healthcare-blue">Edit Doctor</h2>
+          <button onclick="closeModal('editDoctorModal')" class="text-gray-400 hover:text-gray-600">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <!-- Edit Doctor Form -->
+        <form id="editDoctorForm" class="space-y-6" method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          
+          <div class="grid grid-cols-2 gap-6">
+            <input type="hidden" name="doctor_id" id="editDoctorId">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Specialization</label>
+              <input type="text" name="specialization" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-healthcare-blue focus:border-transparent" required>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">License Number</label>
+              <input type="text" name="license_number" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-healthcare-blue focus:border-transparent" required>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Years of Experience</label>
+              <input type="number" name="years_of_experience" min="0" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-healthcare-blue focus:border-transparent" required>
+            </div>
+
+            <div class="col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Contact Information</label>
+              <textarea name="contact_info" rows="3" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-healthcare-blue focus:border-transparent"></textarea>
+            </div>
+            <div class="col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Profile Photo</label>
+              <input type="file" name="photo" accept="image/*" class="w-full" />
+              <p class="text-xs text-gray-500 mt-1">Upload a new profile photo to update the doctor's profile.</p>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-4 mt-6">
+            <button type="button" onclick="closeModal('editDoctorModal')" class="px-6 py-2 border rounded-lg hover:bg-gray-50">
+              Cancel
+            </button>
+            <button type="submit" class="px-6 py-2 bg-healthcare-blue text-white rounded-lg hover:bg-healthcare-light-blue">
+              Update Doctor
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Modal Functions
+    function openModal(modalId) {
+      document.getElementById(modalId).classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    // Toggle Team Members Dropdown
+    function toggleTeamMembers() {
+      const content = document.getElementById('teamMembersContent');
+      const icon = document.getElementById('teamMembersToggleIcon');
+      if (content && icon) {
+        content.classList.toggle('hidden');
+        icon.classList.toggle('fa-chevron-down');
+        icon.classList.toggle('fa-chevron-up');
+      }
+    }
+
+    // Client-side search filter for doctors
+    document.addEventListener('DOMContentLoaded', () => {
+      checkSuperAdminStatus(); // Check permissions on page load
+      const input = document.getElementById('doctorSearch');
+      if (!input) return;
+      input.addEventListener('input', () => {
+        const term = input.value.toLowerCase();
+        document.querySelectorAll('table tbody tr').forEach(row => {
+          const cellsText = Array.from(row.querySelectorAll('td')).map(td => td.textContent.toLowerCase()).join(' ');
+          row.style.display = cellsText.includes(term) ? '' : 'none';
+        });
+      });
+    });
+
+    function showLoader(){ const el = document.getElementById('pageLoader'); if(el){ el.classList.remove('hidden'); el.classList.add('flex'); } }
+    function hideLoader(){ const el = document.getElementById('pageLoader'); if(el){ el.classList.add('hidden'); el.classList.remove('flex'); } }
+
+    async function openEditModal(doctorId) {
+      try {
+        showLoader();
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const response = await fetch(`/mod_doctors/get/${doctorId}/`, {
+          method: 'GET',
+          headers: {
+            'X-CSRFToken': csrftoken,
+            'Accept': 'application/json'
+          }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to fetch doctor data');
+        }
+
+        // Populate form with doctor data
+        const form = document.getElementById('editDoctorForm');
+        form.querySelector('#editDoctorId').value = doctorId;
+        form.querySelector('[name="specialization"]').value = data.specialization;
+        form.querySelector('[name="license_number"]').value = data.license_number;
+        form.querySelector('[name="years_of_experience"]').value = data.years_of_experience;
+        form.querySelector('[name="contact_info"]').value = data.contact_info || '';
+
+        // Add/Update a preview block for profile photo and basic name
+        let preview = document.getElementById('doctorEditPreview');
+        if(!preview){
+          preview = document.createElement('div');
+          preview.id = 'doctorEditPreview';
+          preview.className = 'flex items-center gap-4 p-4 mb-4 rounded-lg bg-blue-50 border border-blue-100';
+          form.parentElement.insertBefore(preview, form);
+        }
+        preview.innerHTML = `
+          <div style="width:64px;height:64px;border-radius:999px;overflow:hidden;background:#e5e7eb;flex-shrink:0">
+            ${data.photo_url ? `<img src="${data.photo_url}" style="width:100%;height:100%;object-fit:cover">` : ''}
+          </div>
+          <div>
+            <div class="font-bold text-healthcare-blue">${data.first_name || ''} ${data.last_name || ''}</div>
+            <div class="text-sm text-gray-600">User ID: ${data.user_id} · Doctor ID: ${data.doctor_id}</div>
+          </div>
+        `;
+
+        // Open the edit modal
+        openModal('editDoctorModal');
+      } catch (error) {
+        // Show error message
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded shadow-lg z-50';
+        alertDiv.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i>${error.message}`;
+        document.body.appendChild(alertDiv);
+        setTimeout(() => alertDiv.remove(), 3000);
+      } finally {
+        hideLoader();
+      }
+    }
+
+    async function confirmRoleChange(doctorId) {
+      // Permission check
+      if (!isSuperAdmin) {
+        showPermissionWarning();
+        return;
+      }
+
+      if (confirm('Are you sure you want to convert this doctor to a patient? This action will remove their doctor privileges and create a new patient record.')) {
+        try {
+          showLoader();
+          const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const response = await fetch(`/mod_doctors/convert/${doctorId}/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': csrftoken,
+            'Accept': 'application/json'
+          }
+        });          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || 'Failed to convert doctor to patient');
+          }
+
+          // Show success message
+          const alertDiv = document.createElement('div');
+          alertDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded shadow-lg z-50';
+          alertDiv.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Doctor successfully converted to patient';
+          document.body.appendChild(alertDiv);
+          setTimeout(() => alertDiv.remove(), 3000);
+
+          // Remove the row from the table
+          const row = document.querySelector(`tr[data-doctor-id="${doctorId}"]`);
+          if (row) {
+            row.remove();
+          } else {
+            // If row not found by data attribute, refresh the page
+            location.reload();
+          }
+
+        } catch (error) {
+          // Show error message
+          const alertDiv = document.createElement('div');
+          alertDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded shadow-lg z-50';
+          alertDiv.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i>${error.message}`;
+          document.body.appendChild(alertDiv);
+          setTimeout(() => alertDiv.remove(), 3000);
+        } finally {
+          hideLoader();
+        }
+      }
+    }
+
+    async function confirmDelete(doctorId) {
+      if (confirm('Are you sure you want to delete this doctor? This action cannot be undone and will delete all associated data including consultations.')) {
+        try {
+          showLoader();
+          const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+          const response = await fetch(`{% url "mod_doctors" %}?doctor_id=${doctorId}`, {
+            method: 'DELETE',
+            headers: {
+              'X-CSRFToken': csrftoken
+            }
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || 'Failed to delete doctor');
+          }
+
+          // Show success message
+          const alertDiv = document.createElement('div');
+          alertDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded shadow-lg z-50';
+          alertDiv.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Doctor deleted successfully';
+          document.body.appendChild(alertDiv);
+          setTimeout(() => alertDiv.remove(), 3000);
+
+          // Remove the row from the table
+          const row = document.querySelector(`tr[data-doctor-id="${doctorId}"]`);
+          if (row) {
+            row.remove();
+          } else {
+            // If row not found by data attribute, refresh the page
+            location.reload();
+          }
+
+        } catch (error) {
+          // Show error message
+          const alertDiv = document.createElement('div');
+          alertDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded shadow-lg z-50';
+          alertDiv.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i>${error.message}`;
+          document.body.appendChild(alertDiv);
+          setTimeout(() => alertDiv.remove(), 3000);
+        } finally {
+          hideLoader();
+        }
+      }
+    }
+
+    // Form submission
+    document.getElementById('editDoctorForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const submitButton = form.querySelector('button[type="submit"]');
+      const formData = new FormData(form);
+      const doctorId = formData.get('doctor_id');
+      
+      try {
+        // Disable submit button and show loading state
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+
+        // Send data to backend
+        showLoader();
+        const response = await fetch(`/mod_doctors/edit/${doctorId}/`, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+            'Accept': 'application/json'
+          }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to update doctor');
+        }
+
+        // Show success message
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded shadow-lg z-50';
+        alertDiv.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Doctor updated successfully';
+        document.body.appendChild(alertDiv);
+        setTimeout(() => alertDiv.remove(), 3000);
+
+        // Update the row in the table
+        const row = document.querySelector(`tr[data-doctor-id="${doctorId}"]`);
+        if (row) {
+          row.querySelector('td:nth-child(4)').textContent = formData.get('specialization');
+          row.querySelector('td:nth-child(5)').textContent = formData.get('license_number');
+          row.querySelector('td:nth-child(6)').textContent = formData.get('years_of_experience') + ' years';
+          row.querySelector('td:nth-child(8)').textContent = formData.get('contact_info');
+        }
+
+        // Close modal
+        closeModal('editDoctorModal');
+
+      } catch (error) {
+        // Show error message
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded shadow-lg z-50';
+        alertDiv.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i>${error.message}`;
+        document.body.appendChild(alertDiv);
+        setTimeout(() => alertDiv.remove(), 3000);
+      } finally {
+        // Re-enable submit button
+        submitButton.disabled = false;
+        submitButton.innerHTML = 'Update Doctor';
+        hideLoader();
+      }
+    });
+
+    document.getElementById('addDoctorForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const submitButton = form.querySelector('button[type="submit"]');
+      const formData = new FormData(form);
+      
+      try {
+        // Disable submit button and show loading state
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+        // Send data to backend
+        showLoader();
+        const response = await fetch('{% url "mod_doctors" %}', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+          }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to add doctor');
+        }
+
+        // Show success message
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded shadow-lg z-50';
+        alertDiv.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Doctor added successfully';
+        document.body.appendChild(alertDiv);
+        setTimeout(() => alertDiv.remove(), 3000);
+
+        // Add new doctor to the table
+        const tbody = document.querySelector('table tbody');
+        const newRow = document.createElement('tr');
+        newRow.className = 'text-gray-700 hover:bg-gray-50';
+        newRow.innerHTML = `
+          <td class="px-6 py-4">${data.doctor.id}</td>
+          <td class="px-6 py-4">${data.doctor.user_id}</td>
+          <td class="px-6 py-4">${data.doctor.name}</td>
+          <td class="px-6 py-4">${data.doctor.specialization}</td>
+          <td class="px-6 py-4">${data.doctor.license_number}</td>
+          <td class="px-6 py-4">${data.doctor.years_of_experience} years</td>
+          <td class="px-6 py-4">
+            <span class="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-1 text-xs font-semibold text-green-600">
+              <span class="h-1.5 w-1.5 rounded-full bg-green-600"></span>
+              Available
+            </span>
+          </td>
+          <td class="px-6 py-4">Contact details</td>
+          <td class="px-6 py-4">
+            <div class="flex items-center gap-2">
+              <button onclick="openEditModal('${data.doctor.id}')" class="text-blue-600 hover:text-blue-800">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button onclick="confirmDelete('${data.doctor.id}')" class="text-red-600 hover:text-red-800">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        `;
+        tbody.insertBefore(newRow, tbody.firstChild);
+
+        // Remove the selected user from the dropdown
+        const userOption = form.querySelector(`option[value="${data.doctor.user_id}"]`);
+        if (userOption) userOption.remove();
+
+        // Reset form and close modal
+        form.reset();
+        closeModal('addDoctorModal');
+
+      } catch (error) {
+        // Show error message
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded shadow-lg z-50';
+        alertDiv.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i>${error.message}`;
+        document.body.appendChild(alertDiv);
+        setTimeout(() => alertDiv.remove(), 3000);
+      } finally {
+        // Re-enable submit button
+        submitButton.disabled = false;
+        submitButton.innerHTML = 'Save Doctor';
+        hideLoader();
+      }
+    });
+    
+
+    // Close modals when clicking outside
+    document.querySelectorAll('.modal').forEach(modal => {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          closeModal(modal.id);
+        }
+      });
+    });
+
+    // Close modals with Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal').forEach(modal => {
+          if (modal.classList.contains('active')) {
+            closeModal(modal.id);
+          }
+        });
+      }
+    });
+
+    // Availability slot management
+    function addAvailabilitySlot() {
+      const container = document.getElementById('availability-container');
+      const newSlot = document.createElement('div');
+      newSlot.className = 'availability-slot border border-gray-300 rounded-lg p-4';
+      newSlot.innerHTML = `
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">Days</label>
+            <select name="availability_days[]" multiple class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-healthcare-blue focus:border-transparent">
+              <option value="monday">Monday</option>
+              <option value="tuesday">Tuesday</option>
+              <option value="wednesday">Wednesday</option>
+              <option value="thursday">Thursday</option>
+              <option value="friday">Friday</option>
+              <option value="saturday">Saturday</option>
+              <option value="sunday">Sunday</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">Time Range</label>
+            <div class="flex items-center gap-2">
+              <input type="time" name="availability_start[]" class="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-healthcare-blue focus:border-transparent">
+              <span class="text-gray-500">to</span>
+              <input type="time" name="availability_end[]" class="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-healthcare-blue focus:border-transparent">
+            </div>
+          </div>
+        </div>
+        <div class="mt-2 flex justify-end">
+          <button type="button" onclick="removeAvailabilitySlot(this)" class="text-red-600 hover:text-red-800 text-sm">
+            <i class="fas fa-trash"></i> Remove
+          </button>
+        </div>
+      `;
+      container.appendChild(newSlot);
+    }
+
+    function removeAvailabilitySlot(button) {
+      const slot = button.closest('.availability-slot');
+      const container = document.getElementById('availability-container');
+      if (container.children.length > 1) {
+        slot.remove();
+      } else {
+        alert('At least one availability slot is required.');
+      }
+    }
+
+    // Add Medisafe Member Form Submission
+    const addMedisafeMemberForm = document.getElementById('addMedisafeMemberForm');
+    if (addMedisafeMemberForm) {
+      addMedisafeMemberForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const submitButton = form.querySelector('button[type="submit"]');
+        const formData = {
+          user_id: form.querySelector('[name="user_id"]').value,
+          role: form.querySelector('[name="role"]:checked')?.value
+        };
+        
+        if (!formData.user_id || !formData.role) {
+          alert('Please select a user and role');
+          return;
+        }
+        
+        try {
+          submitButton.disabled = true;
+          submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Adding...';
+          showLoader();
+          
+          const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+          const response = await fetch('{% url "add_medisafe_member" %}', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify(formData)
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || 'Failed to add team member');
+          }
+
+          // Show success message
+          const alertDiv = document.createElement('div');
+          alertDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded shadow-lg z-50';
+          alertDiv.innerHTML = `<i class="fas fa-check-circle mr-2"></i>${data.message || 'Team member added successfully'}`;
+          document.body.appendChild(alertDiv);
+          setTimeout(() => alertDiv.remove(), 3000);
+
+          // Reload page to show new team member
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+
+        } catch (error) {
+          const alertDiv = document.createElement('div');
+          alertDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded shadow-lg z-50';
+          alertDiv.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i>${error.message}`;
+          document.body.appendChild(alertDiv);
+          setTimeout(() => alertDiv.remove(), 3000);
+        } finally {
+          submitButton.disabled = false;
+          submitButton.innerHTML = '<i class="fas fa-user-plus mr-2"></i>Add Team Member';
+          hideLoader();
+        }
+      });
+    }
+  </script>
+  <script>
+    // Patients Panel Logic
+    let currentPatients = [];
+    function hidePatientsPanel(){
+      const panel = document.getElementById('doctorPatientsPanel');
+      if(panel){ panel.classList.add('hidden'); }
+    }
+    async function viewDoctorPatients(doctorId, doctorName){
+      try{
+        showLoader();
+        const resp = await fetch(`/mod_doctors/patients/${doctorId}/`, { headers: { 'Accept': 'application/json' } });
+        const data = await resp.json();
+        if(!resp.ok){ throw new Error(data.error || 'Failed to load patients'); }
+        currentPatients = data.patients || [];
+        const appointments = data.appointments || [];
+        const prescriptions = data.prescriptions || [];
+        const title = document.getElementById('patientsPanelTitle');
+        const count = document.getElementById('patientsCountBadge');
+        if(title){ title.textContent = `Patients of ${doctorName}`; }
+        if(count){ count.textContent = currentPatients.length; }
+
+        // Populate Patients table
+        const patientsTbody = document.getElementById('patientsTableBody');
+        patientsTbody.innerHTML = currentPatients.map(p => `
+          <tr>
+            <td class="px-4 py-3"><div class="w-10 h-10 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">${p.photo_url ? `<img src="${p.photo_url}" class="w-full h-full object-cover">` : (p.name||'').slice(0,2).toUpperCase()}</div></td>
+            <td class="px-4 py-3">${p.name || ''}</td>
+            <td class="px-4 py-3">${p.user_id || ''}</td>
+            <td class="px-4 py-3">${p.email || ''}</td>
+          </tr>
+        `).join('') || '<tr><td class="px-4 py-3 text-gray-500" colspan="4">No patients found.</td></tr>';
+
+        // Populate Appointments table
+        const apptTbody = document.getElementById('appointmentsTableBody');
+        apptTbody.innerHTML = appointments.map(a => `
+          <tr>
+            <td class="px-4 py-2">${a.appointment_id || ''}</td>
+            <td class="px-4 py-2">${a.patient_name || ''}</td>
+            <td class="px-4 py-2">${a.consultation_type || ''}</td>
+            <td class="px-4 py-2">${a.consultation_date ? (new Date(a.consultation_date)).toLocaleDateString() : ''}</td>
+            <td class="px-4 py-2">${a.consultation_time || ''}</td>
+            <td class="px-4 py-2">${a.status || ''}</td>
+          </tr>
+        `).join('') || '<tr><td class="px-4 py-3 text-gray-500" colspan="6">No appointments found.</td></tr>';
+
+        // Populate Prescriptions table
+        const presTbody = document.getElementById('prescriptionsTableBody');
+        presTbody.innerHTML = prescriptions.map(p => `
+          <tr>
+            <td class="px-4 py-2">${p.prescription_number || ''}</td>
+            <td class="px-4 py-2">${p.patient_name || ''}</td>
+            <td class="px-4 py-2">${p.status || ''}</td>
+            <td class="px-4 py-2">${p.created_at ? (new Date(p.created_at)).toLocaleString() : ''}</td>
+            <td class="px-4 py-2">${p.file_url ? `<a href="${p.file_url}" target="_blank" class="text-healthcare-blue hover:underline">Download</a>` : '-'}</td>
+          </tr>
+        `).join('') || '<tr><td class="px-4 py-3 text-gray-500" colspan="5">No prescriptions found.</td></tr>';
+
+        // Update tab labels to include doctor's name
+        const tabApptBtn = document.getElementById('tabAppointmentsBtn');
+        const tabPresBtn = document.getElementById('tabPrescriptionsBtn');
+        if(tabApptBtn) tabApptBtn.textContent = `Appointments of ${doctorName}`;
+        if(tabPresBtn) tabPresBtn.textContent = `Prescriptions made by ${doctorName}`;
+
+        // Show panel
+        const panel = document.getElementById('doctorPatientsPanel');
+        if(panel){ panel.classList.remove('hidden'); }
+
+        // Tab switching
+        const tabButtons = document.querySelectorAll('#doctorPatientsPanel [data-target]');
+        tabButtons.forEach(btn => btn.addEventListener('click', function(){
+          const target = this.getAttribute('data-target');
+          document.querySelectorAll('#doctorPatientsPanel .tab-panel').forEach(tp => tp.classList.add('hidden'));
+          document.querySelectorAll('#doctorPatientsPanel [data-target]').forEach(b => b.classList.remove('border-healthcare-blue','text-healthcare-blue'));
+          const el = document.querySelector(target);
+          if(el) el.classList.remove('hidden');
+          this.classList.add('border-healthcare-blue','text-healthcare-blue');
+        }));
+        // activate first tab by default
+        const firstBtn = document.getElementById('tabPatientsBtn');
+        if(firstBtn) firstBtn.click();
+
+        // Filtering for visible table
+        const search = document.getElementById('patientsSearch');
+        if(search){
+          search.oninput = function(){
+            const q = (search.value||'').toLowerCase();
+            // Filter rows in currently visible panel
+            document.querySelectorAll('#doctorPatientsPanel .tab-panel').forEach(panelEl => {
+              if(panelEl.classList.contains('hidden')) return;
+              panelEl.querySelectorAll('tbody tr').forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = q && text.indexOf(q) === -1 ? 'none' : '';
+              });
+            });
+          };
+        }
+
+        // CSV export uses currently visible tab
+        const exportBtn = document.getElementById('exportPatientsCsvBtn');
+        if(exportBtn){
+          exportBtn.onclick = function(){
+            // Permission check
+            if (!isSuperAdmin) {
+              showPermissionWarning('Export is for Super Admin only');
+              return;
+            }
+
+            // find visible panel and collect table rows
+            const visible = Array.from(document.querySelectorAll('#doctorPatientsPanel .tab-panel')).find(p=>!p.classList.contains('hidden'));
+            if(!visible) return alert('No data to export');
+            const rows = [];
+            visible.querySelectorAll('thead th').forEach(th=> rows.push([th.textContent.trim()]));
+            // build CSV rows
+            const csvRows = [];
+            visible.querySelectorAll('tbody tr').forEach(tr=>{
+              if(tr.style.display === 'none') return;
+              const cols = Array.from(tr.querySelectorAll('td')).map(td=>td.textContent.trim());
+              csvRows.push(cols);
+            });
+            if(csvRows.length === 0) return alert('No data to export');
+            const csvContent = csvRows.map(r=>r.map(v=>'"'+v.replaceAll('"','""')+'"').join(',')).join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = (doctorName||'doctor')+'_export.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+          };
+        }
+      }catch(err){
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded shadow-lg z-50';
+        alertDiv.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i>${err.message}`;
+        document.body.appendChild(alertDiv);
+        setTimeout(() => alertDiv.remove(), 3000);
+      } finally {
+        hideLoader();
+      }
+    }
+  </script>
+</body>
+</html>

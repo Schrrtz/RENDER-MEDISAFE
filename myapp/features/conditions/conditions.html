@@ -1,0 +1,1237 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Medical Conditions Directory - Medisafe Health Platform{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    'healthcare-red': '#FF6B35',
+                    'healthcare-blue': '#003366',
+                    'healthcare-light-blue': '#0066CC'
+                }
+            }
+        }
+    }
+</script>
+    <style>
+        body {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f3f6;
+            color: #2c2c2f;
+            line-height: 1.6;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            box-shadow: 0 2px 8px rgba(44, 113, 183, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 70px;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2c71b7;
+            text-decoration: none;
+        }
+
+        .nav {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .nav a {
+            text-decoration: none;
+            color: #2c2c2f;
+            font-weight: 500;
+            font-size: 15px;
+            transition: color 0.3s;
+        }
+
+        .nav a:hover, .nav a.active {
+            color: #2c71b7;
+        }
+
+        .search-container {
+            position: relative;
+        }
+
+        .search-bar {
+            padding: 10px 40px 10px 15px;
+            border: 2px solid #b7cce4;
+            border-radius: 25px;
+            width: 280px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .search-bar:focus {
+            border-color: #2c71b7;
+        }
+
+        .search-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #2c71b7;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #2c71b7 0%, #b7cce4 100%);
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="25" cy="25" r="1.5" fill="white" opacity="0.1"/><circle cx="75" cy="35" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="75" r="1.2" fill="white" opacity="0.1"/></svg>');
+        }
+
+        .hero-content {
+            max-width: 700px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero h1 {
+            font-size: 42px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .hero p {
+            font-size: 18px;
+            opacity: 0.95;
+            margin-bottom: 0;
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 50px 20px;
+        }
+
+        .section-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: #2c71b7;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        /* Conditions Directory Grid */
+        .conditions-directory {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 40px;
+            margin-bottom: 60px;
+        }
+
+        .condition-column {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 3px 15px rgba(44, 113, 183, 0.08);
+            border: 1px solid #b7cce4;
+        }
+
+        .condition-item {
+            margin-bottom: 8px;
+        }
+
+        .condition-link {
+            display: block;
+            color: #2c71b7;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 15px;
+            padding: 8px 0;
+            border-bottom: 1px solid transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .condition-link:hover {
+            color: #f15e2c;
+            border-bottom-color: #f15e2c;
+        }
+
+        .condition-link.active {
+            color: #f15e2c;
+            font-weight: 600;
+        }
+
+        /* Expandable Content */
+        .condition-info {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-in-out, padding 0.3s ease;
+            background: #f0f3f6;
+            margin: 0 -25px;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .condition-info.expanded {
+            max-height: 200px;
+            padding: 20px 25px;
+            border-top: 2px solid #b7cce4;
+        }
+
+        .condition-description {
+            color: #555;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .learn-more-link {
+            color: #f15e2c;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .learn-more-link:hover {
+            color: #d14a1f;
+        }
+
+        .view-all-link {
+            color: #2c71b7;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px 0;
+            margin-top: 10px;
+            border: 2px solid #b7cce4;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .view-all-link:hover {
+            background: #2c71b7;
+            color: white;
+            border-color: #2c71b7;
+        }
+
+        /* Featured Section */
+        .featured-section {
+            background: linear-gradient(135deg, #d4cac9 0%, white 100%);
+            border-radius: 15px;
+            padding: 35px;
+            margin-bottom: 50px;
+            border-left: 5px solid #f15e2c;
+        }
+
+        .featured-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #2c71b7;
+            margin-bottom: 15px;
+        }
+
+        .featured-text {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .featured-btn {
+            background: #f15e2c;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .featured-btn:hover {
+            background: #d14a1f;
+        }
+
+        /* Footer */
+        .footer {
+            background: #b7cce4;
+            color: #2c2c2f;
+            padding: 30px 20px 20px;
+            text-align: center;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: #2c2c2f;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: #2c71b7;
+        }
+
+        .footer-tagline {
+            font-size: 14px;
+            color: #666;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 992px) {
+            .conditions-directory {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 30px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                height: auto;
+                padding: 15px 20px;
+                gap: 15px;
+            }
+
+            .nav {
+                gap: 15px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .search-bar {
+                width: 250px;
+            }
+
+            .hero h1 {
+                font-size: 32px;
+            }
+
+            .conditions-directory {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .footer-links {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Explore Medical Conditions</h1>
+            <p>Learn about common health conditions — symptoms, causes, and care tips.</p>
+        </div>
+    </section>
+
+    {% if not is_logged_in %}
+      <!-- Compact Encouraging Message for Non-Logged-In Users -->
+      <div style="background: linear-gradient(135deg, #2c71b7 0%, #2c71b7 100%); color: white; padding: 20px; border-radius: 12px; margin: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+          <div style="flex: 1; min-width: 250px;">
+            <h3 style="font-size: 20px; font-weight: 700; margin: 0 0 8px 0;">Welcome to MediSafe+ Medical Conditions</h3>
+            <p style="font-size: 14px; opacity: 0.9; margin: 0; line-height: 1.4;">{{ encouraging_message }}</p>
+          </div>
+                    <button class="standard-login-btn" onclick="document.getElementById('loginBtn')?.click();" aria-label="Login to Access Conditions">
+                        <i class="fas fa-sign-in-alt" style="margin-right: 6px;"></i>Login to Access Conditions
+                    </button>
+        </div>
+      </div>
+      
+            <!-- Login Button now triggers standardized header login modal -->
+        });
+      </script>
+    {% endif %}
+    <main class="main-content">
+        <h2 class="section-title">Medical Conditions Directory</h2>
+        
+        <div class="conditions-directory">
+            <!-- Column 1 -->
+            <div class="condition-column">
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'adhd')">ADD/ADHD</a>
+                    <div class="condition-info" id="adhd">
+                        <p class="condition-description">A neurodevelopmental disorder affecting attention, hyperactivity, and impulse control. Treatment includes behavioral therapy and medication.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'allergies')">Allergies</a>
+                    <div class="condition-info" id="allergies">
+                        <p class="condition-description">Immune system reactions to substances like pollen, food, or medications. Management includes avoidance and antihistamines.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'arthritis')">Arthritis</a>
+                    <div class="condition-info" id="arthritis">
+                        <p class="condition-description">Inflammation of the joints causing pain, stiffness, and swelling. Regular movement, medication, and physical therapy can help relieve symptoms.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'asthma')">Asthma</a>
+                    <div class="condition-info" id="asthma">
+                        <p class="condition-description">A respiratory condition that causes narrowing of airways, leading to wheezing and shortness of breath. Inhalers and avoiding triggers can help manage it.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'afib')">Atrial Fibrillation</a>
+                    <div class="condition-info" id="afib">
+                        <p class="condition-description">An irregular heart rhythm that can increase stroke risk. Treatment includes medications and lifestyle changes to control heart rate.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'breast-cancer')">Breast Cancer</a>
+                    <div class="condition-info" id="breast-cancer">
+                        <p class="condition-description">Cancer that forms in breast tissue. Early detection through screening and prompt treatment significantly improve outcomes.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'cancer')">Cancer</a>
+                    <div class="condition-info" id="cancer">
+                        <p class="condition-description">A group of diseases involving abnormal cell growth. Treatment varies by type and stage, including surgery, chemotherapy, and radiation.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'crohns')">Crohn's Disease</a>
+                    <div class="condition-info" id="crohns">
+                        <p class="condition-description">Inflammatory bowel disease causing digestive tract inflammation. Management includes medication, dietary changes, and sometimes surgery.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Column 2 -->
+            <div class="condition-column">
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'depression')">Depression</a>
+                    <div class="condition-info" id="depression">
+                        <p class="condition-description">A mental health disorder causing persistent sadness and loss of interest. Treatment includes therapy, medication, and lifestyle changes.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'diabetes')">Diabetes</a>
+                    <div class="condition-info" id="diabetes">
+                        <p class="condition-description">A chronic condition where your body either doesn't produce enough insulin or can't use it effectively, leading to high blood sugar levels. Managing diet, exercise, and medication is key.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'dvt')">DVT (Deep Vein Thrombosis)</a>
+                    <div class="condition-info" id="dvt">
+                        <p class="condition-description">Blood clots in deep veins, usually in legs. Can be serious if clots travel to lungs. Treatment includes blood thinners and compression.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'eczema')">Eczema</a>
+                    <div class="condition-info" id="eczema">
+                        <p class="condition-description">Skin condition causing itchy, inflamed patches. Management includes moisturizers, topical treatments, and avoiding triggers.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'eye-health')">Eye Health</a>
+                    <div class="condition-info" id="eye-health">
+                        <p class="condition-description">Various conditions affecting vision including glaucoma, cataracts, and macular degeneration. Regular eye exams are essential for early detection.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'heart-disease')">Heart Disease</a>
+                    <div class="condition-info" id="heart-disease">
+                        <p class="condition-description">Conditions affecting the heart and blood vessels. Prevention includes healthy diet, exercise, and managing risk factors like blood pressure.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'hiv-aids')">HIV & AIDS</a>
+                    <div class="condition-info" id="hiv-aids">
+                        <p class="condition-description">Viral infection affecting the immune system. Modern treatments allow people with HIV to live long, healthy lives.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'hypertension')">Hypertension</a>
+                    <div class="condition-info" id="hypertension">
+                        <p class="condition-description">High blood pressure that can lead to serious complications. Often called the "silent killer" as it may have no symptoms.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Column 3 -->
+            <div class="condition-column">
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'lung-disease')">Lung Disease</a>
+                    <div class="condition-info" id="lung-disease">
+                        <p class="condition-description">Various conditions affecting lung function including COPD and pulmonary fibrosis. Treatment focuses on breathing support and symptom management.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'lupus')">Lupus</a>
+                    <div class="condition-info" id="lupus">
+                        <p class="condition-description">Autoimmune disease where the body attacks its own tissues. Symptoms vary widely and treatment focuses on controlling inflammation.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'mental-health')">Mental Health</a>
+                    <div class="condition-info" id="mental-health">
+                        <p class="condition-description">Encompasses various psychological conditions affecting mood, thinking, and behavior. Treatment includes therapy, medication, and support systems.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'migraine')">Migraine</a>
+                    <div class="condition-info" id="migraine">
+                        <p class="condition-description">Severe headaches often accompanied by nausea and light sensitivity. Treatment includes preventive medications and lifestyle modifications.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'multiple-sclerosis')">Multiple Sclerosis</a>
+                    <div class="condition-info" id="multiple-sclerosis">
+                        <p class="condition-description">Autoimmune disease affecting the central nervous system. Treatment focuses on managing symptoms and slowing disease progression.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'pain-management')">Pain Management</a>
+                    <div class="condition-info" id="pain-management">
+                        <p class="condition-description">Approaches to treating chronic and acute pain through medications, therapy, and alternative treatments for improved quality of life.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'psoriasis')">Psoriasis</a>
+                    <div class="condition-info" id="psoriasis">
+                        <p class="condition-description">Autoimmune skin condition causing scaly patches. Treatment includes topical treatments, light therapy, and systemic medications.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'stroke')">Stroke</a>
+                    <div class="condition-info" id="stroke">
+                        <p class="condition-description">Interruption of blood flow to the brain. Quick treatment is crucial for minimizing damage and improving recovery outcomes.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Column 4 -->
+            <div class="condition-column">
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'psoriatic-arthritis')">Psoriatic Arthritis</a>
+                    <div class="condition-info" id="psoriatic-arthritis">
+                        <p class="condition-description">Inflammatory arthritis affecting people with psoriasis. Treatment includes anti-inflammatory medications and disease-modifying drugs.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'rheumatoid-arthritis')">Rheumatoid Arthritis</a>
+                    <div class="condition-info" id="rheumatoid-arthritis">
+                        <p class="condition-description">Autoimmune condition causing joint inflammation and damage. Early treatment with disease-modifying drugs can prevent joint destruction.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'sexual-conditions')">Sexual Conditions</a>
+                    <div class="condition-info" id="sexual-conditions">
+                        <p class="condition-description">Various conditions affecting sexual health and function. Treatment options include counseling, medications, and lifestyle changes.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'skin-problems')">Skin Problems</a>
+                    <div class="condition-info" id="skin-problems">
+                        <p class="condition-description">Various dermatological conditions including acne, rashes, and infections. Treatment depends on the specific condition and severity.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'sleep-disorders')">Sleep Disorders</a>
+                    <div class="condition-info" id="sleep-disorders">
+                        <p class="condition-description">Conditions affecting sleep quality including sleep apnea and insomnia. Treatment includes sleep hygiene and medical interventions.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'ulcerative-colitis')">Ulcerative Colitis</a>
+                    <div class="condition-info" id="ulcerative-colitis">
+                        <p class="condition-description">Inflammatory bowel disease affecting the colon. Treatment includes anti-inflammatory medications and dietary modifications.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <a href="#" class="condition-link" onclick="toggleCondition(this, 'thyroid-disorders')">Thyroid Disorders</a>
+                    <div class="condition-info" id="thyroid-disorders">
+                        <p class="condition-description">Conditions affecting thyroid function including hyperthyroidism and hypothyroidism. Treatment involves hormone regulation medications.</p>
+                        <a href="#" class="learn-more-link">Learn more →</a>
+                    </div>
+                </div>
+
+                <a href="#" class="view-all-link">View All →</a>
+            </div>
+        </div>
+
+        <div class="featured-section">
+            <h3 class="featured-title">🩺 Featured Health Topic: Diabetes Prevention</h3>
+            <p class="featured-text">Learn about risk factors, early warning signs, and evidence-based strategies to prevent or delay the onset of Type 2 diabetes through lifestyle modifications.</p>
+            <a href="#" class="featured-btn">Read Complete Guide →</a>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="#">About</a>
+                <a href="#">Contact</a>
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms</a>
+            </div>
+            <p class="footer-tagline">Trusted information for a healthier you.</p>
+        </div>
+    </footer>
+
+    <script>
+        let currentlyExpanded = null;
+
+        function toggleCondition(link, conditionId) {
+            const conditionInfo = document.getElementById(conditionId);
+            const isCurrentlyExpanded = conditionInfo.classList.contains('expanded');
+            
+            // Close any currently expanded condition
+            if (currentlyExpanded && currentlyExpanded !== conditionInfo) {
+                currentlyExpanded.classList.remove('expanded');
+                currentlyExpanded.previousElementSibling.classList.remove('active');
+            }
+            
+            // Toggle current condition
+            if (isCurrentlyExpanded) {
+                conditionInfo.classList.remove('expanded');
+                link.classList.remove('active');
+                currentlyExpanded = null;
+            } else {
+                conditionInfo.classList.add('expanded');
+                link.classList.add('active');
+                currentlyExpanded = conditionInfo;
+                
+                // Smooth scroll to the expanded content
+                setTimeout(() => {
+                    conditionInfo.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'nearest' 
+                    });
+                }, 200);
+            }
+        }
+
+        // Search functionality
+        document.querySelector('.search-btn').addEventListener('click', function() {
+            const searchTerm = document.querySelector('.search-bar').value.trim();
+            if (searchTerm) {
+                searchConditions(searchTerm);
+            }
+        });
+
+        document.querySelector('.search-bar').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const searchTerm = this.value.trim();
+                if (searchTerm) {
+                    searchConditions(searchTerm);
+                }
+            }
+        });
+
+        function searchConditions(term) {
+            const conditions = document.querySelectorAll('.condition-link');
+            let found = false;
+            
+            conditions.forEach(condition => {
+                if (condition.textContent.toLowerCase().includes(term.toLowerCase())) {
+                    condition.style.background = '#fff3cd';
+                    condition.style.borderRadius = '4px';
+                    condition.style.padding = '8px';
+                    found = true;
+                    
+                    // Auto-expand first match
+                    if (!found) {
+                        condition.click();
+                    }
+                    
+                    // Scroll to first match
+                    condition.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else {
+                    condition.style.background = '';
+                    condition.style.borderRadius = '';
+                    condition.style.padding = '8px 0';
+                }
+            });
+            
+            if (!found) {
+                // Show no results message
+                const message = document.createElement('div');
+                message.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: white;
+                    padding: 20px;
+                    border-radius: 10px;
+                    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+                    z-index: 1000;
+                `;
+                message.innerHTML = `
+                    <p style="margin: 0; color: #666;">No conditions found for "${term}"</p>
+                    <button onclick="this.parentElement.remove()" style="margin-top: 10px; background: #f15e2c; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Close</button>
+                `;
+                document.body.appendChild(message);
+                
+                setTimeout(() => {
+                    if (message.parentElement) {
+                        message.remove();
+                    }
+                }, 3000);
+            }
+        }
+
+        // Clear search highlights when search is cleared
+        document.querySelector('.search-bar').addEventListener('input', function() {
+            if (this.value === '') {
+                document.querySelectorAll('.condition-link').forEach(condition => {
+                    condition.style.background = '';
+                    condition.style.borderRadius = '';
+                    condition.style.padding = '8px 0';
+                });
+            }
+        });
+
+    </script>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50">
+        <div class="bg-gradient-to-br from-green-50 via-white to-blue-50 rounded-2xl p-8 max-w-md w-full mx-4 relative shadow-2xl modal-enter">
+            <button id="closeLogin" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl transition-colors duration-200 hover:bg-gray-100 rounded-full w-10 h-10 flex items-center justify-center">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="text-center mb-8">
+                <div class="bg-gradient-to-r from-healthcare-blue to-healthcare-light-blue text-white w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <i class="fas fa-user text-3xl"></i>
+                </div>
+                <!-- Using shared auth modals from `components/auth_modals.html` - removed duplicate inline signup/login content -->
+
+    <!-- Data Privacy Policy Modal -->
+    <div id="privacyPolicyModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl max-w-4xl w-full mx-4 relative shadow-2xl max-h-[90vh] overflow-y-auto modal-enter">
+            <button id="closePrivacyPolicy" class="absolute top-6 right-6 text-gray-500 hover:text-gray-700 text-2xl z-10 bg-gray-100 rounded-full w-12 h-12 flex items-center justify-center transition-all duration-200 hover:bg-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="p-8">
+                <h2 class="text-3xl font-bold text-healthcare-blue mb-6">Data Privacy Policy</h2>
+                
+                <div class="prose max-w-none">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">1. Information We Collect</h3>
+                    <p class="text-gray-700 mb-4">
+                        We collect personal information that you provide directly to us, including but not limited to:
+                    </p>
+                    <ul class="list-disc list-inside text-gray-700 mb-6 space-y-2">
+                        <li>Personal identification information (name, date of birth, gender, civil status)</li>
+                        <li>Contact information (address, phone numbers, email)</li>
+                        <li>Medical information and health records</li>
+                        <li>Emergency contact information</li>
+                        <li>Profile photographs</li>
+                    </ul>
+
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">2. How We Use Your Information</h3>
+                    <p class="text-gray-700 mb-4">
+                        We use your personal information for the following purposes:
+                    </p>
+                    <ul class="list-disc list-inside text-gray-700 mb-6 space-y-2">
+                        <li>To provide healthcare services and medical consultations</li>
+                        <li>To maintain accurate medical records</li>
+                        <li>To communicate with you about appointments and medical care</li>
+                        <li>To contact emergency contacts when necessary</li>
+                        <li>To improve our healthcare services</li>
+                    </ul>
+
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">3. Information Sharing</h3>
+                    <p class="text-gray-700 mb-4">
+                        We do not sell, trade, or otherwise transfer your personal information to third parties without your consent, except:
+                    </p>
+                    <ul class="list-disc list-inside text-gray-700 mb-6 space-y-2">
+                        <li>When required by law or legal process</li>
+                        <li>To protect our rights and the safety of our users</li>
+                        <li>With your explicit consent</li>
+                        <li>In case of medical emergencies</li>
+                    </ul>
+
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">4. Data Security</h3>
+                    <p class="text-gray-700 mb-4">
+                        We implement appropriate security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction.
+                    </p>
+
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">5. Your Rights</h3>
+                    <p class="text-gray-700 mb-4">
+                        You have the right to:
+                    </p>
+                    <ul class="list-disc list-inside text-gray-700 mb-6 space-y-2">
+                        <li>Access your personal information</li>
+                        <li>Correct inaccurate information</li>
+                        <li>Request deletion of your information</li>
+                        <li>Withdraw consent at any time</li>
+                        <li>File a complaint with relevant authorities</li>
+                    </ul>
+
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">6. Contact Information</h3>
+                    <p class="text-gray-700 mb-4">
+                        If you have any questions about this Privacy Policy, please contact us at:
+                    </p>
+                    <p class="text-gray-700">
+                        Email: privacy@medisafe.com<br>
+                        Phone: +1 (555) 123-4567<br>
+                        Address: 123 Healthcare Ave, Medical District, NY 10001
+                    </p>
+                </div>
+                
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <button id="acceptPrivacyPolicy" class="w-full bg-gradient-to-r from-healthcare-blue to-healthcare-light-blue text-white py-3 rounded-xl hover:from-healthcare-light-blue hover:to-blue-700 transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl">
+                        <i class="fas fa-check mr-2"></i>I Understand and Accept
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Modal elements
+        const loginBtn = document.getElementById('loginBtn');
+        const loginModal = document.getElementById('loginModal');
+        const signupModal = document.getElementById('signupModal');
+        const privacyPolicyModal = document.getElementById('privacyPolicyModal');
+        const closeLogin = document.getElementById('closeLogin');
+        const closeSignup = document.getElementById('closeSignup');
+        const closePrivacyPolicy = document.getElementById('closePrivacyPolicy');
+        const switchToSignup = document.getElementById('switchToSignup');
+          const switchToLogin = document.getElementById('switchToLogin');
+          const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
+        const privacyPolicyBtn = document.getElementById('privacyPolicyBtn');
+        const acceptPrivacyPolicy = document.getElementById('acceptPrivacyPolicy');
+        
+        // Camera elements
+        const cameraBtn = document.getElementById('cameraBtn');
+        const cameraPreview = document.getElementById('cameraPreview');
+        const cameraVideo = document.getElementById('cameraVideo');
+        const captureBtn = document.getElementById('captureBtn');
+        const cancelCameraBtn = document.getElementById('cancelCameraBtn');
+        const photoCanvas = document.getElementById('photoCanvas');
+        const patientPhotoInput = document.getElementById('photo_url');
+        
+        let stream = null;
+
+        // Show modal with animation
+        function showModal(modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            modal.style.opacity = '0';
+            modal.style.transition = 'opacity 0.3s ease-in';
+            setTimeout(() => {
+                modal.style.opacity = '1';
+            }, 50);
+        }
+
+        // Hide modal with animation
+        function hideModal(modal) {
+            modal.style.opacity = '0';
+            modal.style.transition = 'opacity 0.3s ease-out';
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                modal.style.opacity = '1';
+            }, 300);
+        }
+
+        // Show login modal
+        if (loginBtn) {
+            loginBtn.addEventListener('click', () => showModal(loginModal));
+        }
+
+        // Close modals
+        if (closeLogin) {
+            closeLogin.addEventListener('click', () => hideModal(loginModal));
+        }
+        if (closeSignup) {
+            closeSignup.addEventListener('click', () => hideModal(signupModal));
+        }
+        if (closePrivacyPolicy) {
+            closePrivacyPolicy.addEventListener('click', () => hideModal(privacyPolicyModal));
+        }
+        
+        // Privacy Policy Modal
+        if (privacyPolicyBtn) {
+            privacyPolicyBtn.addEventListener('click', () => showModal(privacyPolicyModal));
+        }
+        if (acceptPrivacyPolicy) {
+            acceptPrivacyPolicy.addEventListener('click', () => {
+                hideModal(privacyPolicyModal);
+                document.getElementById('data_privacy_consent').checked = true;
+            });
+        }
+
+        // Switch between login and signup
+        if (switchToSignup) {
+            switchToSignup.addEventListener('click', () => {
+                hideModal(loginModal);
+                setTimeout(() => showModal(signupModal), 100);
+            });
+        }
+
+          if (switchToLogin) {
+            switchToLogin.addEventListener('click', () => {
+                hideModal(signupModal);
+                setTimeout(() => showModal(loginModal), 100);
+            });
+        }
+
+        // Close modals when clicking outside
+        [loginModal, signupModal, privacyPolicyModal].forEach(modal => {
+            if (modal) {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        hideModal(modal);
+                    }
+                });
+            }
+        });
+        
+        // Camera functionality
+        if (cameraBtn) {
+            cameraBtn.addEventListener('click', async () => {
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { 
+                            facingMode: 'user',
+                            width: { ideal: 640 },
+                            height: { ideal: 480 }
+                        } 
+                    });
+                    cameraVideo.srcObject = stream;
+                    cameraPreview.classList.remove('hidden');
+                    cameraBtn.classList.add('hidden');
+                } catch (error) {
+                    alert('Camera access denied. Please allow camera access to take a photo.');
+                    console.error('Camera error:', error);
+                }
+            });
+        }
+        
+        if (captureBtn) {
+            captureBtn.addEventListener('click', () => {
+                const canvas = photoCanvas;
+                const video = cameraVideo;
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // Convert canvas to blob and set as file input
+                canvas.toBlob((blob) => {
+                    const file = new File([blob], 'photo_url.jpg', { type: 'image/jpeg' });
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(file);
+                    patientPhotoInput.files = dataTransfer.files;
+                }, 'image/jpeg', 0.8);
+                
+                // Stop camera
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                
+                cameraPreview.classList.add('hidden');
+                cameraBtn.classList.remove('hidden');
+                
+                alert('Photo captured successfully!');
+            });
+        }
+        
+        if (cancelCameraBtn) {
+            cancelCameraBtn.addEventListener('click', () => {
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                cameraPreview.classList.add('hidden');
+                cameraBtn.classList.remove('hidden');
+            });
+        }
+
+        // Login form submission
+          if (loginForm) {
+            loginForm.addEventListener('submit', async (e) => {
+              e.preventDefault();
+                console.log('Login form submitted');
+                const username = loginForm.querySelector('input[name="username"]').value;
+                const password = loginForm.querySelector('input[name="password"]').value;
+                const csrfToken = loginForm.querySelector('input[name="csrfmiddlewaretoken"]').value;
+                console.log('Login data:', { username });
+
+              try {
+                const response = await fetch('/login/', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                  },
+                  body: JSON.stringify({ username, password }),
+                  credentials: 'same-origin'
+                });
+
+                const data = await response.json();
+                    console.log('Login response:', data);
+                
+                    const errorDiv = document.getElementById('loginError');
+                if (response.ok) {
+                        errorDiv.classList.add('hidden');
+                        
+                        // Show welcome message if available
+                        if (data.welcome_message) {
+                            const welcomeDiv = document.createElement('div');
+                            welcomeDiv.style.position = 'fixed';
+                            welcomeDiv.style.top = '20px';
+                            welcomeDiv.style.right = '20px';
+                            welcomeDiv.style.backgroundColor = '#d1fae5';
+                            welcomeDiv.style.borderLeft = '4px solid #10b981';
+                            welcomeDiv.style.color = '#065f46';
+                            welcomeDiv.style.padding = '14px 16px';
+                            welcomeDiv.style.borderRadius = '8px';
+                            welcomeDiv.style.fontWeight = '600';
+                            welcomeDiv.style.fontSize = '14px';
+                            welcomeDiv.style.zIndex = '9999';
+                            welcomeDiv.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                            welcomeDiv.textContent = data.welcome_message;
+                            document.body.appendChild(welcomeDiv);
+                            
+                            // Auto remove after 4 seconds
+                            setTimeout(() => {
+                                welcomeDiv.style.opacity = '0';
+                                welcomeDiv.style.transition = 'opacity 0.3s ease-out';
+                                setTimeout(() => welcomeDiv.remove(), 300);
+                            }, 4000);
+                        }
+                        
+                        // Redirect after brief delay to allow welcome message to show
+                        setTimeout(() => {
+                            window.location.href = data.redirect;
+                        }, 500);
+                } else {
+                  errorDiv.textContent = data.message || 'Login failed. Please check your credentials.';
+                        errorDiv.classList.remove('hidden');
+                }
+              } catch (error) {
+                console.error('Login error:', error);
+                const errorDiv = document.getElementById('loginError');
+                errorDiv.textContent = 'A network error occurred. Please check your connection and try again.';
+                    errorDiv.classList.remove('hidden');
+                    errorDiv.classList.add('bg-red-50', 'border', 'border-red-100');
+              }
+            });
+          }
+
+        // Handle signup form submission
+        if (signupForm) {
+            signupForm.addEventListener('submit', async (e) => {
+              e.preventDefault();
+                const form = e.target;
+
+                // Remove any existing error states
+                form.querySelectorAll('input').forEach(input => {
+                    input.classList.remove('border-red-500', 'bg-red-50');
+                });
+
+              const userData = {
+                    first_name: form.querySelector('input[name="first_name"]').value.trim(),
+                    middle_name: form.querySelector('input[name="middle_name"]').value.trim(),
+                    last_name: form.querySelector('input[name="last_name"]').value.trim(),
+                    birthday: form.querySelector('input[name="birthday"]').value,
+                    email: form.querySelector('input[name="email"]').value.trim(),
+                    sex: form.querySelector('input[name="sex"]:checked')?.value,
+                    civil_status: form.querySelector('select[name="civil_status"]').value,
+                    address: form.querySelector('textarea[name="address"]').value.trim(),
+                    contact_person: form.querySelector('input[name="contact_person"]').value.trim(),
+                    relationship_to_patient: form.querySelector('input[name="relationship_to_patient"]').value.trim(),
+                    contact_number: form.querySelector('input[name="contact_number"]').value.trim(),
+                    phone_number: form.querySelector('input[name="phone_number"]').value.trim(),
+                    phone_type: form.querySelector('select[name="phone_type"]').value,
+                    username: form.querySelector('input[name="username"]').value.trim(),
+                    password: form.querySelector('input[name="password"]').value,
+                    data_privacy_consent: form.querySelector('input[name="data_privacy_consent"]').checked,
+                role: 'patient'
+              };
+
+              try {
+                    const result = await HealthcareAPI.register(userData);
+                    // The HealthcareAPI.register function will handle all success cases
+                } catch (error) {
+                    // Show error message
+                    const errorMessage = document.createElement('div');
+                    errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center';
+                    
+                    // Handle specific error cases
+                    let errorText = 'Registration failed. Please try again.';
+                    if (error.message.includes('Email already exists')) {
+                        errorText = 'This email address is already registered. Please use a different email or login to your existing account.';
+                        // Highlight the email field
+                        const emailInput = form.querySelector('input[name="email"]');
+                        emailInput.classList.add('border-red-500', 'bg-red-50');
+                        emailInput.focus();
+                    } else if (error.message.includes('Username already exists')) {
+                        errorText = 'This username is already taken. Please choose a different username.';
+                        // Highlight the username field
+                        const usernameInput = form.querySelector('input[name="username"]');
+                        usernameInput.classList.add('border-red-500', 'bg-red-50');
+                        usernameInput.focus();
+                    }
+                    
+                    errorMessage.innerHTML = `
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        <span>${errorText}</span>
+                    `;
+                    document.body.appendChild(errorMessage);
+                    
+                    // Remove error highlighting when user starts typing
+                    const inputs = form.querySelectorAll('input');
+                    inputs.forEach(input => {
+                        input.addEventListener('input', function() {
+                            this.classList.remove('border-red-500', 'bg-red-50');
+                        });
+                    });
+
+                    // Remove error message after 5 seconds
+                    setTimeout(() => {
+                        errorMessage.style.opacity = '0';
+                        errorMessage.style.transition = 'opacity 0.5s ease-out';
+                        setTimeout(() => {
+                            document.body.removeChild(errorMessage);
+                        }, 500);
+                    }, 5000);
+                }
+            });
+        }
+
+        // Close modals with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                hideModal(loginModal);
+                hideModal(signupModal);
+                hideModal(privacyPolicyModal);
+            }
+        });
+    </script>
+    
+    <!-- Load HealthcareAPI from app.js -->
+    <script src="{% static 'app.js' %}"></script>
+{% endblock %}

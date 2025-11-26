@@ -1,0 +1,1349 @@
+﻿{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Profile - MediSafe{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --ink: #0f172a;
+        --blue: #0B3D91;
+        --blue2: #1E3A8A;
+        --red: #DC2626;
+        --bg: #E6F0FF;
+        --gray: #64748b;
+        --border: #e2e8f0;
+        --light-bg: #f5f7fa;
+    }
+
+    body {
+        background: var(--light-bg);
+        color: var(--ink);
+    }
+
+    .container {
+        max-width: 1400px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .header-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--ink);
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .btn {
+        padding: 0.6rem 1.5rem;
+        border: 2px solid var(--blue);
+        background: transparent;
+        color: var(--blue);
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.3s;
+    }
+
+    .btn:hover {
+        background: var(--blue);
+        color: white;
+    }
+
+    .btn-primary {
+        background: var(--blue);
+        color: white;
+        border-color: var(--blue);
+    }
+
+    .btn-primary:hover {
+        background: var(--blue2);
+        border-color: var(--blue2);
+    }
+
+    .btn-icon {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    /* Profile Grid */
+    .profile-grid {
+        display: grid;
+        grid-template-columns: 400px 1fr 350px;
+        gap: 2rem;
+        margin-bottom: 3rem;
+    }
+
+    /* Enhanced Profile Card - Larger Panel */
+    .profile-card {
+        background: white;
+        padding: 2.5rem;
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        text-align: center;
+        border: 2px solid transparent;
+        transition: all 0.3s;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .profile-card:hover {
+        box-shadow: 0 8px 24px rgba(11, 61, 145, 0.15);
+        border-color: var(--blue);
+    }
+
+    .profile-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 6px;
+        background: linear-gradient(90deg, var(--blue) 0%, #00a8e8 50%, var(--blue2) 100%);
+    }
+
+    /* Enhanced Avatar */
+    .avatar {
+        width: 180px;
+        height: 180px;
+        margin: 0 auto 1.5rem;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--bg) 0%, var(--blue) 100%);
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 4rem;
+        color: white;
+        box-shadow: 0 8px 24px rgba(11, 61, 145, 0.3);
+        border: 8px solid white;
+        position: relative;
+    }
+
+    .avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .avatar-badge {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        background: #10b981;
+        color: white;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        border: 3px solid white;
+    }
+
+    .profile-name {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--ink);
+        margin-bottom: 0.5rem;
+    }
+
+    .profile-role {
+        color: var(--blue);
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        background: var(--bg);
+        padding: 0.4rem 1rem;
+        border-radius: 20px;
+        display: inline-block;
+    }
+
+    .profile-status {
+        color: var(--gray);
+        font-size: 0.9rem;
+        margin-bottom: 2rem;
+    }
+
+    .profile-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        padding-bottom: 2rem;
+        border-bottom: 2px solid var(--border);
+    }
+
+    .stat-item {
+        background: var(--light-bg);
+        padding: 1rem;
+        border-radius: 8px;
+        text-align: center;
+    }
+
+    .stat-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--blue);
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
+        color: var(--gray);
+        margin-top: 0.25rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .profile-contact {
+        text-align: left;
+    }
+
+    .contact-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1.2rem;
+        font-size: 0.95rem;
+        padding: 0.75rem;
+        background: var(--light-bg);
+        border-radius: 8px;
+        transition: all 0.3s;
+    }
+
+    .contact-item:hover {
+        background: var(--bg);
+        transform: translateX(4px);
+    }
+
+    .contact-item i {
+        color: var(--blue);
+        width: 24px;
+        margin-right: 1rem;
+        font-size: 1.1rem;
+    }
+
+    .contact-item span {
+        color: var(--ink);
+        font-weight: 500;
+    }
+
+    .profile-actions {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 2rem;
+    }
+
+    .profile-action-btn {
+        flex: 1;
+        padding: 0.8rem;
+        border: 2px solid var(--border);
+        background: white;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--blue);
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .profile-action-btn:hover {
+        background: var(--blue);
+        color: white;
+        border-color: var(--blue);
+        transform: translateY(-2px);
+    }
+
+    /* Info Sections */
+    .info-section {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .section-header {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--ink);
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--border);
+    }
+
+    .section-header i {
+        color: var(--blue);
+        margin-right: 0.75rem;
+        font-size: 1.3rem;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .info-label {
+        color: var(--gray);
+        font-size: 0.85rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+    }
+
+    .info-value {
+        color: var(--ink);
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+
+    .info-value.empty {
+        color: var(--gray);
+        font-style: italic;
+    }
+
+    /* Tabs Section */
+    .tabs-section {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        margin-bottom: 2rem;
+    }
+
+    .tabs-container {
+        border-bottom: 2px solid var(--border);
+        margin-bottom: 2rem;
+        display: flex;
+        gap: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .tab-button {
+        background: none;
+        border: none;
+        padding: 1rem 0;
+        cursor: pointer;
+        color: var(--gray);
+        font-weight: 600;
+        font-size: 0.95rem;
+        border-bottom: 3px solid transparent;
+        transition: all 0.3s;
+        margin-bottom: -2px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .tab-button.active {
+        color: var(--blue);
+        border-bottom-color: var(--blue);
+    }
+
+    .tab-button:hover {
+        color: var(--blue);
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+        animation: fadeIn 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .visit-item {
+        padding: 1.2rem;
+        background: var(--light-bg);
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        border-left: 4px solid var(--blue);
+        transition: all 0.3s;
+    }
+
+    .visit-item:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transform: translateX(4px);
+    }
+
+    .visit-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .visit-date {
+        color: var(--gray);
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .visit-doctor {
+        font-weight: 600;
+        color: var(--ink);
+        margin: 0.5rem 0;
+        font-size: 1rem;
+    }
+
+    .visit-status {
+        font-size: 0.85rem;
+        color: var(--gray);
+        display: inline-block;
+        background: white;
+        padding: 0.3rem 0.8rem;
+        border-radius: 12px;
+        margin-top: 0.5rem;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: var(--gray);
+    }
+
+    .empty-state i {
+        font-size: 2.5rem;
+        color: var(--border);
+        margin-bottom: 1rem;
+    }
+
+    /* Completion Bar */
+    .completion-section {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        margin-bottom: 2rem;
+    }
+
+    .completion-header {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--ink);
+        margin-bottom: 1rem;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: var(--border);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--blue) 0%, #00a8e8 100%);
+        border-radius: 10px;
+        transition: width 0.3s ease;
+    }
+
+    .completion-text {
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+        color: var(--gray);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1199px) {
+        .profile-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .avatar {
+            width: 150px;
+            height: 150px;
+            font-size: 3rem;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .profile-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .header-actions {
+            width: 100%;
+            margin-top: 1rem;
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+            text-align: center;
+        }
+
+        .tabs-container {
+            gap: 1rem;
+        }
+
+        .tab-button {
+            padding: 0.75rem 0;
+            font-size: 0.85rem;
+        }
+
+        .profile-card {
+            padding: 1.5rem;
+        }
+
+        .avatar {
+            width: 120px;
+            height: 120px;
+            font-size: 2.5rem;
+        }
+
+        .profile-name {
+            font-size: 1.2rem;
+        }
+
+        .profile-stats {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .container {
+            padding: 0 0.5rem;
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+        }
+
+        .profile-card {
+            padding: 1rem;
+        }
+
+        .header-actions {
+            flex-direction: column;
+        }
+
+        .tabs-container {
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .tab-button {
+            padding: 0.75rem;
+            width: 100%;
+            justify-content: center;
+            border-radius: 6px;
+            margin-bottom: 0;
+            border: 1px solid var(--border);
+        }
+
+        .tab-button.active {
+            background: var(--bg);
+            border-color: var(--blue);
+        }
+    }
+
+    /* Edit Mode Styles */
+    .edit-input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px solid var(--blue);
+        border-radius: 6px;
+        font-size: 0.95rem;
+        font-family: inherit;
+        background: white;
+        color: var(--ink);
+        transition: all 0.3s;
+        margin-top: 0.5rem;
+    }
+
+    .edit-input:focus {
+        outline: none;
+        border-color: var(--blue2);
+        box-shadow: 0 0 0 3px rgba(11, 61, 145, 0.1);
+    }
+
+    .edit-input[type="date"],
+    .edit-input[type="tel"],
+    .edit-input[type="email"] {
+        font-family: inherit;
+    }
+
+    .edit-input[type="textarea"],
+    textarea.edit-input {
+        resize: vertical;
+        min-height: 80px;
+        font-family: inherit;
+    }
+
+    .btn-cancel {
+        background: var(--red) !important;
+        border-color: var(--red) !important;
+    }
+
+    .btn-cancel:hover {
+        background: #b91c1c !important;
+        border-color: #b91c1c !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header with Actions -->
+    <div class="header">
+        <div class="header-title">
+            <i class="fas fa-user-circle" style="margin-right: 0.75rem; color: var(--blue);"></i>My Profile
+        </div>
+        <div class="header-actions">
+            <button class="btn" onclick="window.print()">
+                <span class="btn-icon"><i class="fas fa-print"></i> PRINT</span>
+            </button>
+            <button class="btn btn-primary" onclick="editProfile()">
+                <span class="btn-icon"><i class="fas fa-edit"></i> EDIT PROFILE</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Profile Completion Section -->
+    {% if profile_completion %}
+    <div class="completion-section">
+        <div class="completion-header">
+            <i class="fas fa-chart-pie" style="margin-right: 0.5rem; color: var(--blue);"></i>Profile Completion
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ profile_completion }}%"></div>
+        </div>
+        <div class="completion-text">{{ profile_completion }}% Complete - Keep your profile up to date!</div>
+    </div>
+    {% endif %}
+
+    <!-- Profile Information Grid -->
+    <div class="profile-grid">
+        <!-- Left: Enhanced Profile Card -->
+        <div class="profile-card">
+            <div class="avatar">
+                {% if user_profile.photo_url %}
+                    <img src="{{ user_profile.photo_url }}" alt="Profile Picture">
+                {% else %}
+                    <i class="fas fa-user"></i>
+                {% endif %}
+                <div class="avatar-badge">âœ“</div>
+            </div>
+            <div class="profile-name">{{ user_profile.first_name|default:"" }} {{ user_profile.last_name|default:"User" }}</div>
+            <div class="profile-role">{{ user.role|upper }}</div>
+            <div class="profile-status">Member since {{ user.date_joined|date:"M d, Y" }}</div>
+            
+            <div class="profile-stats">
+                <div class="stat-item">
+                    <div class="stat-number">{{ recent_appointments|length|default:"0" }}</div>
+                    <div class="stat-label">Appointments</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{{ recent_prescriptions|length|default:"0" }}</div>
+                    <div class="stat-label">Prescriptions</div>
+                </div>
+            </div>
+            
+            <div class="profile-contact">
+                <div class="contact-item">
+                    <i class="fas fa-envelope"></i>
+                    <span>{{ user.email }}</span>
+                </div>
+                <div class="contact-item">
+                    <i class="fas fa-phone"></i>
+                    <span>{{ user_profile.contact_number|default:"Not provided" }}</span>
+                </div>
+                <div class="contact-item">
+                    <i class="fas fa-phone-alt"></i>
+                    <span>{{ user_profile.phone_number|default:"Not provided" }}</span>
+                </div>
+                <div class="contact-item">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>{{ user_profile.address|default:"Not provided" }}</span>
+                </div>
+            </div>
+
+            <div class="profile-actions">
+                <button class="profile-action-btn" title="Message">
+                    <i class="fas fa-envelope"></i>
+                </button>
+                <button class="profile-action-btn" title="Settings">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <button class="profile-action-btn" title="Download Profile">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Center: Personal Information -->
+        <div class="info-section">
+            <div class="section-header">
+                <i class="fas fa-user-card"></i> Personal Information
+            </div>
+            
+            <div class="info-row">
+                <div style="width: 100%;">
+                    <div class="info-label">Full Name</div>
+                    <div class="info-value">
+                        {% if user_profile.first_name and user_profile.last_name %}
+                            {{ user_profile.first_name }} 
+                            {% if user_profile.middle_name %}{{ user_profile.middle_name }}{% endif %}
+                            {{ user_profile.last_name }}
+                        {% else %}
+                            <span class="empty">Not provided</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-row">
+                <div style="width: 100%;">
+                    <div class="info-label">Date of Birth</div>
+                    <div class="info-value">
+                        {% if user_profile.birthday %}
+                            {{ user_profile.birthday|date:"F d, Y" }}
+                            <span style="color: var(--gray); font-weight: 400;">
+                                ({{ computed_age|default:"Age" }} years old)
+                            </span>
+                        {% else %}
+                            <span class="empty">Not provided</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-row">
+                <div style="width: 100%;">
+                    <div class="info-label">Sex</div>
+                    <div class="info-value">
+                        {% if user_profile.sex %}
+                            {{ user_profile.sex|upper }}
+                        {% else %}
+                            <span class="empty">Not provided</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-row">
+                <div style="width: 100%;">
+                    <div class="info-label">Civil Status</div>
+                    <div class="info-value">
+                        {% if user_profile.civil_status %}
+                            {{ user_profile.civil_status|title }}
+                        {% else %}
+                            <span class="empty">Not provided</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-row">
+                <div style="width: 100%;">
+                    <div class="info-label">Email</div>
+                    <div class="info-value">{{ user.email }}</div>
+                </div>
+            </div>
+
+            <div class="info-row">
+                <div style="width: 100%;">
+                    <div class="info-label">Address</div>
+                    <div class="info-value">
+                        {% if user_profile.address %}
+                            {{ user_profile.address }}
+                        {% else %}
+                            <span class="empty">Not provided</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-row">
+                <div style="width: 100%;">
+                    <div class="info-label">Data Privacy Consent</div>
+                    <div class="info-value">
+                        {% if user_profile.data_privacy_consent %}
+                            <span style="color: #10b981; font-weight: 700;">âœ“ GIVEN</span>
+                            <span style="color: var(--gray); font-weight: 400;">
+                                on {{ user_profile.consent_date|date:"M d, Y" }}
+                            </span>
+                        {% else %}
+                            <span class="empty">Not given</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Contact Information -->
+        <div class="info-section">
+            <div class="section-header">
+                <i class="fas fa-phone-square"></i> Contact Details
+            </div>
+
+            <div class="info-row">
+                <div style="width: 100%;">
+                    <div class="info-label">Contact Number</div>
+                    <div class="info-value">
+                        {% if user_profile.contact_number %}
+                            {{ user_profile.contact_number }}
+                        {% else %}
+                            <span class="empty">Not provided</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-row">
+                <div style="width: 100%;">
+                    <div class="info-label">Phone Number</div>
+                    <div class="info-value">
+                        {% if user_profile.phone_number %}
+                            {{ user_profile.phone_number }}
+                        {% else %}
+                            <span class="empty">Not provided</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-row">
+                <div style="width: 100%;">
+                    <div class="info-label">Phone Type</div>
+                    <div class="info-value">
+                        {% if user_profile.phone_type %}
+                            {{ user_profile.phone_type|title }}
+                        {% else %}
+                            <span class="empty">Not provided</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-row">
+                <div style="width: 100%;">
+                    <div class="info-label">Emergency Contact Person</div>
+                    <div class="info-value">
+                        {% if user_profile.contact_person %}
+                            {{ user_profile.contact_person }}
+                        {% else %}
+                            <span class="empty">Not provided</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-row">
+                <div style="width: 100%;">
+                    <div class="info-label">Relationship to Patient</div>
+                    <div class="info-value">
+                        {% if user_profile.relationship_to_patient %}
+                            {{ user_profile.relationship_to_patient|title }}
+                        {% else %}
+                            <span class="empty">Not provided</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-row">
+                <div style="width: 100%;">
+                    <div class="info-label">Member Since</div>
+                    <div class="info-value">{{ user.date_joined|date:"F d, Y" }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs Section: Visits & Appointments -->
+    <div class="tabs-section">
+        <div class="tabs-container">
+            <button class="tab-button active" onclick="switchTab(event, 'appointments')">
+                <i class="fas fa-calendar-check"></i> Appointments
+            </button>
+            <button class="tab-button" onclick="switchTab(event, 'prescriptions')">
+                <i class="fas fa-prescription-bottle"></i> Prescriptions
+            </button>
+            <button class="tab-button" onclick="switchTab(event, 'vitals')">
+                <i class="fas fa-heartbeat"></i> Vital Stats
+            </button>
+        </div>
+
+        <!-- Appointments Tab -->
+        <div id="appointments" class="tab-content active">
+            {% if recent_appointments %}
+                {% for appointment in recent_appointments %}
+                    <div class="visit-item">
+                        <div class="visit-date">
+                            <i class="fas fa-calendar"></i>
+                            {{ appointment.appointment_date|date:"F d, Y - g:i A"|default:"Date not available" }}
+                        </div>
+                        <div class="visit-doctor">
+                            <i class="fas fa-stethoscope" style="margin-right: 0.5rem;"></i>
+                            Dr. {{ appointment.doctor.user.get_full_name|default:"Doctor" }}
+                        </div>
+                        <div class="visit-status">
+                            Status: {{ appointment.status|title }}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-calendar-check"></i>
+                    <p>No appointments scheduled</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Prescriptions Tab -->
+        <div id="prescriptions" class="tab-content">
+            {% if recent_prescriptions %}
+                {% for prescription in recent_prescriptions %}
+                    <div class="visit-item">
+                        <div class="visit-date">
+                            <i class="fas fa-prescription-bottle"></i>
+                            Rx #{{ prescription.prescription_number|default:"N/A" }}
+                        </div>
+                        <div class="visit-doctor">{{ prescription.live_appointment.appointment.doctor.user.get_full_name|default:"Doctor" }}</div>
+                        <div class="visit-status">
+                            Status: {{ prescription.status|title }}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-prescription-bottle"></i>
+                    <p>No prescriptions available</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Vital Stats Tab -->
+        <div id="vitals" class="tab-content">
+            {% if vital_snapshot %}
+                <div class="visit-item">
+                    <div class="visit-doctor">
+                        <i class="fas fa-heartbeat" style="margin-right: 0.5rem; color: #ef4444;"></i>
+                        Latest Vital Statistics
+                    </div>
+                    <div class="visit-status">
+                        {{ vital_snapshot|safe }}
+                    </div>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-heartbeat"></i>
+                    <p>No vital statistics recorded yet</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    function switchTab(e, tabName) {
+        // Hide all tab contents
+        const contents = document.querySelectorAll('.tab-content');
+        contents.forEach(content => content.classList.remove('active'));
+
+        // Remove active class from all buttons
+        const buttons = document.querySelectorAll('.tab-button');
+        buttons.forEach(btn => btn.classList.remove('active'));
+
+        // Show selected tab and mark button as active
+        document.getElementById(tabName).classList.add('active');
+        e.target.closest('.tab-button').classList.add('active');
+    }
+
+    let isEditMode = false;
+    let originalValues = {};
+
+    function editProfile() {
+        if (isEditMode) {
+            // Cancel edit mode
+            cancelEdit();
+            return;
+        }
+        
+        // Enable edit mode
+        isEditMode = true;
+        const editBtn = document.querySelector('.btn-primary');
+        if (editBtn) {
+            editBtn.innerHTML = '<span class="btn-icon"><i class="fas fa-times"></i> CANCEL</span>';
+            editBtn.classList.add('btn-cancel');
+        }
+
+        // Store original values
+        originalValues = {
+            first_name: '{{ user_profile.first_name|default:"" }}',
+            middle_name: '{{ user_profile.middle_name|default:"" }}',
+            last_name: '{{ user_profile.last_name|default:"" }}',
+            sex: '{{ user_profile.sex|default:"" }}',
+            birthday: '{{ user_profile.birthday|date:"Y-m-d"|default:"" }}',
+            address: '{{ user_profile.address|default:""|escapejs }}',
+            contact_number: '{{ user_profile.contact_number|default:"" }}',
+            phone_number: '{{ user_profile.phone_number|default:"" }}',
+            phone_type: '{{ user_profile.phone_type|default:"" }}',
+            contact_person: '{{ user_profile.contact_person|default:"" }}',
+            relationship_to_patient: '{{ user_profile.relationship_to_patient|default:"" }}',
+            civil_status: '{{ user_profile.civil_status|default:"" }}'
+        };
+
+        // Convert display values to input fields
+        convertToEditMode();
+    }
+
+    function cancelEdit() {
+        isEditMode = false;
+        const editBtn = document.querySelector('.btn-primary');
+        if (editBtn) {
+            editBtn.innerHTML = '<span class="btn-icon"><i class="fas fa-edit"></i> EDIT PROFILE</span>';
+            editBtn.classList.remove('btn-cancel');
+        }
+        convertToViewMode();
+    }
+
+    function convertToEditMode() {
+        // Handle Full Name separately (it's a composite field)
+        const fullNameRow = Array.from(document.querySelectorAll('.info-row')).find(row => {
+            const label = row.querySelector('.info-label');
+            return label && label.textContent.trim() === 'Full Name';
+        });
+        
+        if (fullNameRow) {
+            const valueEl = fullNameRow.querySelector('.info-value');
+            if (valueEl) {
+                valueEl.style.display = 'none';
+                
+                // Create three input fields for first, middle, last name
+                const nameContainer = document.createElement('div');
+                nameContainer.style.cssText = 'display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-top: 0.5rem;';
+                
+                const firstNameInput = document.createElement('input');
+                firstNameInput.type = 'text';
+                firstNameInput.className = 'edit-input';
+                firstNameInput.placeholder = 'First Name';
+                firstNameInput.value = originalValues.first_name || '';
+                firstNameInput.setAttribute('data-field', 'first_name');
+                nameContainer.appendChild(firstNameInput);
+                
+                const middleNameInput = document.createElement('input');
+                middleNameInput.type = 'text';
+                middleNameInput.className = 'edit-input';
+                middleNameInput.placeholder = 'Middle Name';
+                middleNameInput.value = originalValues.middle_name || '';
+                middleNameInput.setAttribute('data-field', 'middle_name');
+                nameContainer.appendChild(middleNameInput);
+                
+                const lastNameInput = document.createElement('input');
+                lastNameInput.type = 'text';
+                lastNameInput.className = 'edit-input';
+                lastNameInput.placeholder = 'Last Name';
+                lastNameInput.value = originalValues.last_name || '';
+                lastNameInput.setAttribute('data-field', 'last_name');
+                nameContainer.appendChild(lastNameInput);
+                
+                valueEl.parentElement.appendChild(nameContainer);
+            }
+        }
+        
+        // Convert all other info-value elements to input fields
+        document.querySelectorAll('.info-value').forEach(valueEl => {
+            const labelEl = valueEl.previousElementSibling;
+            if (!labelEl || !labelEl.classList.contains('info-label')) return;
+            
+            const label = labelEl.textContent.trim();
+            if (label === 'Full Name') return; // Skip, already handled
+            
+            const currentValue = valueEl.textContent.trim().replace(/\s*\(.*?\)\s*/g, '').replace('Not provided', '').trim();
+            
+            // Create input based on field type
+            let input;
+            const fieldName = getFieldName(label);
+            
+            if (fieldName === 'sex') {
+                input = document.createElement('select');
+                input.className = 'edit-input';
+                input.innerHTML = `
+                    <option value="">Select Sex</option>
+                    <option value="male" ${originalValues.sex === 'male' ? 'selected' : ''}>Male</option>
+                    <option value="female" ${originalValues.sex === 'female' ? 'selected' : ''}>Female</option>
+                    <option value="other" ${originalValues.sex === 'other' ? 'selected' : ''}>Other</option>
+                `;
+            } else if (fieldName === 'birthday') {
+                input = document.createElement('input');
+                input.type = 'date';
+                input.className = 'edit-input';
+                input.value = originalValues.birthday || '';
+            } else if (fieldName === 'address') {
+                input = document.createElement('textarea');
+                input.className = 'edit-input';
+                input.rows = 3;
+                input.value = originalValues.address || '';
+            } else if (fieldName === 'phone_type') {
+                input = document.createElement('select');
+                input.className = 'edit-input';
+                input.innerHTML = `
+                    <option value="">Select Phone Type</option>
+                    <option value="mobile" ${originalValues.phone_type === 'mobile' ? 'selected' : ''}>Mobile</option>
+                    <option value="home" ${originalValues.phone_type === 'home' ? 'selected' : ''}>Home</option>
+                    <option value="work" ${originalValues.phone_type === 'work' ? 'selected' : ''}>Work</option>
+                    <option value="other" ${originalValues.phone_type === 'other' ? 'selected' : ''}>Other</option>
+                `;
+            } else if (fieldName === 'civil_status') {
+                input = document.createElement('select');
+                input.className = 'edit-input';
+                input.innerHTML = `
+                    <option value="">Select Civil Status</option>
+                    <option value="single" ${originalValues.civil_status === 'single' ? 'selected' : ''}>Single</option>
+                    <option value="married" ${originalValues.civil_status === 'married' ? 'selected' : ''}>Married</option>
+                    <option value="divorced" ${originalValues.civil_status === 'divorced' ? 'selected' : ''}>Divorced</option>
+                    <option value="widowed" ${originalValues.civil_status === 'widowed' ? 'selected' : ''}>Widowed</option>
+                    <option value="separated" ${originalValues.civil_status === 'separated' ? 'selected' : ''}>Separated</option>
+                `;
+            } else {
+                input = document.createElement('input');
+                input.type = fieldName.includes('email') ? 'email' : fieldName.includes('phone') || fieldName.includes('contact') ? 'tel' : 'text';
+                input.className = 'edit-input';
+                input.value = originalValues[fieldName] || currentValue;
+            }
+            
+            input.setAttribute('data-field', fieldName);
+            valueEl.style.display = 'none';
+            valueEl.parentElement.appendChild(input);
+        });
+
+        // Add photo upload functionality
+        const avatar = document.querySelector('.avatar');
+        if (avatar && !avatar.querySelector('.photo-upload-btn')) {
+            const uploadBtn = document.createElement('button');
+            uploadBtn.className = 'photo-upload-btn';
+            uploadBtn.innerHTML = '<i class="fas fa-camera"></i> Change Photo';
+            uploadBtn.style.cssText = 'position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem;';
+            uploadBtn.onclick = (e) => {
+                e.stopPropagation();
+                document.getElementById('photoFileInput')?.click();
+            };
+            avatar.style.position = 'relative';
+            avatar.appendChild(uploadBtn);
+        }
+
+        // Add save button
+        if (!document.getElementById('saveProfileBtn')) {
+            const saveBtn = document.createElement('button');
+            saveBtn.id = 'saveProfileBtn';
+            saveBtn.className = 'btn btn-primary';
+            saveBtn.style.cssText = 'margin-top: 1rem; width: 100%;';
+            saveBtn.innerHTML = '<span class="btn-icon"><i class="fas fa-save"></i> SAVE CHANGES</span>';
+            saveBtn.onclick = saveProfile;
+            document.querySelector('.profile-card').appendChild(saveBtn);
+        }
+    }
+
+    function convertToViewMode() {
+        // Remove name container if it exists
+        const nameContainer = document.querySelector('.info-row .edit-input[data-field="first_name"]')?.parentElement;
+        if (nameContainer && nameContainer.style.display.includes('grid')) {
+            const fullNameRow = nameContainer.closest('.info-row');
+            const valueEl = fullNameRow?.querySelector('.info-value');
+            if (valueEl) {
+                valueEl.style.display = '';
+            }
+            nameContainer.remove();
+        }
+        
+        // Remove all input fields and restore display values
+        document.querySelectorAll('.edit-input').forEach(input => {
+            const valueEl = input.previousElementSibling;
+            if (valueEl && valueEl.classList.contains('info-value')) {
+                valueEl.style.display = '';
+            }
+            input.remove();
+        });
+
+        // Remove photo upload button
+        const uploadBtn = document.querySelector('.photo-upload-btn');
+        if (uploadBtn) uploadBtn.remove();
+
+        // Remove save button
+        const saveBtn = document.getElementById('saveProfileBtn');
+        if (saveBtn) saveBtn.remove();
+    }
+
+    function getFieldName(label) {
+        const mapping = {
+            'Full Name': 'first_name',
+            'Date of Birth': 'birthday',
+            'Sex': 'sex',
+            'Civil Status': 'civil_status',
+            'Address': 'address',
+            'Contact Number': 'contact_number',
+            'Phone Number': 'phone_number',
+            'Phone Type': 'phone_type',
+            'Emergency Contact Person': 'contact_person',
+            'Relationship to Patient': 'relationship_to_patient'
+        };
+        return mapping[label] || label.toLowerCase().replace(/\s+/g, '_');
+    }
+
+    async function saveProfile() {
+        const saveBtn = document.getElementById('saveProfileBtn');
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<span class="btn-icon"><i class="fas fa-spinner fa-spin"></i> SAVING...</span>';
+        }
+
+        const formData = new FormData();
+        
+        // Collect all input values
+        document.querySelectorAll('.edit-input').forEach(input => {
+            const fieldName = input.getAttribute('data-field');
+            if (fieldName && input.value) {
+                formData.append(fieldName, input.value);
+            }
+        });
+
+        // Handle photo upload if selected
+        const photoInput = document.getElementById('photoFileInput');
+        if (photoInput && photoInput.files && photoInput.files[0]) {
+            formData.append('photo', photoInput.files[0]);
+        }
+
+        // Get CSRF token
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                         document.cookie.match(/csrftoken=([^;]+)/)?.[1];
+
+        try {
+            const response = await fetch('/api/update-profile/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken
+                },
+                body: formData,
+                credentials: 'same-origin'
+            });
+
+            // Check if response is JSON
+            const contentType = response.headers.get('content-type') || '';
+            let data;
+            
+            if (contentType.includes('application/json')) {
+                data = await response.json();
+            } else {
+                // If not JSON, it's likely an HTML error page
+                const text = await response.text();
+                throw new Error(`Server returned an error (${response.status}). Please try again.`);
+            }
+
+            if (data.success) {
+                alert('Profile updated successfully!');
+                window.location.reload();
+            } else {
+                throw new Error(data.error || data.message || 'Failed to update profile');
+            }
+        } catch (error) {
+            console.error('Error saving profile:', error);
+            alert('Error: ' + (error.message || 'Failed to save profile. Please try again.'));
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<span class="btn-icon"><i class="fas fa-save"></i> SAVE CHANGES</span>';
+            }
+        }
+    }
+
+    // Photo upload handler
+    document.addEventListener('DOMContentLoaded', function() {
+        // Create hidden file input for photo upload
+        const photoInput = document.createElement('input');
+        photoInput.type = 'file';
+        photoInput.id = 'photoFileInput';
+        photoInput.accept = 'image/*';
+        photoInput.style.display = 'none';
+        photoInput.onchange = async function(e) {
+            if (!e.target.files || !e.target.files[0]) return;
+            
+            const file = e.target.files[0];
+            const formData = new FormData();
+            formData.append('photo', file);
+            
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                             document.cookie.match(/csrftoken=([^;]+)/)?.[1];
+
+            try {
+                const response = await fetch('/api/update-profile-photo/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken
+                    },
+                    body: formData,
+                    credentials: 'same-origin'
+                });
+
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type') || '';
+                let data;
+                
+                if (contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    const text = await response.text();
+                    throw new Error(`Server returned an error (${response.status}). Please try again.`);
+                }
+                
+                if (data.success) {
+                    // Update avatar image
+                    const avatarImg = document.querySelector('.avatar img');
+                    if (avatarImg) {
+                        avatarImg.src = data.photo_url + '?t=' + Date.now();
+                    } else {
+                        // Reload page to show new photo
+                        window.location.reload();
+                    }
+                    alert('Profile photo updated successfully!');
+                } else {
+                    throw new Error(data.error || 'Failed to update photo');
+                }
+            } catch (error) {
+                console.error('Error uploading photo:', error);
+                alert('Error: ' + (error.message || 'Failed to update photo. Please try again.'));
+            }
+        };
+        document.body.appendChild(photoInput);
+    });
+</script>
+{% endblock %}
+

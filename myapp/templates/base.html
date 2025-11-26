@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MediSafe{% endblock %}</title>
+    <!-- Favicon and social preview image (served from media folder) -->
+    <link rel="icon" type="image/png" href="/media/logo/Medisafe%20Logo.jpg" />
+    <meta property="og:image" content="/media/logo/Medisafe%20Logo.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .nav-link.active {
+            background: var(--blue);
+            color: white;
+        }
+
+        /* Ensure elements with class 'hidden' are actually hidden on pages without Tailwind */
+        .hidden { display: none !important; }
+
+        /* Modal animations and fixes */
+        @keyframes modalEnter {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .modal-enter {
+            animation: modalEnter 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Small inline spinner used for buttons and actions */
+        .btn-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(0,0,0,0.08);
+            border-top-color: rgba(255,255,255,0.9);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            vertical-align: middle;
+            margin-left: 8px;
+        }
+
+        .btn-spinner.dark {
+            border: 2px solid rgba(0,0,0,0.12);
+            border-top-color: rgba(0,0,0,0.6);
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Ensure modals display correctly when visible */
+        #loginModal:not(.hidden),
+        #signupModal:not(.hidden),
+        #privacyPolicyModal:not(.hidden) {
+            display: flex !important;
+        }
+
+        .notification-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            margin: 0 4px;
+            font-size: 1.2rem;
+            color: var(--gray);
+            border-radius: 20px;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .notification-btn:hover {
+            background: var(--bg);
+            color: var(--blue);
+            transform: translateY(-1px);
+        }
+
+        .notification-btn.active {
+            background: var(--blue);
+            color: white;
+        }
+
+        /* Standardized login button used across pages */
+        .standard-login-btn {
+            background: var(--red);
+            color: #fff;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 9999px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 6px 14px rgba(241,94,44,.25);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.12s ease, filter 0.12s ease;
+        }
+        .standard-login-btn:hover { transform: translateY(-2px); filter: brightness(.98); }
+        .standard-login-btn.alt {
+            background: transparent; color: white; border: 2px solid rgba(255,255,255,0.18); box-shadow: none;
+        }
+
+        :root {
+            --ink: #2c2c2f;
+            --blue: #2c71b7; /* MEDISAFE blue */
+            --blue2: #2c71b7;
+            --red: #f15e2c; /* MEDISAFE orange */
+            --bg: #f0f3f6;  /* MEDISAFE white */
+            --gray: #64748b;
+            --border: #d4cac9; /* MEDISAFE beige */
+            --healthcare-blue: #003366;
+            --healthcare-red: #FF6B35;
+            --healthcare-light-blue: #0066CC;
+        }
+
+        body {
+            margin: 0;
+            background: #f8fafc;
+            color: var(--ink);
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        /* Main Navigation */
+        .main-nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(255,255,255,.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0,51,102,.1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 70px;
+        }
+
+        .nav-brand {
+            background: transparent;
+            color: var(--ink);
+            padding: 6px 10px;
+            border-radius: 10px;
+            font-weight: 800;
+            font-size: 20px;
+            text-decoration: none;
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid rgba(44, 113, 183, 0.08);
+            box-shadow: 0 6px 18px rgba(12, 44, 90, 0.04);
+            padding-left: 12px;
+        }
+
+        /* Logo image inside brand */
+        .nav-brand .nav-logo {
+            display: block;
+            height: 44px;
+            width: 44px;
+            object-fit: cover;
+            border-radius: 10px;
+            background: white;
+            box-shadow: 0 6px 14px rgba(11,61,145,0.08);
+            border: 1px solid rgba(0,0,0,0.04);
+            padding: 4px;
+        }
+
+        /* Brand text styled as two-tone "Medi" + "Safe" */
+        .brand-text { font-weight: 800; font-size: 18px; display: inline-flex; gap: 4px; align-items: baseline; }
+        .brand-text .brand-part1 { color: var(--blue); }
+        .brand-text .brand-part2 { color: var(--red); }
+        .nav-brand:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(11,61,145,0.08); }
+
+        .nav-brand:hover {
+            transform: translateY(-1px);
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            padding: 8px;
+            background: none;
+            border: none;
+            color: var(--gray);
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .social-links {
+                display: none !important;
+            }
+
+            .mobile-menu-btn {
+                display: block;
+            }
+
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 70px;
+                left: 0;
+                right: 0;
+                background: white;
+                padding: 16px;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .nav-links.show {
+                display: flex;
+            }
+
+            .nav-link {
+                padding: 12px 16px;
+            }
+
+            .user-menu {
+                margin: 0;
+                width: 100%;
+            }
+
+            .user-btn {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .user-menu-content {
+                width: 100%;
+                position: static;
+                margin-top: 8px;
+            }
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: var(--ink);
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 9999px; /* pill */
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            display: inline-flex;          /* keep icon and label on one line */
+            align-items: center;           /* vertically center icon and text */
+            gap: 8px;                      /* space between icon and label */
+            white-space: nowrap;           /* prevent line breaks within link */
+        }
+
+        .nav-link:hover {
+            background: var(--bg);
+            color: var(--blue);
+        }
+
+        .nav-link.active {
+            background: var(--blue);
+            color: white;
+            border-color: rgba(255,255,255,.2);
+            box-shadow: 0 2px 8px rgba(44,113,183,.25);
+        }
+
+        .notification-btn {
+            position: relative;
+            padding: 8px;
+            color: var(--gray);
+            border-radius: 8px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .notification-btn:hover {
+            background: var(--bg);
+            color: var(--blue);
+        }
+
+        .notification-count {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--red);
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            width: 18px;
+            height: 18px;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: translate(25%, -25%);
+        }
+
+        .user-menu {
+            position: relative;
+            margin-left: 16px;
+        }
+
+        .user-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            background: white;
+            transition: all 0.2s;
+        }
+
+        .user-btn:hover {
+            background: var(--bg);
+        }
+
+        .user-menu-content {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+            min-width: 200px;
+            display: none;
+        }
+
+        .user-menu.active .user-menu-content {
+            display: block;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            color: var(--ink);
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+
+        .menu-item:hover {
+            background: var(--bg);
+        }
+
+        .menu-item i {
+            color: var(--gray);
+            width: 20px;
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 8px 0;
+        }
+
+        /* Messages */
+        .messages {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .message {
+            background: white;
+            border-radius: 8px;
+            padding: 12px 20px;
+            margin-bottom: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .message.success {
+            background: #10B981;
+            color: white;
+        }
+
+        .message.error {
+            background: var(--red);
+            color: white;
+        }
+
+        .message.info {
+            background: var(--blue);
+            color: white;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Global Page Loader removed -->
+    <!-- Main Navigation -->
+    <nav class="main-nav">
+        <div class="nav-container">
+            <a href="{% url 'dashboard' %}" class="nav-brand" aria-label="MediSafe">
+                <img src="/media/logo/Medisafe%20Logo.jpg" alt="MediSafe logo" class="nav-logo" />
+                <span class="brand-text" aria-hidden="true"><span class="brand-part1">Medi</span><span class="brand-part2">Safe</span></span>
+            </a>
+            
+            <!-- Social Links in Header -->
+            <div class="social-links" style="display: flex; align-items: center; gap: 15px; margin-right: 20px;">
+                <a href="https://www.facebook.com/medisafemedical" target="_blank" style="color: var(--gray); text-decoration: none; display: flex; align-items: center; gap: 4px; transition: all 0.2s; padding: 6px 8px; border-radius: 6px;" onmouseover="this.style.color='var(--blue)'; this.style.backgroundColor='var(--bg)'" onmouseout="this.style.color='var(--gray)'; this.style.backgroundColor='transparent'">
+                    <i class="fab fa-facebook-f" style="font-size: 14px;"></i>
+                    <span style="font-size: 12px;">Facebook</span>
+                </a>
+                <a href="mailto:medisafe.medicalpateros@gmail.com" style="color: var(--gray); text-decoration: none; display: flex; align-items: center; gap: 4px; transition: all 0.2s; padding: 6px 8px; border-radius: 6px;" onmouseover="this.style.color='var(--blue)'; this.style.backgroundColor='var(--bg)'" onmouseout="this.style.color='var(--gray)'; this.style.backgroundColor='transparent'">
+                    <i class="fas fa-envelope" style="font-size: 14px;"></i>
+                    <span style="font-size: 12px;">Email</span>
+                </a>
+                <a href="https://maps.app.goo.gl/j9NyDTbU1VQP4yGp6" target="_blank" style="color: var(--gray); text-decoration: none; display: flex; align-items: center; gap: 4px; transition: all 0.2s; padding: 6px 8px; border-radius: 6px;" onmouseover="this.style.color='var(--blue)'; this.style.backgroundColor='var(--bg)'" onmouseout="this.style.color='var(--gray)'; this.style.backgroundColor='transparent'">
+                    <i class="fas fa-map-marker-alt" style="font-size: 14px;"></i>
+                    <span style="font-size: 12px;">Location</span>
+                </a>
+                <span style="color: var(--gray); font-size: 12px; display: flex; align-items: center; gap: 4px;">
+                    <i class="fas fa-phone" style="font-size: 12px;"></i>
+                    <span>09685699664 / 88006290</span>
+                </span>
+            </div>
+            <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="nav-links">
+                <!-- Navigation Dropdown Menu -->
+                <div class="nav-dropdown" style="position:relative;margin-right:12px;">
+                    <button id="primaryNavDropdown" aria-haspopup="true" aria-expanded="false" class="nav-link" style="display:inline-flex;align-items:center;gap:8px;padding:12px 16px;">
+                        <i class="fas fa-bars"></i> Menu <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div id="primaryNavMenu" role="menu" aria-labelledby="primaryNavDropdown" class="hidden" style="position:absolute;left:0;top:100%;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.08);min-width:240px;z-index:60;margin-top:4px;">
+                        <a href="{% url 'dashboard' %}" class="menu-item" role="menuitem" style="display:flex;align-items:center;gap:8px;padding:12px 16px;color:var(--ink);text-decoration:none;border-bottom:1px solid #f1f5f9;transition:background-color 0.2s;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'"><i class="fas fa-home"></i> Homepage</a>
+                        <a href="{% url 'consultations' %}" class="menu-item" role="menuitem" style="display:flex;align-items:center;gap:8px;padding:12px 16px;color:var(--ink);text-decoration:none;border-bottom:1px solid #f1f5f9;transition:background-color 0.2s;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'"><i class="fas fa-stethoscope"></i> Appointments</a>
+                        <a href="{% url 'labresults' %}" class="menu-item" role="menuitem" style="display:flex;align-items:center;gap:8px;padding:12px 16px;color:var(--ink);text-decoration:none;border-bottom:1px solid #f1f5f9;transition:background-color 0.2s;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'"><i class="fas fa-flask"></i> Lab Results</a>
+                        <a href="{% url 'vitals' %}" class="menu-item" role="menuitem" style="display:flex;align-items:center;gap:8px;padding:12px 16px;color:var(--ink);text-decoration:none;border-bottom:1px solid #f1f5f9;transition:background-color 0.2s;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'"><i class="fas fa-heartbeat"></i> Vitals</a>
+                        <a href="{% url 'health_tools' %}" class="menu-item" role="menuitem" style="display:flex;align-items:center;gap:8px;padding:12px 16px;color:var(--ink);text-decoration:none;border-bottom:1px solid #f1f5f9;transition:background-color 0.2s;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'"><i class="fas fa-toolbox"></i> Health Tools</a>
+                        <a href="{% url 'conditions' %}" class="menu-item" role="menuitem" style="display:flex;align-items:center;gap:8px;padding:12px 16px;color:var(--ink);text-decoration:none;border-bottom:1px solid #f1f5f9;transition:background-color 0.2s;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'"><i class="fas fa-book-medical"></i> Conditions</a>
+                        <a href="{% url 'prescriptions' %}" class="menu-item" role="menuitem" style="display:flex;align-items:center;gap:8px;padding:12px 16px;color:var(--ink);text-decoration:none;border-bottom:1px solid #f1f5f9;transition:background-color 0.2s;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'"><i class="fas fa-prescription-bottle-alt"></i> Prescriptions</a>
+                        <a href="{% url 'alertnotification' %}" class="menu-item" role="menuitem" style="display:flex;align-items:center;gap:8px;padding:12px 16px;color:var(--ink);text-decoration:none;transition:background-color 0.2s;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'"><i class="fas fa-bell"></i> Notifications {% if unread_notifications_count %}<span class="notification-count" style="margin-left:auto;background:var(--red);color:white;border-radius:50%;padding:2px 6px;font-size:12px;">{{ unread_notifications_count }}</span>{% endif %}</a>
+                    </div>
+                </div>
+                <!-- Notification Bell Icon -->
+                {% if user.is_authenticated %}
+                <button id="notificationBellBtn" class="notification-btn" onclick="toggleNotificationPanel()" title="Notifications" style="position:relative;display:flex;align-items:center;justify-content:center;width:40px;height:40px;margin:0 8px;font-size:1.2rem;color:var(--gray);border:none;border-radius:50%;background:transparent;cursor:pointer;transition:all 0.2s ease;">
+                    <i class="fas fa-bell"></i>
+                    <span id="notificationBadge" class="notification-count" style="position:absolute;top:0;right:0;background:var(--red);color:white;font-size:12px;font-weight:600;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;transform:translate(25%,-25%);display:none;">0</span>
+                </button>
+                {% endif %}
+                <!-- Notification Panel -->
+                <div id="notificationPanel" class="hidden" style="position:absolute;top:100%;right:0;margin-top:8px;background:white;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);border:1px solid var(--border);width:320px;max-height:400px;display:flex;flex-direction:column;z-index:100;">
+                    <!-- Panel Header -->
+                    <div style="padding:16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+                        <h3 style="margin:0;font-size:16px;font-weight:700;color:var(--ink);">Notifications</h3>
+                        <button onclick="closeNotificationPanel()" style="background:none;border:none;color:var(--gray);font-size:18px;cursor:pointer;padding:4px;"><i class="fas fa-times"></i></button>
+                    </div>
+                    <!-- Notifications List -->
+                    <div id="notificationList" style="flex:1;overflow-y:auto;">
+                        <div id="notificationEmpty" style="padding:32px 16px;text-align:center;color:var(--gray);">
+                            <i class="fas fa-inbox" style="font-size:32px;margin-bottom:8px;opacity:0.5;display:block;"></i>
+                            <p style="margin:0;font-size:14px;">No notifications yet</p>
+                        </div>
+                    </div>
+                    <!-- Panel Footer -->
+                    <div style="padding:12px;border-top:1px solid var(--border);text-align:center;flex-shrink:0;">
+                        <a href="{% url 'alertnotification' %}" style="color:var(--blue);text-decoration:none;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:4px;transition:all 0.2s;" onmouseover="this.style.color='var(--blue2)'" onmouseout="this.style.color='var(--blue)'">
+                            View All <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- User Menu Dropdown -->
+                <div class="user-menu" style="position:relative;">
+                    {% if user.is_authenticated %}
+                        <button class="user-btn" onclick="toggleUserMenu()" style="display:flex;align-items:center;gap:8px;padding:8px 16px;border:1px solid var(--border);border-radius:8px;cursor:pointer;background:white;transition:all 0.2s;">
+                            <i class="fas fa-user-circle"></i>
+                            <span>{{ user.username }}</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="user-menu-content" style="position:absolute;top:100%;right:0;margin-top:8px;background:white;border-radius:8px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);border:1px solid var(--border);min-width:200px;display:none;">
+                            <a href="{% url 'userprofile' %}" class="menu-item" style="display:flex;align-items:center;gap:8px;padding:12px 16px;color:var(--ink);text-decoration:none;transition:background-color 0.2s;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'">
+                                <i class="fas fa-user"></i>
+                                Profile
+                            </a>
+                            <a href="#" id="openSettings" class="menu-item" style="display:flex;align-items:center;gap:8px;padding:12px 16px;color:var(--ink);text-decoration:none;transition:background-color 0.2s;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'">
+                                <i class="fas fa-cog"></i>
+                                Settings
+                            </a>
+                            <div class="divider" style="height:1px;background:var(--border);margin:8px 0;"></div>
+                            <a href="{% url 'logout' %}" class="menu-item" style="display:flex;align-items:center;gap:8px;padding:12px 16px;color:var(--ink);text-decoration:none;transition:background-color 0.2s;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'">
+                                <i class="fas fa-sign-out-alt"></i>
+                                Logout
+                            </a>
+                        </div>
+                    {% else %}
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <button id="loginBtn" class="standard-login-btn">
+                                <i class="fas fa-sign-in-alt"></i><span>Login</span>
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Messages -->
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="message {{ message.tags }}">
+            <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: #fff; width: 520px; max-width: 92vw; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.25); overflow: hidden;">
+            <div style="background: linear-gradient(90deg, var(--blue), var(--red)); color: #fff; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;">
+                <div style="font-weight: 800;">Settings</div>
+                <button id="closeSettings" style="background: rgba(255,255,255,.15); color:#fff; border: none; border-radius: 8px; padding: 6px 10px; cursor: pointer;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div style="padding: 20px;">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div>
+                        <label style="font-weight: 600; color: var(--ink); font-size: 14px;">Accent Color</label>
+                        <select id="settingAccent" style="width:100%; margin-top:8px; padding:10px; border:1px solid var(--border); border-radius:10px;">
+                            <option value="#0B3D91">Healthcare Blue</option>
+                            <option value="#DC2626">Healthcare Red</option>
+                            <option value="#0ea5e9">Cyan</option>
+                            <option value="#16a34a">Green</option>
+                            <option value="#7c3aed">Purple</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-weight: 600; color: var(--ink); font-size: 14px;">Density</label>
+                        <select id="settingDensity" style="width:100%; margin-top:8px; padding:10px; border:1px solid var(--border); border-radius:10px;">
+                            <option value="comfortable">Comfortable</option>
+                            <option value="compact">Compact</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="margin-top:16px; display:grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <label style="display:flex; align-items:center; gap:10px;">
+                        <input id="settingNotifications" type="checkbox" />
+                        Enable notifications
+                    </label>
+                    <label style="display:flex; align-items:center; gap:10px;">
+                        <input id="settingReducedMotion" type="checkbox" />
+                        Reduce motion
+                    </label>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap: 10px; margin-top: 20px;">
+                    <button id="resetSettings" style="background:#eef2f7; color:#111827; border:none; border-radius:10px; padding:10px 14px; cursor:pointer;">Reset</button>
+                    <button id="saveSettings" style="background: var(--blue); color:#fff; border:none; border-radius:10px; padding:10px 14px; cursor:pointer;">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    {% block content %}{% endblock %}
+
+    <script>
+        // Global page loader: provide a safe, non-blocking big loader
+        // This preserves small inline spinners ('.btn-spinner') and prevents
+        // long-running blockers by auto-hiding after a timeout.
+        const MSLoader = (function(){
+            let _autoHideTimer = null;
+
+            function _ensureElement(){
+                if (document.getElementById('ms-big-loader')) return document.getElementById('ms-big-loader');
+                const el = document.createElement('div');
+                el.id = 'ms-big-loader';
+                // Non-blocking overlay: visible but allows pointer events to pass through
+                el.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:9999;opacity:0;transition:opacity .18s ease;';
+                // Inner box (visible) will not block pointer events so page remains interactive
+                const inner = document.createElement('div');
+                inner.style.cssText = 'pointer-events:auto;display:flex;align-items:center;gap:12px;padding:12px 18px;border-radius:12px;background:rgba(0,0,0,0.45);color:#fff;font-weight:700;backdrop-filter:blur(3px);';
+                const spinner = document.createElement('span');
+                spinner.className = 'btn-spinner dark';
+                spinner.style.width = '28px';
+                spinner.style.height = '28px';
+                spinner.style.borderWidth = '3px';
+                inner.appendChild(spinner);
+                const txt = document.createElement('div');
+                txt.textContent = 'Loading…';
+                inner.appendChild(txt);
+                el.appendChild(inner);
+                document.body.appendChild(el);
+                return el;
+            }
+
+            function show(){
+                try{
+                    const el = _ensureElement();
+                    el.style.opacity = '1';
+                    // Auto-hide after 8 seconds to avoid stuck/fullpage hangs
+                    if (_autoHideTimer) clearTimeout(_autoHideTimer);
+                    _autoHideTimer = setTimeout(()=>{ try{ el.style.opacity = '0'; }catch(_){} _autoHideTimer = null; }, 8000);
+                }catch(e){ console.warn('MSLoader.show error', e); }
+            }
+
+            function hide(){
+                try{
+                    const el = document.getElementById('ms-big-loader');
+                    if (el) el.style.opacity = '0';
+                    if (_autoHideTimer) { clearTimeout(_autoHideTimer); _autoHideTimer = null; }
+                }catch(e){ console.warn('MSLoader.hide error', e); }
+            }
+
+            async function wrap(promise){
+                show();
+                try { return await promise; }
+                finally { hide(); }
+            }
+
+            return { show, hide, wrap };
+        })();
+
+        // Backwards-compatible aliases used across the project
+        window.showLoader = MSLoader.show;
+        window.hideLoader = MSLoader.hide;
+        window.startLoading = MSLoader.show;
+        window.stopLoading = MSLoader.hide;
+
+        function toggleMobileMenu() {
+            const navLinks = document.querySelector('.nav-links');
+            navLinks.classList.toggle('show');
+        }
+
+        function toggleUserMenu() {
+            const userMenu = document.querySelector('.user-menu');
+            const userMenuContent = userMenu.querySelector('.user-menu-content');
+            userMenu.classList.toggle('active');
+            if (userMenu.classList.contains('active')) {
+                userMenuContent.style.display = 'block';
+            } else {
+                userMenuContent.style.display = 'none';
+            }
+        }
+
+        // Close user menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const userMenu = document.querySelector('.user-menu');
+            const userBtn = document.querySelector('.user-btn');
+            if (!userMenu.contains(event.target)) {
+                userMenu.classList.remove('active');
+                userMenu.querySelector('.user-menu-content').style.display = 'none';
+            }
+        });
+
+        // Guest gating for sensitive pages (Lab Results, Vitals, Prescriptions, Notifications)
+        document.addEventListener('DOMContentLoaded', function(){
+            const isAuthenticated = "{{ user.is_authenticated|yesno:'true,false' }}" === 'true';
+            if (!isAuthenticated) {
+                // Get the actual URL paths
+                const labResultsUrl = '{% url "labresults" %}';
+                const vitalsUrl = '{% url "vitals" %}';
+                const prescriptionsUrl = '{% url "prescriptions" %}';
+                const notificationsUrl = '{% url "alertnotification" %}';
+                
+                // Create a map of URL patterns to page names
+                const protectedUrls = {
+                    [labResultsUrl]: 'Lab Results',
+                    [vitalsUrl]: 'Vitals',
+                    [prescriptionsUrl]: 'Prescriptions',
+                    [notificationsUrl]: 'Notifications'
+                };
+                
+                // Also check for URL patterns (in case of query strings or trailing slashes)
+                const urlPatterns = [
+                    { pattern: /\/labresults/, name: 'Lab Results' },
+                    { pattern: /\/vitals/, name: 'Vitals' },
+                    { pattern: /\/prescriptions/, name: 'Prescriptions' },
+                    { pattern: /\/alertnotification/, name: 'Notifications' }
+                ];
+                
+                document.addEventListener('click', function(e){
+                    const a = e.target.closest('a');
+                    if (!a) return;
+                    const href = a.getAttribute('href') || '';
+                    
+                    // Check for exact match
+                    if (protectedUrls[href]) {
+                        e.preventDefault();
+                        showLoginRequiredMessage(protectedUrls[href]);
+                        return;
+                    }
+                    
+                    // Check for pattern match
+                    for (const urlPattern of urlPatterns) {
+                        if (urlPattern.pattern.test(href)) {
+                            e.preventDefault();
+                            showLoginRequiredMessage(urlPattern.name);
+                            return;
+                        }
+                    }
+                });
+                
+                function showLoginRequiredMessage(pageName) {
+                    // Prevent any stuck loaders
+                    try { MSLoader.hide(); } catch(_) {}
+                    // Show message
+                    const note = document.createElement('div');
+                    note.textContent = 'You need to log in to access ' + pageName + '.';
+                    note.style.cssText = 'position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;padding:12px 16px;border-radius:10px;box-shadow:0 10px 25px rgba(0,0,0,.15);z-index:3000;font-weight:700;';
+                    document.body.appendChild(note);
+                    setTimeout(()=>{ note.style.opacity='0'; note.style.transition='opacity .3s'; setTimeout(()=>note.remove(),300); }, 2200);
+                    // Open login modal if present
+                    const loginModal = document.getElementById('loginModal');
+                    const loginBtn = document.getElementById('loginBtn');
+                    if (loginModal) {
+                        loginModal.classList.remove('hidden');
+                        loginModal.classList.add('flex');
+                    } else if (loginBtn) {
+                        loginBtn.click();
+                    }
+                }
+            }
+
+            // Minimal modal wiring for pages that include shared auth modals
+            const loginBtn = document.getElementById('loginBtn');
+            const loginModal = document.getElementById('loginModal');
+            const closeLogin = document.getElementById('closeLogin');
+            const switchToSignup = document.getElementById('switchToSignup');
+            const signupModal = document.getElementById('signupModal');
+            const closeSignup = document.getElementById('closeSignup');
+
+            if (loginBtn && loginModal) {
+                loginBtn.addEventListener('click', function(){
+                    loginModal.classList.remove('hidden');
+                    loginModal.classList.add('flex');
+                    try { loginModal.style.display = 'flex'; } catch(_) {}
+                });
+            }
+            if (closeLogin && loginModal) {
+                closeLogin.addEventListener('click', function(){
+                    loginModal.classList.add('hidden');
+                    loginModal.classList.remove('flex');
+                    try { loginModal.style.display = 'none'; } catch(_) {}
+                });
+            }
+            if (loginModal) {
+                loginModal.addEventListener('click', function(e){
+                    if (e.target === loginModal) {
+                        loginModal.classList.add('hidden');
+                        loginModal.classList.remove('flex');
+                        try { loginModal.style.display = 'none'; } catch(_) {}
+                    }
+                });
+            }
+            if (switchToSignup && signupModal && loginModal) {
+                switchToSignup.addEventListener('click', function(){
+                    loginModal.classList.add('hidden');
+                    loginModal.classList.remove('flex');
+                    try { loginModal.style.display = 'none'; } catch(_) {}
+                    signupModal.classList.remove('hidden');
+                    signupModal.classList.add('flex');
+                    try { signupModal.style.display = 'flex'; } catch(_) {}
+                });
+            }
+            if (closeSignup && signupModal) {
+                closeSignup.addEventListener('click', function(){
+                    signupModal.classList.add('hidden');
+                    signupModal.classList.remove('flex');
+                    try { signupModal.style.display = 'none'; } catch(_) {}
+                });
+            }
+            // cursor-ai: navbar dropdown JS (temporary inline; move to static/js/navbar.js if desired)
+            const navBtn = document.getElementById('primaryNavDropdown');
+            const navMenu = document.getElementById('primaryNavMenu');
+            if (navBtn && navMenu){
+                function closeMenu(){ navMenu.classList.add('hidden'); navBtn.setAttribute('aria-expanded','false'); }
+                function openMenu(){ navMenu.classList.remove('hidden'); navBtn.setAttribute('aria-expanded','true'); }
+                navBtn.addEventListener('click', function(e){
+                    e.stopPropagation();
+                    if (navMenu.classList.contains('hidden')) openMenu(); else closeMenu();
+                });
+                document.addEventListener('click', function(e){
+                    if (!navMenu.contains(e.target) && !navBtn.contains(e.target)) closeMenu();
+                });
+                document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeMenu(); });
+            }
+        });
+
+        // Auto-hide messages after 5 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            const messages = document.querySelectorAll('.message');
+            messages.forEach(message => {
+                setTimeout(() => {
+                    message.style.opacity = '0';
+                    message.style.transform = 'translateX(100%)';
+                    setTimeout(() => message.remove(), 300);
+                }, 5000);
+            });
+
+            // Settings modal wiring
+            const elOpen = document.getElementById('openSettings');
+            const elModal = document.getElementById('settingsModal');
+            const elClose = document.getElementById('closeSettings');
+            const elSave = document.getElementById('saveSettings');
+            const elReset = document.getElementById('resetSettings');
+            const elAccent = document.getElementById('settingAccent');
+            const elDensity = document.getElementById('settingDensity');
+            const elNotif = document.getElementById('settingNotifications');
+            const elMotion = document.getElementById('settingReducedMotion');
+
+            function openSettings() { elModal.style.display = 'flex'; }
+            function closeSettings() { elModal.style.display = 'none'; }
+
+            function loadSettings() {
+                const prefs = JSON.parse(localStorage.getItem('ms:prefs') || '{}');
+                if (prefs.accent) {
+                    document.documentElement.style.setProperty('--blue', prefs.accent);
+                }
+                if (prefs.density === 'compact') {
+                    document.body.classList.add('density-compact');
+                } else {
+                    document.body.classList.remove('density-compact');
+                }
+                elAccent.value = prefs.accent || getComputedStyle(document.documentElement).getPropertyValue('--blue').trim();
+                elDensity.value = prefs.density || 'comfortable';
+                elNotif.checked = !!prefs.notifications;
+                elMotion.checked = !!prefs.reducedMotion;
+            }
+
+            function saveSettings() {
+                const prefs = {
+                    accent: elAccent.value,
+                    density: elDensity.value,
+                    notifications: elNotif.checked,
+                    reducedMotion: elMotion.checked,
+                };
+                localStorage.setItem('ms:prefs', JSON.stringify(prefs));
+                loadSettings();
+                closeSettings();
+            }
+
+            function resetSettings() {
+                localStorage.removeItem('ms:prefs');
+                loadSettings();
+            }
+
+            if (elOpen) elOpen.addEventListener('click', (e)=>{ e.preventDefault(); loadSettings(); openSettings(); });
+            if (elClose) elClose.addEventListener('click', closeSettings);
+            if (elSave) elSave.addEventListener('click', saveSettings);
+            if (elReset) elReset.addEventListener('click', resetSettings);
+
+            // Density compact tweaks
+            const style = document.createElement('style');
+            style.innerHTML = `.density-compact .nav-container{height:60px} .density-compact .nav-link{padding:6px 10px} .density-compact .user-btn{padding:6px 10px}`;
+            document.head.appendChild(style);
+            loadSettings();
+
+            // Notification Bell and Panel initialization
+            loadNotifications();
+        });
+
+        // Notification Bell Functions
+        function toggleNotificationPanel() {
+            const panel = document.getElementById('notificationPanel');
+            if (panel.classList.contains('hidden')) {
+                panel.classList.remove('hidden');
+                panel.style.display = 'flex';
+            } else {
+                panel.classList.add('hidden');
+                panel.style.display = 'none';
+            }
+        }
+
+        function closeNotificationPanel() {
+            const panel = document.getElementById('notificationPanel');
+            panel.classList.add('hidden');
+            panel.style.display = 'none';
+        }
+
+        function loadNotifications() {
+            const userId = '{{ user.user_id }}';
+            if (!userId) return;
+
+            fetch(`/api/notifications/unread/`, {
+                method: 'GET',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                updateNotificationUI(data);
+            })
+            .catch(error => console.error('Error loading notifications:', error));
+        }
+
+        function updateNotificationUI(data) {
+            const badge = document.getElementById('notificationBadge');
+            const notificationList = document.getElementById('notificationList');
+            const emptyState = document.getElementById('notificationEmpty');
+            
+            const unreadCount = data.unread_count || 0;
+            const notifications = data.notifications || [];
+
+            // Update badge count
+            if (unreadCount > 0) {
+                badge.textContent = unreadCount;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+
+            // Clear list and update
+            if (notifications.length === 0) {
+                notificationList.innerHTML = '<div id="notificationEmpty" style="padding:32px 16px;text-align:center;color:var(--gray);"><i class="fas fa-inbox" style="font-size:32px;margin-bottom:8px;opacity:0.5;display:block;"></i><p style="margin:0;font-size:14px;">No notifications yet</p></div>';
+            } else {
+                let html = '';
+                notifications.forEach(notif => {
+                    const icon = getNotificationIcon(notif.notification_type);
+                    const isUnread = !notif.is_read;
+                    html += `
+                    <div class="notification-item" data-id="${notif.notification_id}" style="padding:12px 16px;border-bottom:1px solid #f1f5f9;cursor:pointer;transition:all 0.2s;${isUnread ? 'background:#f0f7ff;' : ''}" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='${isUnread ? '#f0f7ff' : 'transparent'}'">
+                        <div style="display:flex;gap:10px;">
+                            <div style="font-size:16px;color:${getNotificationColor(notif.notification_type)};flex-shrink:0;margin-top:2px;">${icon}</div>
+                            <div style="flex:1;min-width:0;">
+                                <div style="font-weight:600;font-size:13px;color:var(--ink);margin-bottom:2px;">${notif.title}</div>
+                                <div style="font-size:12px;color:var(--gray);line-height:1.4;margin-bottom:6px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;">${notif.message}</div>
+                                <div style="display:flex;gap:6px;align-items:center;">
+                                    <span style="font-size:11px;color:var(--gray);">${formatTime(notif.created_at)}</span>
+                                    ${isUnread ? '<button onclick="markNotificationAsRead(this)" class="notification-mark-read" style="background:none;border:none;color:var(--blue);font-size:11px;cursor:pointer;font-weight:600;padding:0;margin:0;">Mark read</button>' : '<span style="font-size:11px;color:var(--gray);">✓ Read</span>'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                });
+                notificationList.innerHTML = html;
+            }
+        }
+
+        function getNotificationIcon(type) {
+            const icons = {
+                'account': '<i class="fas fa-user-shield"></i>',
+                'urgent': '<i class="fas fa-exclamation-circle"></i>',
+                'appointment': '<i class="fas fa-calendar-check"></i>',
+                'lab_result': '<i class="fas fa-flask-vial"></i>',
+                'system': '<i class="fas fa-info-circle"></i>'
+            };
+            return icons[type] || '<i class="fas fa-bell"></i>';
+        }
+
+        function getNotificationColor(type) {
+            const colors = {
+                'account': '#ff4757',
+                'urgent': '#f15e2c',
+                'appointment': '#2c71b7',
+                'lab_result': '#b7cce4',
+                'system': '#d4cac9'
+            };
+            return colors[type] || '#64748b';
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+
+            if (diffMins < 1) return 'just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            if (diffDays < 7) return `${diffDays}d ago`;
+            
+            return date.toLocaleDateString();
+        }
+
+        function markNotificationAsRead(button) {
+            const notifItem = button.closest('.notification-item');
+            const notifId = notifItem.dataset.id;
+            
+            fetch(`/api/notifications/mark-read/${notifId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({}),
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    notifItem.style.backgroundColor = 'transparent';
+                    button.outerHTML = '<span style="font-size:11px;color:var(--gray);">✓ Read</span>';
+                    // Reload notifications to update badge
+                    loadNotifications();
+                }
+            })
+            .catch(error => console.error('Error marking as read:', error));
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Close notification panel when clicking outside
+        document.addEventListener('click', function(e) {
+            const panel = document.getElementById('notificationPanel');
+            const bellBtn = document.getElementById('notificationBellBtn');
+            if (panel && !panel.contains(e.target) && !bellBtn.contains(e.target)) {
+                closeNotificationPanel();
+            }
+        });
+
+        // Refresh notifications every 30 seconds
+        setInterval(loadNotifications, 30000);
+    </script>
+
+    <!-- Include app.js so HealthcareAPI is available to auth modals and other pages -->
+    <script src="{% static 'app.js' %}"></script>
+
+    <!-- Include Auth Modals for Non-Logged-In Users -->
+    {% if not user.is_authenticated %}
+        {% include 'components/auth_modals.html' %}
+    {% endif %}
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
