@@ -716,7 +716,7 @@ def generate_prescription_pdf(request, prescription_id):
 
 @login_required(login_url='homepage2')
 def upload_prescription_file(request, prescription_id):
-    """Upload prescription file (doctor)"""
+    """Upload prescription file (doctor) with Render ephemeral storage handling"""
     user = request.user
     if getattr(user, 'role', None) != 'doctor':
         return JsonResponse({'error': 'Unauthorized access'}, status=403)
@@ -749,14 +749,22 @@ def upload_prescription_file(request, prescription_id):
             return JsonResponse({'error': 'File size exceeds 10MB limit'}, status=400)
 
         # Save file to prescription
+        # Django will handle the file path - on Render it will be /tmp or similar
         prescription.prescription_file = file
         prescription.save()
+        
+        # For Render: Store filename for tracking
+        if prescription.prescription_file:
+            file_name = prescription.prescription_file.name
+        else:
+            file_name = file.name
 
         return JsonResponse({
             'success': True,
-            'message': 'Prescription file uploaded successfully',
-            'file_name': file.name,
-            'file_url': prescription.prescription_file.url if prescription.prescription_file else None
+            'message': 'Prescription file uploaded successfully. Note: On Render, files are temporary and may be cleared during redeployments.',
+            'file_name': file_name,
+            'file_url': prescription.prescription_file.url if prescription.prescription_file else None,
+            'warning': 'Render uses ephemeral storage - files persist only until next deployment'
         })
         
     except Prescription.DoesNotExist:
@@ -916,7 +924,7 @@ def prescription_details(request, prescription_id):
 
 @login_required(login_url='homepage2')
 def download_prescription(request, prescription_id):
-    """Download prescription file"""
+    """Download prescription file with proper error handling for Render ephemeral storage"""
     user = request.user
     if getattr(user, 'role', None) != 'doctor':
         return JsonResponse({"error": "Unauthorized"}, status=403)
@@ -931,9 +939,17 @@ def download_prescription(request, prescription_id):
         if not prescription.prescription_file:
             return JsonResponse({'error': 'Prescription file not found'}, status=404)
         
-        response = HttpResponse(prescription.prescription_file.read(), content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="prescription_{prescription.prescription_number}.pdf"'
-        return response
+        try:
+            response = HttpResponse(prescription.prescription_file.read(), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="prescription_{prescription.prescription_number}.pdf"'
+            return response
+        except FileNotFoundError:
+            # File path in DB but file not on disk (Render ephemeral storage)
+            return JsonResponse({
+                'error': 'Prescription file not available',
+                'message': 'The file has been removed from temporary storage. Please re-upload the prescription.',
+                'type': 'ephemeral_storage_missing'
+            }, status=410)
         
     except Prescription.DoesNotExist:
         return JsonResponse({'error': 'Prescription not found'}, status=404)

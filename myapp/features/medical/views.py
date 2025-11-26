@@ -940,7 +940,7 @@ def prescription_details(request, prescription_id):
 
 
 def prescription_download(request, prescription_id):
-    """Download prescription file (patient)"""
+    """Download prescription file (patient) with proper error handling for Render ephemeral storage"""
     user_id = request.session.get('user_id') or request.session.get('user')
     
     if not user_id:
@@ -968,13 +968,24 @@ def prescription_download(request, prescription_id):
         mode = request.GET.get('mode', 'download')
         disposition = 'inline' if mode == 'preview' else 'attachment'
         
-        response = FileResponse(file_obj.open('rb'), content_type=mime_type or 'application/octet-stream')
-        response['Content-Disposition'] = f'{disposition}; filename="{smart_str(prescription.prescription_number)}_{smart_str(file_name)}"'
-        return response
+        try:
+            response = FileResponse(file_obj.open('rb'), content_type=mime_type or 'application/octet-stream')
+            response['Content-Disposition'] = f'{disposition}; filename="{smart_str(prescription.prescription_number)}_{smart_str(file_name)}"'
+            return response
+        except FileNotFoundError:
+            # File path in DB but file not on disk (Render ephemeral storage)
+            return JsonResponse({
+                'error': 'Prescription file not available',
+                'message': 'The file has been removed from temporary storage. Please ask your doctor to re-upload the prescription.',
+                'type': 'ephemeral_storage_missing'
+            }, status=410)  # 410 Gone
         
     except Prescription.DoesNotExist:
         return JsonResponse({'error': 'Prescription not found'}, status=404)
     except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error downloading prescription {prescription_id}: {str(e)}")
         return JsonResponse({'error': f'Error downloading file: {str(e)}'}, status=500)
 
 
