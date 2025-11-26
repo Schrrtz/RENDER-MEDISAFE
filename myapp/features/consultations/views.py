@@ -21,15 +21,22 @@ def consultations(request):
     is_logged_in = user_id is not None
     
     try:
-        # Get all doctors with their user profiles and appointment counts
+        # Get all doctors with their user profiles and appointment counts (optimized query)
         doctors = Doctor.objects.select_related(
             'user',
             'user__userprofile'
+        ).prefetch_related(
+            'doctor_consultations'  # Prefetch to avoid N+1
         ).all().annotate(
             first_name=F('user__userprofile__first_name'),
             last_name=F('user__userprofile__last_name'),
             photo_url=F('user__userprofile__photo_url'),
             appointment_count=Count('doctor_consultations')
+        ).only(
+            'doctor_id', 'years_of_experience', 'specialization', 'user_id',
+            'user__user_id', 'user__username', 'user__role',
+            'user__userprofile__first_name', 'user__userprofile__last_name',
+            'user__userprofile__photo_url'
         )
         
         if is_logged_in:

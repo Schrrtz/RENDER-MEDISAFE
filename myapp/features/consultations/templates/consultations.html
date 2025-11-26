@@ -663,11 +663,8 @@
           <div class="consultations-grid">
             {% for doctor in doctors %}
             <div class="consultation-card" data-availability='{{ doctor.availability|escapejs }}' data-appointment-count='{{ doctor.appointment_count|default:0 }}'>
-              {% if doctor.photo_url %}
-              <img src="{{ doctor.photo_url }}" alt="{{ doctor.specialization }}" class="card-image" onerror="this.src='/static/images/default-doctor.jpg'">
-            {% else %}
-              <img src="/static/images/default-doctor.jpg" alt="{{ doctor.specialization }}" class="card-image">
-            {% endif %}
+              <img src="{% if doctor.photo_url %}{{ doctor.photo_url }}{% else %}/static/images/default-doctor.jpg{% endif %}" alt="{{ doctor.specialization }}" class="card-image" decoding="async">
+            
             <div class="card-content">
               <h2 class="specialty">{{ doctor.specialization }}</h2>
               <h3 class="doctor-name">Dr. {{ doctor.first_name }} {{ doctor.last_name }}, MD</h3>
@@ -1575,16 +1572,10 @@
           name: cardContent.querySelector('.doctor-name').textContent,
           specialty: cardContent.querySelector('.specialty').textContent,
           info: cardContent.querySelector('.doctor-info').textContent,
-          image: card.querySelector('.card-image').src,
+          image: card.querySelector('.card-image').src || '/static/images/default-doctor.jpg',
           availability: availabilityData,
           consultations: card.dataset.appointmentCount || '0'
         };
-        
-        // Add error handling for missing images
-        const imgElement = card.querySelector('.card-image');
-        if (imgElement && imgElement.src.includes('default-doctor.jpg')) {
-          currentDoctorData.image = '/static/images/default-doctor.jpg';
-        }
 
         // Update type selection overlay content
         updateTypeSelectionOverlay(currentDoctorData);
@@ -1603,13 +1594,10 @@
       
       const doctorImageDiv = overlay.querySelector('.doctor-image');
       if (doctorImageDiv) {
-        doctorImageDiv.style.backgroundImage = `url(${doctorData.image})`;
-        // Add fallback for failed images
+        const imageUrl = doctorData.image || '/static/images/default-doctor.jpg';
+        doctorImageDiv.style.backgroundImage = `url('${imageUrl}')`;
         doctorImageDiv.style.backgroundSize = 'cover';
         doctorImageDiv.style.backgroundPosition = 'center';
-        if (!doctorData.image || doctorData.image.includes('default-doctor')) {
-          doctorImageDiv.style.backgroundImage = `url('/static/images/default-doctor.jpg')`;
-        }
       }
       // Build a friendly availability string
       let availText = 'Next Available: Tomorrow';
@@ -1652,10 +1640,8 @@
           // Update doctor info display
           const photoDiv = formOverlay.querySelector('.doctor-photo');
           if (photoDiv) {
-            photoDiv.style.backgroundImage = `url(${doctorData.image})`;
-            photoDiv.onerror = function() {
-              this.style.backgroundImage = `url('/static/images/default-doctor.jpg')`;
-            };
+            const photoUrl = doctorData.image || '/static/images/default-doctor.jpg';
+            photoDiv.style.backgroundImage = `url('${photoUrl}')`;
           }
           formOverlay.querySelector('.doctor-name').textContent = doctorData.name;
           formOverlay.querySelector('.doctor-specialty').textContent = doctorData.specialty;
