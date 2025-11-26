@@ -171,8 +171,16 @@ SESSION_COOKIE_HTTPONLY = True
 STATIC_URL = 'static/'
 
 # Media files (User uploaded files)
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# On Render, use Supabase Storage for persistent media files
+if os.getenv('RENDER'):
+    # Production: Use Supabase Storage URL
+    MEDIA_URL = 'https://[YOUR_SUPABASE_ID].supabase.co/storage/v1/object/public/medisafe-media/'
+    MEDIA_ROOT = BASE_DIR / 'media'  # Temporary local storage during upload
+else:
+    # Development: Use local storage
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = BASE_DIR / 'media'
+
 STATICFILES_DIRS = [
     BASE_DIR / 'myapp' / 'static',
     BASE_DIR / 'myapp' / 'features' / 'doctors',
