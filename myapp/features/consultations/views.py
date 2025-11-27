@@ -22,21 +22,33 @@ def consultations(request):
     
     try:
         # Get all doctors with their user profiles and appointment counts (optimized query)
-        doctors = Doctor.objects.select_related(
+        doctors_qs = Doctor.objects.select_related(
             'user',
             'user__userprofile'
         ).prefetch_related(
             'doctor_consultations'  # Prefetch to avoid N+1
         ).all().annotate(
-            first_name=F('user__userprofile__first_name'),
-            last_name=F('user__userprofile__last_name'),
-            photo_url=F('user__userprofile__photo_url'),
             appointment_count=Count('doctor_consultations')
-        ).values(
-            'doctor_id', 'years_of_experience', 'specialization', 'user_id',
-            'user__user_id', 'user__username', 'user__role',
-            'first_name', 'last_name', 'photo_url', 'appointment_count'
         )
+        
+        # Convert to list and manually add photo URLs
+        doctors = []
+        for doctor in doctors_qs:
+            doctor_dict = {
+                'doctor_id': doctor.doctor_id,
+                'years_of_experience': doctor.years_of_experience,
+                'specialization': doctor.specialization,
+                'user_id': doctor.user_id,
+                'user__user_id': doctor.user.user_id,
+                'user__username': doctor.user.username,
+                'user__role': doctor.user.role,
+                'first_name': doctor.user.userprofile.first_name if doctor.user.userprofile else '',
+                'last_name': doctor.user.userprofile.last_name if doctor.user.userprofile else '',
+                'appointment_count': doctor.appointment_count,
+                # Get photo URL - ImageField.url property gives us the proper path
+                'photo_url': doctor.user.userprofile.photo_url.url if doctor.user.userprofile and doctor.user.userprofile.photo_url else ''
+            }
+            doctors.append(doctor_dict)
         
         if is_logged_in:
             # User is logged in - show full functionality

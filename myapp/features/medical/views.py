@@ -965,20 +965,32 @@ def prescription_download(request, prescription_id):
         # First, try to serve the prescription_file from Supabase if it exists
         if prescription.prescription_file:
             try:
-                # Get file from prescription_file field
+                # Check if prescription_file has content
                 file_obj = prescription.prescription_file
-                file_content = file_obj.read()
                 
-                if file_content and len(file_content) > 0:
-                    logger.info(f"Serving prescription file from storage for prescription {prescription_id}, size: {len(file_content)} bytes")
-                    response = HttpResponse(file_content, content_type='application/pdf')
-                    response['Content-Disposition'] = f'attachment; filename="Prescription_{prescription.prescription_number}.pdf"'
-                    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-                    response['Pragma'] = 'no-cache'
-                    response['Expires'] = '0'
-                    return response
+                # If it's a string/path, it needs to be served from storage
+                file_path = str(file_obj) if file_obj else None
+                
+                if file_path and file_path.strip():
+                    logger.info(f"Attempting to serve prescription file: {file_path}")
+                    
+                    # Try to open and read the file
+                    try:
+                        with file_obj.open('rb') as f:
+                            file_content = f.read()
+                            
+                        if file_content and len(file_content) > 0:
+                            logger.info(f"Serving prescription file from storage for prescription {prescription_id}, size: {len(file_content)} bytes")
+                            response = HttpResponse(file_content, content_type='application/pdf')
+                            response['Content-Disposition'] = f'attachment; filename="Prescription_{prescription.prescription_number}.pdf"'
+                            response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+                            response['Pragma'] = 'no-cache'
+                            response['Expires'] = '0'
+                            return response
+                    except Exception as open_error:
+                        logger.warning(f"Could not open file: {str(open_error)}, will generate PDF instead")
             except Exception as file_error:
-                logger.warning(f"Could not serve stored file, falling back to PDF generation: {str(file_error)}")
+                logger.warning(f"Could not process stored file: {str(file_error)}")
         
         # Fallback: Generate PDF on-the-fly if file doesn't exist
         logger.info(f"Generating PDF for prescription {prescription_id}")
