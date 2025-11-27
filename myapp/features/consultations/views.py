@@ -32,11 +32,10 @@ def consultations(request):
             last_name=F('user__userprofile__last_name'),
             photo_url=F('user__userprofile__photo_url'),
             appointment_count=Count('doctor_consultations')
-        ).only(
+        ).values(
             'doctor_id', 'years_of_experience', 'specialization', 'user_id',
             'user__user_id', 'user__username', 'user__role',
-            'user__userprofile__first_name', 'user__userprofile__last_name',
-            'user__userprofile__photo_url'
+            'first_name', 'last_name', 'photo_url', 'appointment_count'
         )
         
         if is_logged_in:

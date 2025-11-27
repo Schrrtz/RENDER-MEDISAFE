@@ -166,9 +166,12 @@ def clean_old_profile_photo(old_photo_path):
     Args:
         old_photo_path: Path to old photo file (e.g., '/media/profile_photos/file.jpg')
     """
-    if old_photo_path and old_photo_path.startswith('/media/'):
+    # Convert to string in case it's an ImageFieldFile object
+    photo_path_str = str(old_photo_path) if old_photo_path else None
+    
+    if photo_path_str and len(photo_path_str) > 0 and photo_path_str.startswith('/media/'):
         # Extract actual file path
-        file_path = old_photo_path.lstrip('/media/')
+        file_path = photo_path_str.lstrip('/media/')
         import os
         media_root = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'media')
         full_path = os.path.join(media_root, file_path)

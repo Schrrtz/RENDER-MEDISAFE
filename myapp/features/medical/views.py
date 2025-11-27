@@ -940,7 +940,7 @@ def prescription_details(request, prescription_id):
 
 
 def prescription_download(request, prescription_id):
-    """Download prescription file (patient) - generates PDF on-the-fly for Render compatibility"""
+    """Download prescription file (patient) - retrieves from Supabase storage or generates PDF"""
     user_id = request.session.get('user_id') or request.session.get('user')
     
     if not user_id:
@@ -960,9 +960,28 @@ def prescription_download(request, prescription_id):
             live_appointment__appointment__patient=user
         )
         
-        logger.info(f"Generating PDF for prescription {prescription_id}")
+        logger.info(f"Processing download for prescription {prescription_id}")
         
-        # Generate PDF on-the-fly (works even if file doesn't exist on Render)
+        # First, try to serve the prescription_file from Supabase if it exists
+        if prescription.prescription_file:
+            try:
+                # Get file from prescription_file field
+                file_obj = prescription.prescription_file
+                file_content = file_obj.read()
+                
+                if file_content and len(file_content) > 0:
+                    logger.info(f"Serving prescription file from storage for prescription {prescription_id}, size: {len(file_content)} bytes")
+                    response = HttpResponse(file_content, content_type='application/pdf')
+                    response['Content-Disposition'] = f'attachment; filename="Prescription_{prescription.prescription_number}.pdf"'
+                    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+                    response['Pragma'] = 'no-cache'
+                    response['Expires'] = '0'
+                    return response
+            except Exception as file_error:
+                logger.warning(f"Could not serve stored file, falling back to PDF generation: {str(file_error)}")
+        
+        # Fallback: Generate PDF on-the-fly if file doesn't exist
+        logger.info(f"Generating PDF for prescription {prescription_id}")
         pdf_content = generate_prescription_pdf(prescription)
         if not pdf_content:
             logger.error(f"PDF generation returned None for prescription {prescription_id}")
