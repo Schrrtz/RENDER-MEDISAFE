@@ -662,9 +662,9 @@
           <h2 class="section-title">Book New Appointment</h2>
           <div class="consultations-grid">
             {% for doctor in doctors %}
-            <div class="consultation-card" data-availability='{{ doctor.availability|escapejs }}' data-appointment-count='{{ doctor.appointment_count|default:0 }}'>
-              {% if doctor.photo_url and not doctor.photo_url|slice:":7" == "/media/" %}
-                <img src="{{ doctor.photo_url }}" alt="{{ doctor.specialization }}" class="card-image" decoding="async" onerror="this.src='{% static 'images/default-doctor.svg' %}'">
+            <div class="consultation-card" data-availability='{{ doctor.availability|escapejs }}' data-appointment-count='{{ doctor.appointment_count|default:0 }}' data-doctor-photo="{{ doctor.photo_url|default:'' }}">
+              {% if doctor.photo_url %}
+                <img src="{{ doctor.photo_url }}" alt="Dr. {{ doctor.first_name }} {{ doctor.last_name }}" class="card-image" decoding="async" onerror="this.src='{% static 'images/default-doctor.svg' %}'" style="object-fit: cover;">
               {% else %}
                 <img src="{% static 'images/default-doctor.svg' %}" alt="{{ doctor.specialization }}" class="card-image" decoding="async">
               {% endif %}

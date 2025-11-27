@@ -944,7 +944,7 @@ def prescription_download(request, prescription_id):
     user_id = request.session.get('user_id') or request.session.get('user')
     
     if not user_id:
-        return JsonResponse({'error': 'Not authenticated'}, status=401)
+        return JsonResponse({'error': 'Not authenticated', 'message': 'Please login to download prescriptions'}, status=401)
     
     try:
         from ...models import User, Prescription
@@ -960,27 +960,51 @@ def prescription_download(request, prescription_id):
             live_appointment__appointment__patient=user
         )
         
+        logger.info(f"Generating PDF for prescription {prescription_id}")
+        
         # Generate PDF on-the-fly (works even if file doesn't exist on Render)
         pdf_content = generate_prescription_pdf(prescription)
         if not pdf_content:
             logger.error(f"PDF generation returned None for prescription {prescription_id}")
             return JsonResponse({
                 'error': 'Failed to generate prescription PDF',
-                'message': 'An error occurred while generating the prescription document. Check logs for details.'
+                'message': 'An error occurred while generating the prescription document. Please try again or contact support.'
             }, status=500)
+        
+        # Verify PDF content size
+        if len(pdf_content) == 0:
+            logger.error(f"PDF content is empty for prescription {prescription_id}")
+            return JsonResponse({
+                'error': 'PDF generation failed',
+                'message': 'The prescription PDF is empty. Please try again.'
+            }, status=500)
+        
+        logger.info(f"Successfully generated PDF ({len(pdf_content)} bytes) for prescription {prescription_id}")
         
         # Return PDF
         response = HttpResponse(pdf_content, content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="Prescription_{prescription.prescription_number}.pdf"'
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
         return response
         
     except Prescription.DoesNotExist:
-        return JsonResponse({'error': 'Prescription not found'}, status=404)
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Prescription {prescription_id} not found for user {user_id}")
+        return JsonResponse({
+            'error': 'Prescription not found',
+            'message': 'The prescription you are looking for does not exist or you do not have access to it.'
+        }, status=404)
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"Error downloading prescription {prescription_id}: {str(e)}", exc_info=True)
-        return JsonResponse({'error': f'Error: {str(e)}'}, status=500)
+        return JsonResponse({
+            'error': 'Failed to download prescription',
+            'message': 'An unexpected error occurred. Please try again or contact support.'
+        }, status=500)
 
 
 # ===== Global Notification API Endpoints =====

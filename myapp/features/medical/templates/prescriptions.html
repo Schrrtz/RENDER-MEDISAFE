@@ -462,25 +462,37 @@
         font-weight: 600;
     }
 
-    /* Responsive Design */
     @media (max-width: 768px) {
         .prescriptions-container {
             padding: 1rem;
         }
 
+        .page-header {
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
         .page-title {
-            font-size: 2rem;
+            font-size: 1.75rem;
             flex-direction: column;
             gap: 0.5rem;
         }
 
+        .page-subtitle {
+            font-size: 0.95rem;
+        }
+
         .prescriptions-table {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
 
         .prescriptions-table th,
         .prescriptions-table td {
             padding: 0.75rem 0.5rem;
+        }
+
+        .prescriptions-table th {
+            font-size: 0.75rem;
         }
 
         .medicines-list {
@@ -495,7 +507,7 @@
 
         .btn {
             padding: 0.5rem 1rem;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             width: 100%;
             justify-content: center;
         }
@@ -503,6 +515,7 @@
         .modal-content {
             width: 95%;
             padding: 1.5rem;
+            max-height: 90vh;
         }
 
         .modal-footer {
@@ -515,6 +528,33 @@
 
         .stats-container {
             grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .stat-card {
+            padding: 1rem;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+        }
+
+        .doctor-specialization {
+            font-size: 0.8rem;
+        }
+
+        .medicine-item {
+            padding: 0.5rem;
+            font-size: 0.8rem;
+            margin: 0.2rem 0;
+        }
+
+        .medicine-name {
+            font-size: 0.85rem;
+        }
+
+        .medicine-details {
+            font-size: 0.75rem;
         }
     }
 
@@ -528,24 +568,69 @@
         }
 
         .page-subtitle {
-            font-size: 0.95rem;
+            font-size: 0.9rem;
+        }
+
+        .prescriptions-table {
+            font-size: 0.75rem;
         }
 
         .prescriptions-table th {
-            padding: 0.6rem 0.3rem;
-            font-size: 0.8rem;
+            padding: 0.5rem 0.25rem;
+            font-size: 0.7rem;
         }
 
         .prescriptions-table td {
-            padding: 0.6rem 0.3rem;
+            padding: 0.5rem 0.25rem;
+            font-size: 0.75rem;
+        }
+
+        .prescription-number {
+            font-size: 0.8rem;
         }
 
         .modal-content {
             max-height: 90vh;
+            padding: 1rem;
+        }
+
+        .modal-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
         }
 
         .medicine-card-details {
             grid-template-columns: 1fr;
+        }
+
+        .prescription-detail {
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            font-size: 0.75rem;
+            padding: 0.4rem 0.8rem;
+        }
+
+        .stat-number {
+            font-size: 1.25rem;
         }
     }
 </style>

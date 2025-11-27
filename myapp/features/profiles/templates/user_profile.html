@@ -1270,14 +1270,26 @@
             }
 
             if (data.success) {
-                alert('Profile updated successfully!');
-                window.location.reload();
+                // Show success notification
+                if (typeof showNotification === 'function') {
+                    showNotification('✓ Profile updated successfully!', 'success');
+                } else {
+                    alert('Profile updated successfully!');
+                }
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             } else {
                 throw new Error(data.error || data.message || 'Failed to update profile');
             }
         } catch (error) {
             console.error('Error saving profile:', error);
-            alert('Error: ' + (error.message || 'Failed to save profile. Please try again.'));
+            const errorMsg = error.message || 'Failed to save profile. Please try again.';
+            if (typeof showNotification === 'function') {
+                showNotification('Error: ' + errorMsg, 'error');
+            } else {
+                alert('Error: ' + errorMsg);
+            }
             if (saveBtn) {
                 saveBtn.disabled = false;
                 saveBtn.innerHTML = '<span class="btn-icon"><i class="fas fa-save"></i> SAVE CHANGES</span>';
@@ -1329,17 +1341,27 @@
                     const avatarImg = document.querySelector('.avatar img');
                     if (avatarImg) {
                         avatarImg.src = data.photo_url + '?t=' + Date.now();
-                    } else {
-                        // Reload page to show new photo
-                        window.location.reload();
+                        avatarImg.style.objectFit = 'cover';
+                        avatarImg.style.width = '100%';
+                        avatarImg.style.height = '100%';
                     }
-                    alert('Profile photo updated successfully!');
+                    // Show success notification
+                    if (typeof showNotification === 'function') {
+                        showNotification('✓ Profile photo updated successfully!', 'success');
+                    } else {
+                        alert('Profile photo updated successfully!');
+                    }
                 } else {
                     throw new Error(data.error || 'Failed to update photo');
                 }
             } catch (error) {
                 console.error('Error uploading photo:', error);
-                alert('Error: ' + (error.message || 'Failed to update photo. Please try again.'));
+                const errorMsg = error.message || 'Failed to update photo. Please try again.';
+                if (typeof showNotification === 'function') {
+                    showNotification('Error: ' + errorMsg, 'error');
+                } else {
+                    alert('Error: ' + errorMsg);
+                }
             }
         };
         document.body.appendChild(photoInput);

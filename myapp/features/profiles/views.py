@@ -95,6 +95,7 @@ def userprofile(request):
 
 @require_http_methods(["POST"])
 def update_profile_photo(request):
+    """Handle profile photo upload with proper error handling"""
     user_id = request.session.get("user_id") or request.session.get("user")
     if not user_id:
         return JsonResponse({'success': False, 'error': 'Not authenticated'}, status=401)
@@ -109,25 +110,52 @@ def update_profile_photo(request):
             return JsonResponse({'success': False, 'error': 'No photo provided'}, status=400)
 
         # Validate file type
-        allowed_types = ['image/jpeg', 'image/png', 'image/gif']
+        allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
         if uploaded.content_type not in allowed_types:
-            return JsonResponse({'success': False, 'error': 'Invalid file type. Please upload a JPEG, PNG, or GIF image.'}, status=400)
+            return JsonResponse({
+                'success': False, 
+                'error': 'Invalid file type. Please upload a JPEG, PNG, GIF, or WebP image.'
+            }, status=400)
+        
+        # Validate file size (max 5MB)
+        max_size = 5 * 1024 * 1024
+        if uploaded.size > max_size:
+            return JsonResponse({
+                'success': False,
+                'error': 'File size too large. Maximum 5MB allowed.'
+            }, status=400)
 
         # Import storage utility
         from ...utils.supabase_storage import upload_profile_photo, clean_old_profile_photo
+        import logging
+        logger = logging.getLogger(__name__)
 
-        # Delete old photo if it exists
+        # Delete old photo if it exists and is a string URL
         if user_profile.photo_url:
-            clean_old_profile_photo(user_profile.photo_url)
+            try:
+                # Ensure photo_url is a string
+                photo_url_str = str(user_profile.photo_url)
+                if photo_url_str and len(photo_url_str) > 0:
+                    clean_old_profile_photo(photo_url_str)
+                    logger.info(f"Cleaned old photo for user {user_id}")
+            except Exception as cleanup_error:
+                logger.warning(f"Could not clean old photo: {str(cleanup_error)}")
+                # Don't fail the upload if cleanup fails
 
         # Upload new photo to storage
         photo_url_str = upload_profile_photo(uploaded, user.user_id)
         if not photo_url_str:
-            return JsonResponse({'success': False, 'error': 'Failed to upload photo'}, status=500)
+            logger.error(f"Failed to upload photo for user {user_id}")
+            return JsonResponse({
+                'success': False, 
+                'error': 'Failed to upload photo. Please try again.'
+            }, status=500)
 
-        # Update profile URL
-        user_profile.photo_url = photo_url_str
+        # Update profile URL (ensure it's a string)
+        user_profile.photo_url = str(photo_url_str)
         user_profile.save()
+        
+        logger.info(f"Profile photo updated for user {user_id}: {photo_url_str}")
 
         # Create notification: account profile photo updated
         try:
@@ -139,14 +167,22 @@ def update_profile_photo(request):
                 notification_type='account',
                 priority='low'
             )
-        except Exception:
+        except Exception as notif_error:
+            logger.warning(f"Could not create notification: {str(notif_error)}")
             pass
 
-        return JsonResponse({'success': True, 'message': 'Profile photo updated successfully', 'photo_url': photo_url_str})
+        return JsonResponse({
+            'success': True, 
+            'message': 'Profile photo updated successfully!', 
+            'photo_url': photo_url_str
+        })
     except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error updating profile photo: {str(e)}", exc_info=True)
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': 'An error occurred while updating your photo. Please try again.'
         }, status=500)
 
 @require_http_methods(["POST"])
